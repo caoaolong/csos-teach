@@ -1,6 +1,9 @@
 [org 0x7c00]
 
 start:
+    mov ax, 0x03
+    int 0x10
+
     mov si, msg
     call print
     jmp $

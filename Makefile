@@ -10,9 +10,9 @@ master: $(BUILD)/boot/boot.bin
 	dd if=$(BUILD)/boot/boot.bin of=master.img bs=512 count=1 conv=notrunc
 
 .PHONY: bochs
-bochs:
+bochs: master
 	bochsdbg -q -f bochsrc.bxrc
 
 .PHONY: qemu
-qemu:
+qemu: master
 	qemu-system-x86_64w -m 128M -drive file=master.img,index=0,media=disk,format=raw
