@@ -1,16 +1,16 @@
 [org 0x7C00]
 
+; edi存储内存位置
 mov edi, 0x8000
+; ecx存储起始扇区位置
 mov ecx, 0
+; bl存储扇区数量
 mov bl, 1
 call read_disk
 
 xchg bx, bx
 
 read_disk:
-    ; edi存储内存位置
-    ; ecx存储起始扇区位置
-    ; bl存储扇区数量
     pushad; ax, cx, dx, bx, sp, bp, si, di
 
     ; 设置扇区数量为1
@@ -67,8 +67,8 @@ read_disk:
             nop
             in al, dx
             ; 检测是否数据准备完毕
-            and al, 0x88
-            cmp al, 0x08
+            and al, 0b1000_1000
+            cmp al, 0b1000
             jnz .check
         ret
 

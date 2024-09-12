@@ -11,7 +11,7 @@ read_disk:
 	; dh=磁头号 dl=驱动器号(软驱从0开始, 硬盘从80H开始)
 	mov dx, 0x80
 	int 0x13
-	jc read_disk
+	; jc read_disk
 
 	xchg bx, bx
 
