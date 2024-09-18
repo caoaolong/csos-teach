@@ -31,7 +31,7 @@ $(BUILD)/kernel.bin: $(BUILD)/kernel/start.o \
 master: $(BUILD)/boot.bin \
 	$(BUILD)/kernel.bin
 	dd if=$(BUILD)/boot.bin of=master.img bs=512 count=1 conv=notrunc
-	dd if=$(BUILD)/kernel.bin of=master.img bs=512 count=10 seek=1 conv=notrunc
+	dd if=$(BUILD)/kernel.bin of=master.img bs=512 count=9 seek=1 conv=notrunc
 
 .PHONY: bochs
 bochs: master
