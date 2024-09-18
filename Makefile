@@ -22,7 +22,9 @@ $(BUILD)/boot.bin: $(BUILD)/boot/boot.o
 	x86_64-elf-objcopy -O binary $(BUILD)/boot.elf $(BUILD)/boot.bin
 
 $(BUILD)/kernel.bin: $(BUILD)/kernel/start.o \
-	$(BUILD)/kernel/kernel.o
+	$(BUILD)/kernel/kernel.o \
+	$(BUILD)/kernel/tty.o \
+	$(BUILD)/kernel/memory.o
 	$(shell mkdir -p $(dir $@))
 	x86_64-elf-ld -m elf_i386 -Ttext=0x7e00 $^ -o $(BUILD)/kernel.elf
 	x86_64-elf-objcopy -O binary $(BUILD)/kernel.elf $(BUILD)/kernel.bin
