@@ -13,11 +13,11 @@ void memory_check()
 				: "=a"(signature), "=c"(bytes), "=b"(index)
 				: "a"(sign16), "b"(index), "c"(MEMORY_MAX_COUNT), "d"(sign32), "D"(memory_raw));
         if (signature != sign32) {
-            show_string("Memory check error!\r\n", 0xFF);
+            show_string("Memory check error!\r\n");
         }
         memory_info.count ++;
         if (index == 0) {
-            show_string("Memory check success!\r\n", 0xF0);
+            show_string("Memory check success!\r\n");
             break;
         }
     }
