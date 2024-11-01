@@ -1,5 +1,5 @@
 __asm__(".code16gcc");
-#include <x16/kernel.h>
+#include <kernel.h>
 
 void show_string(char *str)
 {

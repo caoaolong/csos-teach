@@ -1,4 +1,4 @@
-#include <x16/kernel.h>
+#include <kernel.h>
 
 gdt_table_t gdt_table[GDT_SIZE] = {
     {0, 0, 0, 0}

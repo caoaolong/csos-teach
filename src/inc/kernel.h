@@ -1,10 +1,8 @@
-__asm__(".code16gcc");
-#ifndef CSOS_X16_KERNEL_H
-#define CSOS_X16_KERNEL_H
+#ifndef CSOS_KERNEL_H
+#define CSOS_KERNEL_H
 
+#include <x16/os.h>
 #include <types.h>
-
-#define BMB __asm__ volatile("xchgw %bx, %bx")
 
 #define KERNEL_CODE_SEG         (1 * 8)
 #define KERNEL_DATA_SEG         (2 * 8)
@@ -109,5 +107,22 @@ static inline void lgdt(uint32_t start, uint32_t size) {
 	gdt.limit = size - 1;
 	__asm__ volatile("lgdt %[g]"::[g]"m"(gdt));
 }
+
+static inline uint32_t read_cr0() {
+	uint32_t cr0;
+	__asm__ volatile("mov %%cr0, %[v]":[v]"=r"(cr0));
+	return cr0;
+}
+
+static inline void write_cr0(uint32_t v) {
+	__asm__ volatile("mov %[v], %%cr0"::[v]"r"(v));
+}
+
+static inline void far_jump(uint32_t selector, uint32_t offset) {
+	uint32_t addr[] = { offset, selector };
+	__asm__ volatile("ljmpl *(%[a])"::[a]"r"(addr));
+}
+
+void protect_mode();
 
 #endif
