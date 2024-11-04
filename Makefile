@@ -16,6 +16,10 @@ $(BUILD)/%.o: $(SRC)/%.c
 	$(shell mkdir -p $(dir $@))
 	x86_64-elf-gcc $(CFLAGS) $< -o $@
 
+$(BUILD)/%.o: $(SRC)/%.S
+	$(shell mkdir -p $(dir $@))
+	x86_64-elf-gcc $(CFLAGS) $< -o $@
+
 $(BUILD)/boot.bin: $(BUILD)/boot/boot.o
 	$(shell mkdir -p $(dir $@))
 	x86_64-elf-ld -m elf_i386 -Ttext=0x7c00 $^ -o $(BUILD)/boot.elf
@@ -31,13 +35,18 @@ $(BUILD)/kernel.bin: $(BUILD)/kernel/start.o \
 	x86_64-elf-ld -m elf_i386 -Ttext=0x7e00 $^ -o $(BUILD)/kernel.elf
 	x86_64-elf-objcopy -O binary $(BUILD)/kernel.elf $(BUILD)/kernel.bin
 
+$(BUILD)/kernel32.elf: $(BUILD)/kernel32/start.o \
+	$(BUILD)/kernel32/kernel.o
+	$(shell mkdir -p $(dir $@))
+	x86_64-elf-ld -m elf_i386 -Ttext=0x100000 $^ -o $@
+
 .PHONY: master
 master: $(BUILD)/boot.bin \
-	$(BUILD)/kernel.bin
+	$(BUILD)/kernel.bin \
+	$(BUILD)/kernel32.elf
 	dd if=$(BUILD)/boot.bin of=master.img bs=512 count=1 conv=notrunc
 	dd if=$(BUILD)/kernel.bin of=master.img bs=512 count=9 seek=1 conv=notrunc
-
-
+	dd if=$(BUILD)/kernel32.elf of=master.img bs=512 count=500 seek=10 conv=notrunc
 
 .PHONY: clean
 clean:

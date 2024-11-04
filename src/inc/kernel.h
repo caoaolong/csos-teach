@@ -1,11 +1,8 @@
 #ifndef CSOS_KERNEL_H
 #define CSOS_KERNEL_H
 
-#include <x16/os.h>
 #include <types.h>
-
-#define KERNEL_CODE_SEG         (1 * 8)
-#define KERNEL_DATA_SEG         (2 * 8)
+#include <os.h>
 
 /*==================Memory Check==================*/
 
@@ -55,6 +52,41 @@ typedef struct gdt_table_t
     uint16_t attr;
     uint8_t base_h;
 } _packed gdt_table_t;
+
+/*==================ELF Header Structures==================*/
+
+#define EI_NIDENT       16
+#define ELF_MAGIC       0x7F
+
+typedef struct {
+    char e_ident[EI_NIDENT];
+    Elf32_Half e_type;
+    Elf32_Half e_machine;
+    Elf32_Word e_version;
+    Elf32_Addr e_entry;
+    Elf32_Off e_phoff;
+    Elf32_Off e_shoff;
+    Elf32_Word e_flags;
+    Elf32_Half e_ehsize;
+    Elf32_Half e_phentsize;
+    Elf32_Half e_phnum;
+    Elf32_Half e_shentsize;
+    Elf32_Half e_shnum;
+    Elf32_Half e_shstrndx;
+} _packed Elf32_Ehdr;
+
+#define PT_LOAD         1
+
+typedef struct {
+    Elf32_Word p_type;
+    Elf32_Off p_offset;
+    Elf32_Addr p_vaddr;
+    Elf32_Addr p_paddr;
+    Elf32_Word p_filesz;
+    Elf32_Word p_memsz;
+    Elf32_Word p_flags;
+    Elf32_Word p_align;
+} _packed Elf32_Phdr;
 
 /*==================Extern Functions==================*/
 

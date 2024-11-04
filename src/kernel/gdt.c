@@ -1,3 +1,4 @@
+__asm__(".code16gcc");
 #include <kernel.h>
 
 gdt_table_t gdt_table[GDT_SIZE] = {
