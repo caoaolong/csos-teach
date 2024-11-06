@@ -56,12 +56,18 @@ uint32_t read_elf_header(uint8_t *buffer)
     return elf_header->e_entry;
 }
 
+void test(uint32_t a, uint32_t b)
+{
+    uint32_t c = a + b;
+}
+
 void kernel32_init()
 {
+    test(5, 6);
     // 0号扇区: 引导扇区
     // 1-9: Kernel x16
     // 10-*: Kernel x86
-    read_disk(10, 500, (uint16_t*)OS_ADDR);
-    uint32_t addr = read_elf_header((uint8_t*)OS_ADDR);
-    while (TRUE);
+    // read_disk(10, 500, (uint16_t*)OS_ADDR);
+    // uint32_t addr = read_elf_header((uint8_t*)OS_ADDR);
+    // while (TRUE);
 }
