@@ -21,7 +21,7 @@ typedef struct memory_info_t
 {
     memory_raw_t raws[MEMORY_MAX_COUNT];
     uint32_t count;
-} memory_info_t;
+} _packed memory_info_t;
 
 /*================== GDT ==================*/
 

@@ -1,6 +1,7 @@
 BUILD = ./build
 SRC = ./src
 TEST = ./test
+INFO = ./info
 INC = $(SRC)/inc
 CFLAGS = -gdwarf-2 -O0 -c -m32 -I$(INC) -fno-pie -fno-stack-protector -nostdlib -nostdinc
 
@@ -38,7 +39,7 @@ $(BUILD)/kernel.bin: $(BUILD)/kernel/start.o \
 $(BUILD)/kernel32.elf: $(BUILD)/kernel32/start.o \
 	$(BUILD)/kernel32/kernel.o
 	$(shell mkdir -p $(dir $@))
-	x86_64-elf-ld -m elf_i386 -Ttext=0x100000 $^ -o $@
+	x86_64-elf-ld -m elf_i386 -T $(SRC)/kernel32.lds $^ -o $@
 
 .PHONY: master
 master: $(BUILD)/boot.bin \
@@ -47,10 +48,12 @@ master: $(BUILD)/boot.bin \
 	dd if=$(BUILD)/boot.bin of=master.img bs=512 count=1 conv=notrunc
 	dd if=$(BUILD)/kernel.bin of=master.img bs=512 count=9 seek=1 conv=notrunc
 	dd if=$(BUILD)/kernel32.elf of=master.img bs=512 count=500 seek=10 conv=notrunc
+	${TOOL_PREFIX}readelf -a $(BUILD)/kernel32.elf > $(INFO)/kernel32.txt
 
 .PHONY: clean
 clean:
 	@rm -rf $(BUILD)/*
+	@rm -rf $(INFO)/*
 
 .PHONY: bochs
 bochs: clean master

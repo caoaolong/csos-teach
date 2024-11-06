@@ -1,7 +1,7 @@
 #include <kernel.h>
 
 #define SECTOR_SIZE 512
-#define OS_ADDR     0x100000
+#define OS_ADDR     0x200000
 
 void read_disk(uint32_t sector, uint32_t count, uint16_t* buffer)
 {
@@ -52,22 +52,20 @@ uint32_t read_elf_header(uint8_t *buffer)
             *dst++ = 0;
         }
     }
-
     return elf_header->e_entry;
 }
 
-void test(uint32_t a, uint32_t b)
-{
-    uint32_t c = a + b;
-}
+extern memory_info_t memory_info;
+extern gdt_table_t gdt_table;
 
 void kernel32_init()
 {
-    test(5, 6);
     // 0号扇区: 引导扇区
     // 1-9: Kernel x16
     // 10-*: Kernel x86
-    // read_disk(10, 500, (uint16_t*)OS_ADDR);
-    // uint32_t addr = read_elf_header((uint8_t*)OS_ADDR);
-    // while (TRUE);
+    read_disk(10, 500, (uint16_t*)OS_ADDR);
+    uint32_t addr = read_elf_header((uint8_t*)OS_ADDR);
+    if (addr == 0)
+        while (TRUE);
+    ((void (*)(memory_info_t*, uint32_t))addr)(&memory_info, (uint32_t)&gdt_table);
 }
