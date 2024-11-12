@@ -1,7 +1,7 @@
 #include <kernel.h>
 
 #define SECTOR_SIZE 512
-#define OS_ADDR     0x200000
+#define OS_ADDR     0x100000
 
 void read_disk(uint32_t sector, uint32_t count, uint16_t* buffer)
 {

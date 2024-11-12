@@ -2,7 +2,7 @@
     "files.associations": {
         "memory.h": "c",
         "kernel.h": "c",
-        "os.h": "c"
-    },
-    "C_Cpp.errorSquiggles": "disabled"
+        "os.h": "c",
+        "string.h": "c"
+    }
 }
