@@ -39,7 +39,8 @@ $(BUILD)/kernel.bin: $(BUILD)/kernel/start.o \
 $(BUILD)/kernel32.elf: $(BUILD)/kernel32/start.o \
 	$(BUILD)/kernel32/kernel.o \
 	$(BUILD)/kernel32/tty.o \
-	$(BUILD)/lib/string.o
+	$(BUILD)/lib/string.o \
+	$(BUILD)/lib/stdio.o
 	$(shell mkdir -p $(dir $@))
 	x86_64-elf-ld -m elf_i386 -T $(SRC)/kernel32.lds $^ -o $@
 

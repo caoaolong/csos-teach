@@ -3,6 +3,8 @@
         "memory.h": "c",
         "kernel.h": "c",
         "os.h": "c",
-        "string.h": "c"
+        "string.h": "c",
+        "cstdio": "c",
+        "tty.h": "c"
     }
 }

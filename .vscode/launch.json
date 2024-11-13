@@ -35,11 +35,11 @@
                     "description": "加载内核文件",
                     "ignoreFailures": false
                 },
-                {
-                    "text": "add-symbol-file ./build/kernel.elf 0x7e00",
-                    "description": "加载内核文件",
-                    "ignoreFailures": false
-                },
+                // {
+                //     "text": "add-symbol-file ./build/kernel.elf 0x7e00",
+                //     "description": "加载内核文件",
+                //     "ignoreFailures": false
+                // },
                 {
                     "text": "add-symbol-file ./build/kernel32.elf 0x9000",
                     "description": "加载内核文件",

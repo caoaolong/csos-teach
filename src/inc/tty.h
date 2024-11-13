@@ -9,4 +9,6 @@ uint32_t tty_write(char *buf, uint32_t count);
 
 void tty_init();
 
+int tty_printf(const char *fmt, ...);
+
 #endif

@@ -1,6 +1,8 @@
 #include <string.h>
 #include <tty.h>
+#include <stdio.h>
 #include <kernel.h>
+#include <stdarg.h>
 
 #define CRT_ADDR_REG        0x3D4
 #define CRT_DATA_REG        0x3D5
@@ -182,4 +184,19 @@ uint32_t tty_write(char *buf, uint32_t count)
 void tty_init()
 {
     tty_clear();
+}
+
+#define BUFFER_SIZE 1024
+static char buf[BUFFER_SIZE];
+
+int tty_printf(const char *fmt, ...)
+{
+    kernel_memset(buf, 0, BUFFER_SIZE);
+    va_list args;
+    int i;
+    va_start(args, fmt);
+    i = vsprintf(buf, fmt, args);
+    va_end(args);
+    tty_write(buf, (uint32_t)i);
+    return i;
 }
