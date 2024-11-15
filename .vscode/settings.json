@@ -6,6 +6,7 @@
         "string.h": "c",
         "cstdio": "c",
         "tty.h": "c",
-        "interrupt.h": "c"
+        "interrupt.h": "c",
+        "stdio.h": "c"
     }
 }
