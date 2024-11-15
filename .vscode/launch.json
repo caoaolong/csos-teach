@@ -36,12 +36,12 @@
                     "ignoreFailures": false
                 },
                 // {
-                //     "text": "add-symbol-file ./build/kernel.elf 0x7e00",
+                //     "text": "add-symbol-file ./build/kernel.elf 0x8000",
                 //     "description": "加载内核文件",
                 //     "ignoreFailures": false
                 // },
                 {
-                    "text": "add-symbol-file ./build/kernel32.elf 0x9000",
+                    "text": "add-symbol-file ./build/kernel32.elf 0x10000",
                     "description": "加载内核文件",
                     "ignoreFailures": false
                 }

@@ -5,6 +5,7 @@
         "os.h": "c",
         "string.h": "c",
         "cstdio": "c",
-        "tty.h": "c"
+        "tty.h": "c",
+        "interrupt.h": "c"
     }
 }

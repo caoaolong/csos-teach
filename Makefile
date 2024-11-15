@@ -33,11 +33,12 @@ $(BUILD)/kernel.bin: $(BUILD)/kernel/start.o \
 	$(BUILD)/kernel/gdt.o \
 	$(BUILD)/kernel/kernel32.o
 	$(shell mkdir -p $(dir $@))
-	x86_64-elf-ld -m elf_i386 -Ttext=0x7e00 $^ -o $(BUILD)/kernel.elf
+	x86_64-elf-ld -m elf_i386 -Ttext=0x8000 $^ -o $(BUILD)/kernel.elf
 	x86_64-elf-objcopy -O binary $(BUILD)/kernel.elf $(BUILD)/kernel.bin
 
 $(BUILD)/kernel32.elf: $(BUILD)/kernel32/start.o \
 	$(BUILD)/kernel32/kernel.o \
+	$(BUILD)/kernel32/interrupt.o \
 	$(BUILD)/kernel32/tty.o \
 	$(BUILD)/lib/string.o \
 	$(BUILD)/lib/stdio.o

@@ -12,3 +12,8 @@ _start:
     call csos_init
     
     jmp .
+
+.text
+.global interrupt_handler_default
+interrupt_handler_default:
+    iret

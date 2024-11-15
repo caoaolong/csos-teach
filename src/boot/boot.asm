@@ -10,7 +10,7 @@ _start:
 ; 读取内核代码
 read_disk:
 	; ax=目标地址
-	mov bx, 0x7e00
+	mov bx, 0x8000
 	; ch=磁道号 cl=扇区号
 	mov cx, 0x02
 	; ah=2表示读扇区,3表示写扇区 al=读取/写入的扇区数
@@ -20,7 +20,7 @@ read_disk:
 	int 0x13
 	jc read_disk
     xchg bx, bx
-	jmp 0:0x7e00
+	jmp 0:0x8000
 
 times 510 - ($ - $$) db 0
 dw 0xaa55
