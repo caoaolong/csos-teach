@@ -80,6 +80,10 @@ void handler_virtual(interrupt_frame_t frame);
 extern void interrupt_handler_control();
 void handler_control(interrupt_frame_t frame);
 
+#define IRQ0_TIMER          0x20
+extern void interrupt_handler_timer();
+void handler_timer(interrupt_frame_t* frame);
+
 #define INTERRUPT_GATE_SIZE 0x100
 
 #define GAT_TYPE_INT    (0xE << 8)
@@ -96,6 +100,8 @@ typedef struct gate_t
 } gate_t;
 
 void set_interrupt_gate(int vector, uint32_t offset, uint32_t selector, uint16_t attr);
+
+void install_interrupt_handler(int vector, uint32_t handler);
 
 void interrupt_init();
 

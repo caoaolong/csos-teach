@@ -7,6 +7,8 @@
         "cstdio": "c",
         "tty.h": "c",
         "interrupt.h": "c",
-        "stdio.h": "c"
+        "stdio.h": "c",
+        "pic.h": "c",
+        "timer.h": "c"
     }
 }

@@ -3,6 +3,7 @@
 #include <os.h>
 #include <tty.h>
 #include <pic.h>
+#include <timer.h>
 
 gate_t int_table[INTERRUPT_GATE_SIZE];
 
@@ -124,7 +125,7 @@ void handler_control(interrupt_frame_t frame)
     tty_printf("control handler\n");
 }
 
-void installinterrupt_handler(int vector, uint32_t handler)
+void install_interrupt_handler(int vector, uint32_t handler)
 {
     set_interrupt_gate(vector, handler, KERNEL_CODE_SEG, 
             GATE_ATTR_P | GATE_ATTR_DPL0 | GAT_TYPE_INT);
@@ -138,28 +139,29 @@ void interrupt_init()
             KERNEL_CODE_SEG, 
             GATE_ATTR_P | GATE_ATTR_DPL0 | GAT_TYPE_INT);
     }
-    installinterrupt_handler(IRQ0_DE, (uint32_t)interrupt_handler_division);
-    installinterrupt_handler(IRQ1_DB, (uint32_t)interrupt_handler_debug);
-    installinterrupt_handler(IRQ2_NMI, (uint32_t)interrupt_handler_nmi);
-    installinterrupt_handler(IRQ3_BP, (uint32_t)interrupt_handler_breakpoint);
-    installinterrupt_handler(IRQ4_OF, (uint32_t)interrupt_handler_overflow);
-    installinterrupt_handler(IRQ5_BR, (uint32_t)interrupt_handler_range);
-    installinterrupt_handler(IRQ6_UD, (uint32_t)interrupt_handler_opcode);
-    installinterrupt_handler(IRQ7_NM, (uint32_t)interrupt_handler_device);
-    installinterrupt_handler(IRQ8_DF, (uint32_t)interrupt_handler_double);
-    installinterrupt_handler(IRQA_TS, (uint32_t)interrupt_handler_tss);
-    installinterrupt_handler(IRQB_NP, (uint32_t)interrupt_handler_segment);
-    installinterrupt_handler(IRQC_SS, (uint32_t)interrupt_handler_stack);
-    installinterrupt_handler(IRQD_GP, (uint32_t)interrupt_handler_protection);
-    installinterrupt_handler(IRQE_PF, (uint32_t)interrupt_handler_page);
-    installinterrupt_handler(IRQ10_MF, (uint32_t)interrupt_handler_fpu);
-    installinterrupt_handler(IRQ11_AC, (uint32_t)interrupt_handler_align);
-    installinterrupt_handler(IRQ12_MC, (uint32_t)interrupt_handler_machine);
-    installinterrupt_handler(IRQ13_XM, (uint32_t)interrupt_handler_simd);
-    installinterrupt_handler(IRQ14_VE, (uint32_t)interrupt_handler_virtual);
-    installinterrupt_handler(IRQ15_CP, (uint32_t)interrupt_handler_control);
+    install_interrupt_handler(IRQ0_DE, (uint32_t)interrupt_handler_division);
+    install_interrupt_handler(IRQ1_DB, (uint32_t)interrupt_handler_debug);
+    install_interrupt_handler(IRQ2_NMI, (uint32_t)interrupt_handler_nmi);
+    install_interrupt_handler(IRQ3_BP, (uint32_t)interrupt_handler_breakpoint);
+    install_interrupt_handler(IRQ4_OF, (uint32_t)interrupt_handler_overflow);
+    install_interrupt_handler(IRQ5_BR, (uint32_t)interrupt_handler_range);
+    install_interrupt_handler(IRQ6_UD, (uint32_t)interrupt_handler_opcode);
+    install_interrupt_handler(IRQ7_NM, (uint32_t)interrupt_handler_device);
+    install_interrupt_handler(IRQ8_DF, (uint32_t)interrupt_handler_double);
+    install_interrupt_handler(IRQA_TS, (uint32_t)interrupt_handler_tss);
+    install_interrupt_handler(IRQB_NP, (uint32_t)interrupt_handler_segment);
+    install_interrupt_handler(IRQC_SS, (uint32_t)interrupt_handler_stack);
+    install_interrupt_handler(IRQD_GP, (uint32_t)interrupt_handler_protection);
+    install_interrupt_handler(IRQE_PF, (uint32_t)interrupt_handler_page);
+    install_interrupt_handler(IRQ10_MF, (uint32_t)interrupt_handler_fpu);
+    install_interrupt_handler(IRQ11_AC, (uint32_t)interrupt_handler_align);
+    install_interrupt_handler(IRQ12_MC, (uint32_t)interrupt_handler_machine);
+    install_interrupt_handler(IRQ13_XM, (uint32_t)interrupt_handler_simd);
+    install_interrupt_handler(IRQ14_VE, (uint32_t)interrupt_handler_virtual);
+    install_interrupt_handler(IRQ15_CP, (uint32_t)interrupt_handler_control);
 
     lidt((uint32_t)int_table, sizeof(int_table));
 
     pic_init();
+    timer_init();
 }

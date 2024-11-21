@@ -67,3 +67,5 @@ interrupt_handler machine,          18,     0
 interrupt_handler simd,             19,     0
 interrupt_handler virtual,          20,     0
 interrupt_handler control,          21,     1
+
+interrupt_handler timer,            0x20,   0
