@@ -40,6 +40,7 @@ $(BUILD)/kernel32.elf: $(BUILD)/kernel32/start.o \
 	$(BUILD)/kernel32/kernel.o \
 	$(BUILD)/kernel32/interrupt.o \
 	$(BUILD)/kernel32/tty.o \
+	$(BUILD)/kernel32/pic.o \
 	$(BUILD)/lib/string.o \
 	$(BUILD)/lib/stdio.o
 	$(shell mkdir -p $(dir $@))

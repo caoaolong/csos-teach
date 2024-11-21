@@ -2,6 +2,7 @@
 #include <kernel.h>
 #include <os.h>
 #include <tty.h>
+#include <pic.h>
 
 gate_t int_table[INTERRUPT_GATE_SIZE];
 
@@ -158,5 +159,7 @@ void interrupt_init()
     installinterrupt_handler(IRQ14_VE, (uint32_t)interrupt_handler_virtual);
     installinterrupt_handler(IRQ15_CP, (uint32_t)interrupt_handler_control);
 
-    lidt((uint32_t)int_table, INTERRUPT_GATE_SIZE);
+    lidt((uint32_t)int_table, sizeof(int_table));
+
+    pic_init();
 }
