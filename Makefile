@@ -43,7 +43,8 @@ $(BUILD)/kernel32.elf: $(BUILD)/kernel32/start.o \
 	$(BUILD)/kernel32/pic.o \
 	$(BUILD)/kernel32/timer.o \
 	$(BUILD)/lib/string.o \
-	$(BUILD)/lib/stdio.o
+	$(BUILD)/lib/stdio.o \
+	$(BUILD)/lib/logf.o
 	$(shell mkdir -p $(dir $@))
 	x86_64-elf-ld -m elf_i386 -T $(SRC)/kernel32.lds $^ -o $@
 
@@ -67,7 +68,7 @@ bochs: clean master
 
 .PHONY: qemu
 qemu: clean master
-	qemu-system-i386w -s -S -m 32M -drive file=master.img,index=0,media=disk,format=raw
+	qemu-system-i386 -s -S -m 32M -serial stdio -drive file=master.img,index=0,media=disk,format=raw
 
 .PHONY: test_chs
 test_chs: $(BUILD)/test/read_disk_chs.bin
