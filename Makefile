@@ -42,6 +42,7 @@ $(BUILD)/kernel32.elf: $(BUILD)/kernel32/start.o \
 	$(BUILD)/kernel32/tty.o \
 	$(BUILD)/kernel32/pic.o \
 	$(BUILD)/kernel32/timer.o \
+	$(BUILD)/kernel32/rtc.o \
 	$(BUILD)/lib/string.o \
 	$(BUILD)/lib/stdio.o \
 	$(BUILD)/lib/logf.o

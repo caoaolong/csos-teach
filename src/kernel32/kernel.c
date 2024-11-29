@@ -1,6 +1,5 @@
 #include <kernel.h>
 #include <tty.h>
-#include <stdio.h>
 #include <interrupt.h>
 #include <logf.h>
 

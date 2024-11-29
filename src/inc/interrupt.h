@@ -83,6 +83,11 @@ void handler_control(interrupt_frame_t frame);
 #define IRQ0_TIMER          0x20
 extern void interrupt_handler_timer();
 void handler_timer(interrupt_frame_t* frame);
+#define IRQ1_RTC            0x28
+extern void interrupt_handler_rtc();
+void handler_rtc(interrupt_frame_t* frame);
+
+#define IRQ0_CASCADE        0x22
 
 #define INTERRUPT_GATE_SIZE 0x100
 

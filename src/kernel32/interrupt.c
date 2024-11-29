@@ -4,6 +4,7 @@
 #include <tty.h>
 #include <pic.h>
 #include <timer.h>
+#include <rtc.h>
 
 gate_t int_table[INTERRUPT_GATE_SIZE];
 
@@ -164,4 +165,5 @@ void interrupt_init()
 
     pic_init();
     timer_init();
+    rtc_init();
 }

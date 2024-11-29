@@ -69,3 +69,4 @@ interrupt_handler virtual,          20,     0
 interrupt_handler control,          21,     1
 
 interrupt_handler timer,            0x20,   0
+interrupt_handler rtc,              0x28,   0
