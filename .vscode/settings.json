@@ -9,6 +9,8 @@
         "interrupt.h": "c",
         "stdio.h": "c",
         "pic.h": "c",
-        "timer.h": "c"
+        "timer.h": "c",
+        "time.h": "c",
+        "stdlib.h": "c"
     }
 }

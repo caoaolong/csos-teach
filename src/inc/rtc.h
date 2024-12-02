@@ -18,6 +18,8 @@
 
 void rtc_init();
 
+void set_alarm(uint32_t value);
+
 uint8_t cmos_read(uint8_t addr);
 void cmos_write(uint8_t addr, uint8_t value);
 

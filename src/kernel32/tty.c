@@ -1,8 +1,8 @@
-#include <string.h>
+#include <csos/string.h>
 #include <tty.h>
-#include <stdio.h>
+#include <csos/stdio.h>
 #include <kernel.h>
-#include <stdarg.h>
+#include <csos/stdarg.h>
 
 #define CRT_ADDR_REG        0x3D4
 #define CRT_DATA_REG        0x3D5

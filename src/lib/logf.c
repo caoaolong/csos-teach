@@ -1,8 +1,8 @@
 #include <logf.h>
 #include <kernel.h>
-#include <stdarg.h>
-#include <string.h>
-#include <stdio.h>
+#include <csos/stdarg.h>
+#include <csos/string.h>
+#include <csos/stdio.h>
 
 void tty_logf_init()
 {

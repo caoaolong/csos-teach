@@ -25,10 +25,15 @@ void handler_rtc(interrupt_frame_t* frame)
     tty_printf("rtc handler %d ...\n", counter++);
 }
 
+void set_alarm(uint32_t value)
+{
+    
+}
+
 void rtc_init()
 {
-    // 周期中断
-    cmos_write(CMOS_B, 0b01000010);
+    // 周期中断、闹钟中断
+    cmos_write(CMOS_B, 0b01100010);
     cmos_read(CMOS_C);
     // 设置中断频率
     outb(CMOS_A, (inb(CMOS_A) & 0xF) | 0b1110);

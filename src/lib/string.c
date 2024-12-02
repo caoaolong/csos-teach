@@ -1,4 +1,4 @@
-#include <string.h>
+#include <csos/string.h>
 #include <kernel.h>
 
 void kernel_strcpy(char *dst, const char *src)

@@ -4,8 +4,8 @@
  *  (C) 1991  Linus Torvalds
  */
 
-#include <stdarg.h>
-#include <string.h>
+#include <csos/stdarg.h>
+#include <csos/string.h>
 #include <kernel.h>
 
 /* we use this so that we can do without the ctype library */
