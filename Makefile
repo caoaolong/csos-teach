@@ -69,7 +69,9 @@ bochs: clean master
 
 .PHONY: qemu
 qemu: clean master
-	qemu-system-i386 -s -S -m 32M -serial stdio -drive file=master.img,index=0,media=disk,format=raw
+	qemu-system-i386 -s -S -m 32M \
+		-serial stdio -drive file=master.img,index=0,media=disk,format=raw \
+		-audiodev id=sdl,driver=sdl -machine pcspk-audiodev=sdl
 
 .PHONY: test_chs
 test_chs: $(BUILD)/test/read_disk_chs.bin
