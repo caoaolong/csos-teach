@@ -7,4 +7,6 @@
 #define KERNEL_VERSION          "1.0.0"
 #define OP_SYS_VERSION          "1.0.0"
 
+#define OS_TZ                   (+8)
+
 #endif

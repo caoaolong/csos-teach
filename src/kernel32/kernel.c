@@ -10,7 +10,7 @@ void csos_init(memory_info_t* mem_info, uint32_t gdt_info)
     interrupt_init();
     tty_logf_init();
     tty_logf("KL Version: %s; OS Version: %s", KERNEL_VERSION, OP_SYS_VERSION);
-    time_init(+8);
-    // sti();
+    time_init(OS_TZ);
+    sti();
     while(TRUE);
 }

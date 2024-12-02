@@ -16,9 +16,15 @@
 #define CMOS_MINUTE 0x03
 #define CMOS_HOUR   0x05
 
+#define CMOS_B_24HOUR   (1 << 1)
+#define CMOS_B_AIE      (1 << 5)
+#define CMOS_B_PIE      (1 << 6)
+#define CMOS_C_PF       (1 << 6)
+#define CMOS_C_AF       (1 << 5)
+
 void rtc_init();
 
-void set_alarm(uint32_t value);
+void create_alarm(uint32_t value);
 
 uint8_t cmos_read(uint8_t addr);
 void cmos_write(uint8_t addr, uint8_t value);
