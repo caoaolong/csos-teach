@@ -19,7 +19,6 @@ typedef uint32_t Elf32_Word;
 #define TRUE    1
 #define FLASE   0
 
-#define _packed __attribute__((__packed__))
 #define HLT __asm__ volatile("hlt")
 
 #endif

@@ -21,6 +21,10 @@
 #define DAY (24 * HOUR)         // 每天的秒数
 #define YEAR (365 * DAY)        // 每年的秒数，以 365 天算
 
+static int month_days[13] = {
+    0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
+};
+
 // 每个月开始时的已经过去天数
 static int month[13] = {
         0, // 这里占位，没有 0 月，从 1 月开始
@@ -75,17 +79,16 @@ time_t mktime(tm *time)
 
 void time_read_bcd(tm *time)
 {
-    time->tm_sec = cmos_read(CMOS_SECOND);
-    time->tm_min = cmos_read(CMOS_MINUTE);
-    time->tm_hour = cmos_read(CMOS_HOUR);
-    time->tm_wday = cmos_read(CMOS_WEEKDAY);
-    time->tm_mday = cmos_read(CMOS_DAY);
-    time->tm_mon = cmos_read(CMOS_MONTH);
-    time->tm_year = cmos_read(CMOS_YEAR);
-    century = cmos_read(CMOS_CENTURY);
-    do
-    {
+    do {
         time->tm_sec = cmos_read(CMOS_SECOND);
+        time->tm_sec = cmos_read(CMOS_SECOND);
+        time->tm_min = cmos_read(CMOS_MINUTE);
+        time->tm_hour = cmos_read(CMOS_HOUR);
+        time->tm_wday = cmos_read(CMOS_WEEKDAY);
+        time->tm_mday = cmos_read(CMOS_DAY);
+        time->tm_mon = cmos_read(CMOS_MONTH);
+        time->tm_year = cmos_read(CMOS_YEAR);
+        century = cmos_read(CMOS_CENTURY);
     } while (time->tm_sec != cmos_read(CMOS_SECOND));
 }
 
@@ -97,10 +100,30 @@ void time_read(tm *time, int timezone)
     time->tm_hour = bcd_to_bin(time->tm_hour) + timezone;
     time->tm_wday = bcd_to_bin(time->tm_wday);
     time->tm_mday = bcd_to_bin(time->tm_mday);
+    if (time->tm_hour >= 24) {
+        time->tm_wday++;
+        time->tm_mday++;
+        time->tm_hour %= 24;
+    }
+    if (time->tm_wday >= 8) {
+        time->tm_wday %= 8;
+    }
     time->tm_mon = bcd_to_bin(time->tm_mon);
+    int mdays = month_days[time->tm_mon];
+    if (time->tm_mday > mdays) {
+        time->tm_mday -= mdays;
+        time->tm_mon ++;
+    }
     time->tm_year = bcd_to_bin(time->tm_year);
+    if (time->tm_mon > 12) {
+        time->tm_year++;
+    }
     time->tm_isdst = -1;
     century = bcd_to_bin(century);
+    if (time->tm_year > 99) {
+        century++;
+        time->tm_year %= 100;
+    }
 }
 
 void time_init(int timezone)

@@ -21,7 +21,7 @@ typedef struct memory_info_t
 {
     memory_raw_t raws[MEMORY_MAX_COUNT];
     uint32_t count;
-} _packed memory_info_t;
+} memory_info_t;
 
 /*================== GDT ==================*/
 
@@ -51,7 +51,7 @@ typedef struct gdt_table_t
     uint8_t base_m;
     uint16_t attr;
     uint8_t base_h;
-} _packed gdt_table_t;
+} gdt_table_t;
 
 /*==================ELF Header Structures==================*/
 
@@ -73,7 +73,7 @@ typedef struct {
     Elf32_Half e_shentsize;
     Elf32_Half e_shnum;
     Elf32_Half e_shstrndx;
-} _packed Elf32_Ehdr;
+} Elf32_Ehdr;
 
 #define PT_LOAD         1
 
@@ -86,7 +86,10 @@ typedef struct {
     Elf32_Word p_memsz;
     Elf32_Word p_flags;
     Elf32_Word p_align;
-} _packed Elf32_Phdr;
+} Elf32_Phdr;
+
+#define EFLAGS_DEFAULT      (1 << 1)
+#define EFLAGS_IF           (1 << 9)
 
 /*==================Extern Functions==================*/
 

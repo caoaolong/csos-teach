@@ -3,7 +3,7 @@ SRC = ./src
 TEST = ./test
 INFO = ./info
 INC = $(SRC)/inc
-CFLAGS = -gdwarf-2 -O0 -c -m32 -I$(INC) -fno-pie -fno-stack-protector -nostdlib -nostdinc -Wno-int-to-pointer-cast -Wno-implicit-function-declaration
+CFLAGS = -gdwarf-2 -O0 -c -m32 -I$(INC) -fno-pie -fpack-struct -fno-stack-protector -nostdlib -nostdinc -Wno-int-to-pointer-cast -Wno-implicit-function-declaration
 
 $(BUILD)/test/%.bin: $(TEST)/%.asm
 	$(shell mkdir -p $(dir $@))
