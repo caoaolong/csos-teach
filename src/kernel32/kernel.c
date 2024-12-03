@@ -3,6 +3,26 @@
 #include <interrupt.h>
 #include <logf.h>
 #include <csos/time.h>
+#include <task.h>
+
+static tss_task_t main_task, child_task;
+static uint32_t child_task_stack[1024];
+
+void child_task_entry()
+{
+    int counter = 0;
+    while (TRUE) {
+        tty_logf("child task: %d\n", counter++);
+    }
+}
+
+void main_task_entry()
+{
+    int counter = 0;
+    while (TRUE) {
+        tty_logf("main task: %d\n", counter++);
+    }
+}
 
 void csos_init(memory_info_t* mem_info, uint32_t gdt_info)
 {
@@ -11,6 +31,12 @@ void csos_init(memory_info_t* mem_info, uint32_t gdt_info)
     tty_logf_init();
     tty_logf("KL Version: %s; OS Version: %s", KERNEL_VERSION, OP_SYS_VERSION);
     time_init(OS_TZ);
+
+    // tss_task_init(&child_task, (uint32_t)child_task_entry, &child_task_stack[1024]);
+    // tss_task_init(&main_task, 0, 0);
+    
+    // 开启中断
     sti();
+
     while(TRUE);
 }
