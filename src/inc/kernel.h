@@ -21,7 +21,7 @@ typedef struct memory_info_t
 {
     memory_raw_t raws[MEMORY_MAX_COUNT];
     uint32_t count;
-} _packed memory_info_t;
+} memory_info_t;
 
 /*================== GDT ==================*/
 
@@ -51,7 +51,7 @@ typedef struct gdt_table_t
     uint8_t base_m;
     uint16_t attr;
     uint8_t base_h;
-} _packed gdt_table_t;
+} gdt_table_t;
 
 /*==================ELF Header Structures==================*/
 
@@ -73,7 +73,7 @@ typedef struct {
     Elf32_Half e_shentsize;
     Elf32_Half e_shnum;
     Elf32_Half e_shstrndx;
-} _packed Elf32_Ehdr;
+} Elf32_Ehdr;
 
 #define PT_LOAD         1
 
@@ -86,7 +86,7 @@ typedef struct {
     Elf32_Word p_memsz;
     Elf32_Word p_flags;
     Elf32_Word p_align;
-} _packed Elf32_Phdr;
+} Elf32_Phdr;
 
 #define EFLAGS_DEFAULT      (1 << 1)
 #define EFLAGS_IF           (1 << 9)
@@ -166,11 +166,25 @@ static inline void write_cr0(uint32_t v) {
 	__asm__ volatile("mov %[v], %%cr0"::[v]"r"(v));
 }
 
+static inline void write_tr(uint16_t sel) {
+	__asm__ volatile("ltr %%ax"::"a"(sel));
+}
+
 static inline void far_jump(uint32_t selector, uint32_t offset) {
 	uint32_t addr[] = { offset, selector };
 	__asm__ volatile("ljmpl *(%[a])"::[a]"r"(addr));
 }
 
 void protect_mode();
+
+/*==================GDT Functions==================*/
+
+void gdt32_init(gdt_table_t *gdt_table);
+
+uint32_t alloc_gdt_table_entry();
+
+void free_gdt_table_entry(uint32_t selector);
+
+void set_gdt_table_entry(int selector, uint32_t base, uint32_t limit, uint16_t attr);
 
 #endif

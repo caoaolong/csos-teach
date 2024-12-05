@@ -162,7 +162,7 @@ uint32_t tty_write(char *buf, uint32_t count)
         switch (c) {
             case ASCII_NUL: break;
             case ASCII_BS: com_bs(); break;
-            case ASCII_LF: com_lf(); com_cr(); ptr = pos; break;
+            case ASCII_LF: com_lf(); com_cr(); ptr = (char*)pos; break;
             case ASCII_FF: com_lf(); break;
             case ASCII_CR: com_cr(); break;
             case ASCII_DEL: com_del(); break;

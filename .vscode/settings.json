@@ -11,7 +11,8 @@
         "pic.h": "c",
         "timer.h": "c",
         "time.h": "c",
-        "stdlib.h": "c"
+        "stdlib.h": "c",
+        "rtc.h": "c"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }

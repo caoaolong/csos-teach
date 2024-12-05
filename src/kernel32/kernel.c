@@ -12,7 +12,8 @@ void child_task_entry()
 {
     int counter = 0;
     while (TRUE) {
-        tty_logf("child task: %d\n", counter++);
+        tty_logf("child task: %d", counter++);
+        tss_task_switch(&child_task, &main_task);
     }
 }
 
@@ -20,7 +21,8 @@ void main_task_entry()
 {
     int counter = 0;
     while (TRUE) {
-        tty_logf("main task: %d\n", counter++);
+        tty_logf("main task: %d", counter++);
+        tss_task_switch(&main_task, &child_task);
     }
 }
 
@@ -31,12 +33,14 @@ void csos_init(memory_info_t* mem_info, uint32_t gdt_info)
     tty_logf_init();
     tty_logf("KL Version: %s; OS Version: %s", KERNEL_VERSION, OP_SYS_VERSION);
     time_init(OS_TZ);
-
-    // tss_task_init(&child_task, (uint32_t)child_task_entry, &child_task_stack[1024]);
-    // tss_task_init(&main_task, 0, 0);
-    
+    // GDT重载
+    gdt32_init((gdt_table_t*)gdt_info);
     // 开启中断
     sti();
 
-    while(TRUE);
+    tss_task_init(&child_task, (uint32_t)child_task_entry, (uint32_t)&child_task_stack[1024]);
+    tss_task_init(&main_task, 0, 0);
+    write_tr(main_task.selector);
+
+    main_task_entry();
 }

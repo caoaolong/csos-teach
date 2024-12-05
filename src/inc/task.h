@@ -16,8 +16,11 @@ typedef struct tss_t
 
 typedef struct tss_task_t {
     tss_t tss;
+    uint32_t selector;
 } tss_task_t;
 
 void tss_task_init(tss_task_t *task, uint32_t entry, uint32_t esp);
+
+void tss_task_switch(tss_task_t *from, tss_task_t *to);
 
 #endif

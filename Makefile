@@ -38,12 +38,14 @@ $(BUILD)/kernel.bin: $(BUILD)/kernel/start.o \
 
 $(BUILD)/kernel32.elf: $(BUILD)/kernel32/start.o \
 	$(BUILD)/kernel32/kernel.o \
+	$(BUILD)/kernel32/gdt32.o \
 	$(BUILD)/kernel32/interrupt.o \
 	$(BUILD)/kernel32/tty.o \
 	$(BUILD)/kernel32/pic.o \
 	$(BUILD)/kernel32/timer.o \
 	$(BUILD)/kernel32/rtc.o \
 	$(BUILD)/kernel32/time.o \
+	$(BUILD)/kernel32/task.o \
 	$(BUILD)/lib/string.o \
 	$(BUILD)/lib/stdio.o \
 	$(BUILD)/lib/stdlib.o \
