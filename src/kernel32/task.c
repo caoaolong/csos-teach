@@ -13,7 +13,7 @@ static void tss_init(tss_task_t *task, uint32_t entry, uint32_t esp)
 
     kernel_memset(tss, 0, sizeof(tss_t));
     tss->eip = entry;
-    tss->esp = tss->esp0 = entry;
+    tss->esp = tss->esp0 = esp;
     tss->es = tss->ds =  tss->fs =  tss->gs = tss->ss = tss->ss0 = KERNEL_DATA_SEG;
     tss->cs = KERNEL_CODE_SEG;
     tss->eflags = EFLAGS_DEFAULT | EFLAGS_IF;
