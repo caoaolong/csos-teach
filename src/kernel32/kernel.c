@@ -5,7 +5,8 @@
 #include <csos/time.h>
 #include <task.h>
 
-static tss_task_t main_task, child_task;
+// static tss_task_t main_task, child_task;
+static simple_task_t main_task, child_task;
 static uint32_t child_task_stack[1024];
 
 void child_task_entry()
@@ -13,7 +14,8 @@ void child_task_entry()
     int counter = 0;
     while (TRUE) {
         tty_logf("child task: %d", counter++);
-        tss_task_switch(&child_task, &main_task);
+        // tss_task_switch(&child_task, &main_task);
+        simple_task_switch(&child_task, &main_task);
     }
 }
 
@@ -22,7 +24,8 @@ void main_task_entry()
     int counter = 0;
     while (TRUE) {
         tty_logf("main task: %d", counter++);
-        tss_task_switch(&main_task, &child_task);
+        // tss_task_switch(&main_task, &child_task);
+        simple_task_switch(&main_task, &child_task);
     }
 }
 
@@ -38,9 +41,12 @@ void csos_init(memory_info_t* mem_info, uint32_t gdt_info)
     // 开启中断
     sti();
 
-    tss_task_init(&child_task, (uint32_t)child_task_entry, (uint32_t)&child_task_stack[1024]);
-    tss_task_init(&main_task, 0, 0);
-    write_tr(main_task.selector);
+    // tss_task_init(&child_task, (uint32_t)child_task_entry, (uint32_t)&child_task_stack[1024]);
+    // tss_task_init(&main_task, 0, 0);
+    // write_tr(main_task.selector);
+
+    simple_task_init(&child_task, (uint32_t)child_task_entry, (uint32_t)&child_task_stack[1024]);
+    simple_task_init(&main_task, 0, 0);
 
     main_task_entry();
 }

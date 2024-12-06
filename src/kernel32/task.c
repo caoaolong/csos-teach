@@ -26,7 +26,31 @@ void tss_task_init(tss_task_t *task, uint32_t entry, uint32_t esp)
     tss_init(task, entry, esp);
 }
 
+void simple_task_init(simple_task_t *task, uint32_t entry, uint32_t esp)
+{
+    uint32_t *pesp = (uint32_t *)esp;
+    if (pesp) {
+        *(--pesp) = entry;
+        // ebp
+        *(--pesp) = 0;
+        // ebx
+        *(--pesp) = 1;
+        // esi
+        *(--pesp) = 2;
+        // edi
+        *(--pesp) = 3;
+        task->stack = pesp;
+    }
+}
+
 void tss_task_switch(tss_task_t *from, tss_task_t *to)
 {
     far_jump(to->selector, 0);
+}
+
+extern void simple_switch(uint32_t **from, uint32_t *to);
+
+void simple_task_switch(simple_task_t *from, simple_task_t *to)
+{
+    simple_switch(&from->stack, to->stack);
 }
