@@ -4,6 +4,7 @@
 #include <logf.h>
 #include <csos/time.h>
 #include <task.h>
+#include <list.h>
 
 // static tss_task_t main_task, child_task;
 static simple_task_t main_task, child_task;
@@ -39,14 +40,7 @@ void csos_init(memory_info_t* mem_info, uint32_t gdt_info)
     // GDT重载
     gdt32_init((gdt_table_t*)gdt_info);
     // 开启中断
-    sti();
+    // sti();
 
-    // tss_task_init(&child_task, (uint32_t)child_task_entry, (uint32_t)&child_task_stack[1024]);
-    // tss_task_init(&main_task, 0, 0);
-    // write_tr(main_task.selector);
-
-    simple_task_init(&child_task, (uint32_t)child_task_entry, (uint32_t)&child_task_stack[1024]);
-    simple_task_init(&main_task, 0, 0);
-
-    main_task_entry();
+    test_list();
 }
