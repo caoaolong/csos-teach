@@ -3,7 +3,7 @@ SRC = ./src
 TEST = ./test
 INFO = ./info
 INC = $(SRC)/inc
-CFLAGS = -gdwarf-2 -O0 -c -m32 -I$(INC) -fno-pie -fpack-struct -fno-stack-protector -nostdlib -nostdinc -Wno-int-to-pointer-cast -Wno-implicit-function-declaration
+CFLAGS = -gdwarf-2 -O0 -c -m32 -I$(INC) -fno-pie -fpack-struct -fno-stack-protector -nostdlib -nostdinc -Wno-int-to-pointer-cast -Wno-implicit-function-declaration -Wno-address-of-packed-member
 
 $(BUILD)/test/%.bin: $(TEST)/%.asm
 	$(shell mkdir -p $(dir $@))
@@ -45,7 +45,8 @@ $(BUILD)/kernel32.elf: $(BUILD)/kernel32/start.o \
 	$(BUILD)/kernel32/timer.o \
 	$(BUILD)/kernel32/rtc.o \
 	$(BUILD)/kernel32/time.o \
-	$(BUILD)/kernel32/task.o \
+	$(BUILD)/kernel32/task/simple.o \
+	$(BUILD)/kernel32/task/tss.o \
 	$(BUILD)/lib/string.o \
 	$(BUILD)/lib/stdio.o \
 	$(BUILD)/lib/stdlib.o \
