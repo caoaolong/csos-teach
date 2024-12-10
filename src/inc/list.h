@@ -18,7 +18,7 @@ typedef struct list_t
 
 void list_init(list_t *list);
 
-static inline void init_list_node(list_node_t *node)
+static inline void  list_node_init(list_node_t *node)
 {
     node->pre = node->next = NULL;
 }

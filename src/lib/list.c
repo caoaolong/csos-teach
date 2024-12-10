@@ -89,7 +89,7 @@ void test_list()
         node = &nodes[i];
         list_insert_front(&list, node);
     }
-    list_insert_back(&list, node[5]);
+    list_insert_back(&list, &node[5]);
 
     list_remove(&list, &nodes[2]);
     list_remove_front(&list);

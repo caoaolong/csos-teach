@@ -4,29 +4,17 @@
 #include <logf.h>
 #include <csos/time.h>
 #include <task.h>
-#include <list.h>
 
-// static tss_task_t main_task, child_task;
-static simple_task_t main_task, child_task;
-static uint32_t child_task_stack[1024];
+static uint32_t test_task_stack[1024];
+static tss_task_t test_task;
 
-void child_task_entry()
-{
-    int counter = 0;
-    while (TRUE) {
-        tty_logf("child task: %d", counter++);
-        // tss_task_switch(&child_task, &main_task);
-        simple_task_switch(&child_task, &main_task);
-    }
-}
-
-void main_task_entry()
-{
-    int counter = 0;
-    while (TRUE) {
-        tty_logf("main task: %d", counter++);
-        // tss_task_switch(&main_task, &child_task);
-        simple_task_switch(&main_task, &child_task);
+void test () {
+    uint32_t counter = 0;
+    while (TRUE)
+    {
+        tss_task_t *task = get_running_task();
+        tty_logf("%s : %d", task->name, counter++);
+        task_yield();
     }
 }
 
@@ -39,8 +27,16 @@ void csos_init(memory_info_t* mem_info, uint32_t gdt_info)
     time_init(OS_TZ);
     // GDT重载
     gdt32_init((gdt_table_t*)gdt_info);
+    // 初始化default任务
+    tss_task_init(&test_task, "test task", (uint32_t)test, (uint32_t)&test_task_stack[1024]);
+    default_task_init();
     // 开启中断
-    // sti();
-
-    test_list();
+    sti();
+    // main任务
+    int counter = 0;
+    while (TRUE) {
+        tss_task_t *task = get_running_task();
+        tty_logf("%s : %d", task->name, counter++);
+        task_yield();
+    }
 }

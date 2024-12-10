@@ -58,6 +58,7 @@ $(BUILD)/kernel32.elf: $(BUILD)/kernel32/start.o \
 master: $(BUILD)/boot.bin \
 	$(BUILD)/kernel.bin \
 	$(BUILD)/kernel32.elf
+	$(shell mkdir -p $(INFO))
 	dd if=$(BUILD)/boot.bin of=master.img bs=512 count=1 conv=notrunc
 	dd if=$(BUILD)/kernel.bin of=master.img bs=512 count=9 seek=1 conv=notrunc
 	dd if=$(BUILD)/kernel32.elf of=master.img bs=512 count=500 seek=10 conv=notrunc
