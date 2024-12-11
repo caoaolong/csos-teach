@@ -12,6 +12,9 @@ typedef struct simple_task_t
     list_node_t running_node;
     // 所有任务列表节点
     list_node_t task_node;
+    // 任务时间片
+    uint32_t ticks;
+    uint32_t slices;
 } simple_task_t;
 
 typedef struct simple_task_queue_t
@@ -39,6 +42,8 @@ void simple_task_set_ready(simple_task_t *task);
 void simple_task_set_block(simple_task_t *task);
 
 void simple_task_yield();
+
+void simple_task_ts();
 
 void simple_task_dispatch();
 

@@ -13,7 +13,7 @@ void handler_timer(interrupt_frame_t* frame)
 {
     ticks ++;
     send_eoi(IRQ0_TIMER);
-    tss_task_ts();
+    simple_task_ts();
 }
 
 void start_beep()

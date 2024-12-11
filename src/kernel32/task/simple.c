@@ -49,6 +49,18 @@ void simple_task_yield()
     }
 }
 
+void simple_task_ts()
+{
+    simple_task_t *task = get_running_simple_task();
+    if (-- task->ticks == 0)
+    {
+        task->ticks = task->slices;
+        simple_task_set_block(task);
+        simple_task_set_ready(task);
+        simple_task_dispatch();
+    }
+}
+
 void simple_task_dispatch()
 {
     list_node_t *node = list_get_first(&simple_task_queue.ready_list);
@@ -75,6 +87,8 @@ void simple_task_init(simple_task_t *task, const char *name, uint32_t entry, uin
         *(--pesp) = 2;
         // edi
         *(--pesp) = 3;
+        // eflags
+        *(--pesp) = EFLAGS_DEFAULT | EFLAGS_IF;
         task->stack = pesp;
     }
     kernel_strcpy(task->name, name);
@@ -85,6 +99,8 @@ void simple_task_init(simple_task_t *task, const char *name, uint32_t entry, uin
     list_insert_front(&simple_task_queue.task_list, &task->task_node);
     // 插入就绪队列
     simple_task_set_ready(task);
+    // 任务时间片初始化
+    task->ticks = task->slices = TASK_DEFAULT_TICKS;
 }
 
 extern void simple_switch(uint32_t **from, uint32_t *to);

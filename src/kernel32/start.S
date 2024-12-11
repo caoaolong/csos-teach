@@ -22,8 +22,10 @@ simple_switch:
     push %ebx
     push %esi
     push %edi
+    pushf
     mov %esp, (%eax)
     mov %edx, %esp
+    popf
     pop %edi
     pop %esi
     pop %ebx
