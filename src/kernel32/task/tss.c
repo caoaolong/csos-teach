@@ -69,6 +69,18 @@ void tss_task_yield()
     }
 }
 
+void tss_task_ts()
+{
+    tss_task_t *task = get_running_tss_task();
+    if (-- task->ticks == 0)
+    {
+        task->ticks = task->slices;
+        tss_task_set_block(task);
+        tss_task_set_ready(task);
+        tss_task_dispatch();
+    }
+}
+
 void tss_task_dispatch()
 {
     list_node_t *node = list_get_first(&tss_task_queue.ready_list);
@@ -93,6 +105,8 @@ void tss_task_init(tss_task_t *task, const char *name, uint32_t entry, uint32_t 
     list_insert_front(&tss_task_queue.task_list, &task->task_node);
     // 插入就绪队列
     tss_task_set_ready(task);
+    // 任务时间片初始化
+    task->ticks = task->slices = TASK_DEFAULT_TICKS;
 }
 
 void tss_task_switch(tss_task_t *from, tss_task_t *to)

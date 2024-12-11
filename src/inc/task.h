@@ -4,7 +4,8 @@
 #include <kernel.h>
 #include <list.h>
 
-#define TASK_NAME_SIZE  32
+#define TASK_NAME_SIZE      32
+#define TASK_DEFAULT_TICKS  10
 
 typedef enum {
     TASK_CREATED,

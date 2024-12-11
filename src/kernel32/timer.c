@@ -2,6 +2,8 @@
 #include <pic.h>
 #include <kernel.h>
 #include <tty.h>
+#include <task/tss.h>
+#include <task/simple.h>
 
 static uint32_t ticks = 0;
 static uint32_t beeping = 0;
@@ -9,15 +11,9 @@ static uint32_t frequency = 200;
 
 void handler_timer(interrupt_frame_t* frame)
 {
-    // if (beeping == 0)
-    //     start_beep();
-    // if (beeping > frequency)
-    //     stop_beep();
-    // beeping = beeping == frequency * 2 ? 0 : beeping + 5;
-
     ticks ++;
     send_eoi(IRQ0_TIMER);
-    // tty_printf("beeping: %d\n", beeping);
+    tss_task_ts();
 }
 
 void start_beep()

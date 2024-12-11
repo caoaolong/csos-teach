@@ -23,6 +23,9 @@ typedef struct tss_task_t {
     list_node_t task_node;
     tss_t tss;
     uint32_t selector;
+    // 任务时间片
+    uint32_t ticks;
+    uint32_t slices;
 } tss_task_t;
 
 typedef struct tss_task_queue_t
@@ -50,6 +53,8 @@ void tss_task_set_ready(tss_task_t *task);
 void tss_task_set_block(tss_task_t *task);
 
 void tss_task_yield();
+
+void tss_task_ts();
 
 void tss_task_dispatch();
 
