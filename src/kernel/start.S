@@ -6,6 +6,8 @@
 .text
 .global _start
 _start: 
+	mov $0x3, %ax
+	int $0x10
 	jmp kernel_init
 
 .code32

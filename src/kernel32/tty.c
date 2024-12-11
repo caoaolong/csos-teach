@@ -151,6 +151,16 @@ static void com_lf()
     scroll_up();
 }
 
+void tty_color_set(uint8_t color)
+{
+    attr = color;
+}
+
+void tty_color_reset()
+{
+    attr = COLOR_LIGHT_GRAY;
+}
+
 uint32_t tty_write(char *buf, uint32_t count)
 {
     char c;

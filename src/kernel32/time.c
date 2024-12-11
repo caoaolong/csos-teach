@@ -121,6 +121,7 @@ void time_init(int timezone)
     tm time;
     time_read(&time, timezone);
     startup_time = mktime(&time);
+    tty_color_set(COLOR_YELLOW);
     tty_printf("========================STARTUP TIME: %d%d-%02d-%02d %02d:%02d:%02d=======================\n",
          century,
          time.tm_year,
@@ -129,4 +130,5 @@ void time_init(int timezone)
          time.tm_hour,
          time.tm_min,
          time.tm_sec);
+    tty_color_reset();
 }
