@@ -1,5 +1,6 @@
 #include <task/tss.h>
 #include <csos/string.h>
+#include <interrupt.h>
 
 tss_task_queue_t tss_task_queue;
 
@@ -83,6 +84,7 @@ void tss_task_ts()
 
 void tss_task_dispatch()
 {
+    protect_state_t ps = protect_enter();
     list_node_t *node = list_get_first(&tss_task_queue.ready_list);
     tss_task_t *to = struct_from_field(node, tss_task_t, running_node);
     tss_task_t *from = get_running_tss_task();
@@ -92,6 +94,7 @@ void tss_task_dispatch()
         to->state = TASK_RUNNING;
         tss_task_switch(from, to);
     }
+    protect_exit(ps);
 }
 
 void tss_task_init(tss_task_t *task, const char *name, uint32_t entry, uint32_t esp)

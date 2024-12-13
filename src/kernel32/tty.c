@@ -1,5 +1,6 @@
 #include <csos/string.h>
 #include <tty.h>
+#include <interrupt.h>
 #include <csos/stdio.h>
 #include <kernel.h>
 #include <csos/stdarg.h>
@@ -207,6 +208,8 @@ int tty_printf(const char *fmt, ...)
     va_start(args, fmt);
     i = vsprintf(buf, fmt, args);
     va_end(args);
+    protect_state_t ps = protect_enter();
     tty_write(buf, (uint32_t)i);
+    protect_exit(ps);
     return i;
 }

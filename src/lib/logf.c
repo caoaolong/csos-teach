@@ -1,5 +1,6 @@
 #include <logf.h>
 #include <kernel.h>
+#include <interrupt.h>
 #include <csos/stdarg.h>
 #include <csos/string.h>
 #include <csos/stdio.h>
@@ -30,7 +31,8 @@ void tty_logf(const char * fmt, ...)
     va_start(args, fmt);
     vsprintf(buffer, fmt, args);
     va_end(args);
-
+    
+    protect_state_t ps = protect_enter();
     const char *p = buffer;
     while (*p != 0)
     {
@@ -39,4 +41,5 @@ void tty_logf(const char * fmt, ...)
     }
     outb(COM1_PORT, '\r');
     outb(COM1_PORT, '\n');
+    protect_exit(ps);
 }

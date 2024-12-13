@@ -170,6 +170,18 @@ static inline void write_tr(uint16_t sel) {
 	__asm__ volatile("ltr %%ax"::"a"(sel));
 }
 
+static inline uint32_t read_eflags() {
+	uint32_t eflags;
+	__asm__ volatile("pushf\n"
+		"pop %%eax":"=a"(eflags));
+	return eflags;
+}
+
+static inline void write_eflags(uint32_t eflags) {
+	__asm__ volatile("push %%eax\n"
+		"popf\n"::"a"(eflags));
+}
+
 static inline void far_jump(uint32_t selector, uint32_t offset) {
 	uint32_t addr[] = { offset, selector };
 	__asm__ volatile("ljmpl *(%[a])"::[a]"r"(addr));

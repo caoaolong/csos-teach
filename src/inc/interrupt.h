@@ -108,6 +108,12 @@ void set_interrupt_gate(int vector, uint32_t offset, uint32_t selector, uint16_t
 
 void install_interrupt_handler(int vector, uint32_t handler);
 
+typedef uint32_t protect_state_t;
+
+protect_state_t protect_enter();
+
+protect_state_t protect_exit(protect_state_t ps);
+
 void interrupt_init();
 
 #endif

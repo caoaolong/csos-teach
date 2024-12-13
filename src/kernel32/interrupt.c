@@ -167,3 +167,15 @@ void interrupt_init()
     timer_init();
     rtc_init();
 }
+
+protect_state_t protect_enter()
+{
+    uint32_t eflags = read_eflags();
+    cli();
+    return eflags;
+}
+
+protect_state_t protect_exit(protect_state_t ps)
+{
+    write_eflags(ps);
+}
