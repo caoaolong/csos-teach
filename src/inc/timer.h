@@ -3,7 +3,7 @@
 
 #include <interrupt.h>
 
-#define OS_TICKS_MS         10
+#define OS_TICKS_MS         1
 
 // 每秒钟时钟中断个数（时钟频率）
 #define PIT_OSC_FREQ        1193182

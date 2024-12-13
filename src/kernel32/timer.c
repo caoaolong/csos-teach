@@ -3,17 +3,13 @@
 #include <kernel.h>
 #include <tty.h>
 #include <task/tss.h>
-#include <task/simple.h>
-
-static uint32_t ticks = 0;
-static uint32_t beeping = 0;
-static uint32_t frequency = 200;
+// #include <task/simple.h>
 
 void handler_timer(interrupt_frame_t* frame)
 {
-    ticks ++;
     send_eoi(IRQ0_TIMER);
-    simple_task_ts();
+    // simple_task_ts();
+    tss_task_ts();
 }
 
 void start_beep()

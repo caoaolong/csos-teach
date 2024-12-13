@@ -1,6 +1,7 @@
 #include <task/tss.h>
 #include <csos/string.h>
 #include <interrupt.h>
+#include <timer.h>
 
 tss_task_queue_t tss_task_queue;
 
@@ -27,6 +28,7 @@ void tss_task_queue_init()
 {
     list_init(&tss_task_queue.ready_list);
     list_init(&tss_task_queue.task_list);
+    list_init(&tss_task_queue.sleep_list);
     tss_task_queue.running_task = NULL;
 }
 
@@ -72,6 +74,18 @@ void tss_task_yield()
 
 void tss_task_ts()
 {
+    protect_state_t ps = protect_enter();
+    list_node_t *node = list_get_first(&tss_task_queue.sleep_list);
+    while (node)
+    {
+        tss_task_t *task = struct_from_field(node, tss_task_t, running_node);
+        if (-- task->sleep == 0) {
+            tss_task_notify(task);
+            tss_task_set_ready(task);
+        }
+        node = task->running_node.next;
+    }
+
     tss_task_t *task = get_running_tss_task();
     if (-- task->ticks == 0)
     {
@@ -80,6 +94,28 @@ void tss_task_ts()
         tss_task_set_ready(task);
         tss_task_dispatch();
     }
+    protect_exit(ps);
+}
+
+static void tss_task_set_sleep(tss_task_t *task, uint32_t ticks)
+{
+    if (ticks == 0) return;
+
+    task->sleep = ticks;
+    task->state = TASK_SLEEP;
+    list_insert_back(&tss_task_queue.sleep_list, &task->running_node);
+}
+
+void tss_task_sleep(uint32_t ms)
+{
+    tss_task_set_block(tss_task_queue.running_task);
+    tss_task_set_sleep(tss_task_queue.running_task, ms);
+    tss_task_dispatch();
+}
+
+void tss_task_notify(tss_task_t *task)
+{
+    list_remove(&tss_task_queue.sleep_list, &task->running_node);
 }
 
 void tss_task_dispatch()
@@ -110,6 +146,8 @@ void tss_task_init(tss_task_t *task, const char *name, uint32_t entry, uint32_t 
     tss_task_set_ready(task);
     // 任务时间片初始化
     task->ticks = task->slices = TASK_DEFAULT_TICKS;
+    // 延时
+    task->sleep = 0;
 }
 
 void tss_task_switch(tss_task_t *from, tss_task_t *to)
