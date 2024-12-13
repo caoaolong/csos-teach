@@ -15,6 +15,8 @@ typedef struct simple_task_t
     // 任务时间片
     uint32_t ticks;
     uint32_t slices;
+    // 延时
+    uint32_t sleep;
 } simple_task_t;
 
 typedef struct simple_task_queue_t
@@ -23,6 +25,8 @@ typedef struct simple_task_queue_t
     list_t ready_list;
     // 所有任务列表
     list_t task_list;
+    // 延时任务列表
+    list_t sleep_list;
     // 默认任务
     simple_task_t default_task;
     // 当前正在运行的任务
@@ -44,6 +48,10 @@ void simple_task_set_block(simple_task_t *task);
 void simple_task_yield();
 
 void simple_task_ts();
+
+void simple_task_sleep(uint32_t ms);
+
+void simple_task_notify(simple_task_t *task);
 
 void simple_task_dispatch();
 

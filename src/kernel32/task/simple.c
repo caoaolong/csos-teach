@@ -1,5 +1,6 @@
 #include <task/simple.h>
 #include <csos/string.h>
+#include <interrupt.h>
 
 simple_task_queue_t simple_task_queue;
 
@@ -7,6 +8,7 @@ void simple_task_queue_init()
 {
     list_init(&simple_task_queue.ready_list);
     list_init(&simple_task_queue.task_list);
+    list_init(&simple_task_queue.sleep_list);
     simple_task_queue.running_task = NULL;
 }
 
@@ -51,6 +53,18 @@ void simple_task_yield()
 
 void simple_task_ts()
 {
+    protect_state_t ps = protect_enter();
+    list_node_t *node = list_get_first(&simple_task_queue.sleep_list);
+    while (node)
+    {
+        simple_task_t *task = struct_from_field(node, simple_task_t, running_node);
+        if (-- task->sleep == 0) {
+            simple_task_notify(task);
+            simple_task_set_ready(task);
+        }
+        node = task->running_node.next;
+    }
+
     simple_task_t *task = get_running_simple_task();
     if (-- task->ticks == 0)
     {
@@ -59,10 +73,33 @@ void simple_task_ts()
         simple_task_set_ready(task);
         simple_task_dispatch();
     }
+    protect_exit(ps);
+}
+
+static void simple_task_set_sleep(simple_task_t *task, uint32_t ticks)
+{
+    if (ticks == 0) return;
+
+    task->sleep = ticks;
+    task->state = TASK_SLEEP;
+    list_insert_back(&simple_task_queue.sleep_list, &task->running_node);
+}
+
+void simple_task_sleep(uint32_t ms)
+{
+    simple_task_set_block(simple_task_queue.running_task);
+    simple_task_set_sleep(simple_task_queue.running_task, ms);
+    simple_task_dispatch();
+}
+
+void simple_task_notify(simple_task_t *task)
+{
+    list_remove(&simple_task_queue.sleep_list, &task->running_node);
 }
 
 void simple_task_dispatch()
 {
+    protect_state_t ps = protect_enter();
     list_node_t *node = list_get_first(&simple_task_queue.ready_list);
     simple_task_t *to = struct_from_field(node, simple_task_t, running_node);
     simple_task_t *from = get_running_simple_task();
@@ -72,6 +109,7 @@ void simple_task_dispatch()
         to->state = TASK_RUNNING;
         simple_task_switch(from, to);
     }
+    protect_exit(ps);
 }
 
 void simple_task_init(simple_task_t *task, const char *name, uint32_t entry, uint32_t esp)
@@ -101,6 +139,8 @@ void simple_task_init(simple_task_t *task, const char *name, uint32_t entry, uin
     simple_task_set_ready(task);
     // 任务时间片初始化
     task->ticks = task->slices = TASK_DEFAULT_TICKS;
+    // 延时
+    task->sleep = 0;
 }
 
 extern void simple_switch(uint32_t **from, uint32_t *to);
