@@ -4,6 +4,8 @@
 #include <types.h>
 #include <os.h>
 
+#define TASK_SIMPLE
+
 /*==================Memory Check==================*/
 
 #define MEMORY_MAX_COUNT    24

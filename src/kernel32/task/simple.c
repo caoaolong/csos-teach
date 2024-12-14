@@ -4,12 +4,21 @@
 
 simple_task_queue_t simple_task_queue;
 
+static uint32_t idle_task_stack[1024];
+static void idle_task_entry()
+{
+    while (TRUE) HLT;
+}
+
 void simple_task_queue_init()
 {
     list_init(&simple_task_queue.ready_list);
     list_init(&simple_task_queue.task_list);
     list_init(&simple_task_queue.sleep_list);
     simple_task_queue.running_task = NULL;
+        // 初始化空闲任务
+    simple_task_init(&simple_task_queue.idle_task, "idle task", (uint32_t)idle_task_entry, (uint32_t)&idle_task_stack[1024]);
+
 }
 
 void default_simple_task_init()
@@ -31,12 +40,18 @@ simple_task_t *get_running_simple_task()
 
 void simple_task_set_ready(simple_task_t *task)
 {
+    // 防止空闲任务进入运行任务队列
+    if (task == &simple_task_queue.idle_task) return;
+
     task->state = TASK_READY;
     list_insert_back(&simple_task_queue.ready_list, &task->running_node);
 }
 
 void simple_task_set_block(simple_task_t *task)
 {
+    // 防止空闲任务进入运行任务队列
+    if (task == &simple_task_queue.idle_task) return;
+
     list_remove(&simple_task_queue.ready_list, &task->running_node);
 }
 
@@ -100,9 +115,13 @@ void simple_task_notify(simple_task_t *task)
 void simple_task_dispatch()
 {
     protect_state_t ps = protect_enter();
-    list_node_t *node = list_get_first(&simple_task_queue.ready_list);
-    simple_task_t *to = struct_from_field(node, simple_task_t, running_node);
-    simple_task_t *from = get_running_simple_task();
+    simple_task_t *to = &simple_task_queue.idle_task, *from = get_running_simple_task();
+    // 判断运行队列是否为空，为空则运行空闲任务
+    if (!list_is_empty(&simple_task_queue.ready_list))
+    {
+        list_node_t *node = list_get_first(&simple_task_queue.ready_list);
+        to = struct_from_field(node, simple_task_t, running_node);
+    }
     if (to != from)
     {
         simple_task_queue.running_task = to;

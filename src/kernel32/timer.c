@@ -3,13 +3,18 @@
 #include <kernel.h>
 #include <tty.h>
 #include <task/tss.h>
-// #include <task/simple.h>
+#include <task/simple.h>
 
 void handler_timer(interrupt_frame_t* frame)
 {
     send_eoi(IRQ0_TIMER);
-    // simple_task_ts();
-    tss_task_ts();
+    #ifdef TASK_SIMPLE
+        simple_task_ts();
+    #endif
+
+    #ifdef TASK_TSS
+        tss_task_ts();
+    #endif
 }
 
 void start_beep()

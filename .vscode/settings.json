@@ -14,7 +14,9 @@
         "stdlib.h": "c",
         "rtc.h": "c",
         "list.h": "c",
-        "simple.h": "c"
+        "simple.h": "c",
+        "tss.h": "c",
+        "task.h": "c"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }

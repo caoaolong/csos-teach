@@ -27,6 +27,8 @@ typedef struct simple_task_queue_t
     list_t task_list;
     // 延时任务列表
     list_t sleep_list;
+    // 空闲任务
+    simple_task_t idle_task;
     // 默认任务
     simple_task_t default_task;
     // 当前正在运行的任务
