@@ -21,6 +21,8 @@ typedef struct tss_task_t {
     list_node_t running_node;
     // 所有任务列表节点
     list_node_t task_node;
+    // 等待任务列表节点
+    list_node_t wait_node;
     tss_t tss;
     uint32_t selector;
     // 任务时间片

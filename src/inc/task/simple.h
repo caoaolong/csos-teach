@@ -10,6 +10,8 @@ typedef struct simple_task_t
     char name[TASK_NAME_SIZE];
     // 当前正在运行的任务列表节点
     list_node_t running_node;
+    // 等待任务列表节点
+    list_node_t wait_node;
     // 所有任务列表节点
     list_node_t task_node;
     // 任务时间片
