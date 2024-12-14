@@ -5,6 +5,12 @@
 
 tss_task_queue_t tss_task_queue;
 
+static uint32_t idle_task_stack[1024];
+static void idle_task_entry()
+{
+    while (TRUE) HLT;
+}
+
 static void tss_init(tss_task_t *task, uint32_t entry, uint32_t esp)
 {
     uint32_t selector = alloc_gdt_table_entry();
@@ -30,6 +36,8 @@ void tss_task_queue_init()
     list_init(&tss_task_queue.task_list);
     list_init(&tss_task_queue.sleep_list);
     tss_task_queue.running_task = NULL;
+    // 初始化空闲任务
+    tss_task_init(&tss_task_queue.idle_task, "idle task", (uint32_t)idle_task_entry, (uint32_t)&idle_task_stack[1024]);
 }
 
 void default_tss_task_init()
@@ -52,12 +60,18 @@ tss_task_t *get_running_tss_task()
 
 void tss_task_set_ready(tss_task_t *task)
 {
+    // 防止空闲任务进入运行任务队列
+    if (task == &tss_task_queue.idle_task) return;
+
     task->state = TASK_READY;
     list_insert_back(&tss_task_queue.ready_list, &task->running_node);
 }
 
 void tss_task_set_block(tss_task_t *task)
 {
+    // 防止空闲任务进入运行任务队列
+    if (task == &tss_task_queue.idle_task) return;
+    
     list_remove(&tss_task_queue.ready_list, &task->running_node);
 }
 
@@ -121,9 +135,13 @@ void tss_task_notify(tss_task_t *task)
 void tss_task_dispatch()
 {
     protect_state_t ps = protect_enter();
-    list_node_t *node = list_get_first(&tss_task_queue.ready_list);
-    tss_task_t *to = struct_from_field(node, tss_task_t, running_node);
-    tss_task_t *from = get_running_tss_task();
+    tss_task_t *to = &tss_task_queue.idle_task, *from = get_running_tss_task();
+    // 判断运行队列是否为空，为空则运行空闲任务
+    if (!list_is_empty(&tss_task_queue.ready_list))
+    {
+        list_node_t *node = list_get_first(&tss_task_queue.ready_list);
+        to = struct_from_field(node, tss_task_t, running_node);
+    }
     if (to != from)
     {
         tss_task_queue.running_task = to;

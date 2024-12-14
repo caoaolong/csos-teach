@@ -40,6 +40,8 @@ typedef struct tss_task_queue_t
     list_t sleep_list;
     // 默认任务
     tss_task_t default_task;
+    // 空闲任务
+    tss_task_t idle_task;
     // 当前正在运行的任务
     tss_task_t *running_task;
 } tss_task_queue_t;
