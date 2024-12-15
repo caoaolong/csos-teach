@@ -4,6 +4,7 @@
 #include <csos/stdarg.h>
 #include <csos/string.h>
 #include <csos/stdio.h>
+#include <csos/mutex.h>
 
 void tty_logf_init()
 {
@@ -23,6 +24,8 @@ void tty_logf_init()
     outb(COM1_PORT + 4, 0x0B);
 }
 
+extern mutex_t mutex;
+
 void tty_logf(const char * fmt, ...)
 {
     char buffer[1024];
@@ -32,7 +35,7 @@ void tty_logf(const char * fmt, ...)
     vsprintf(buffer, fmt, args);
     va_end(args);
     
-    protect_state_t ps = protect_enter();
+    mutex_lock(&mutex);
     const char *p = buffer;
     while (*p != 0)
     {
@@ -41,5 +44,5 @@ void tty_logf(const char * fmt, ...)
     }
     outb(COM1_PORT, '\r');
     outb(COM1_PORT, '\n');
-    protect_exit(ps);
+    mutex_unlock(&mutex);
 }
