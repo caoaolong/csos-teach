@@ -1,7 +1,8 @@
 #ifndef CSOS_TASK_TSS_H
 #define CSOS_TASK_TSS_H
 
-#include <task.h>
+#include <kernel.h>
+#include <list.h>
 
 typedef struct tss_t
 {
@@ -71,7 +72,5 @@ void tss_task_notify(tss_task_t *task);
 void tss_task_dispatch();
 
 void tss_task_init(tss_task_t *task, const char *name, uint32_t entry, uint32_t esp);
-
-void tss_task_switch(tss_task_t *from, tss_task_t *to);
 
 #endif

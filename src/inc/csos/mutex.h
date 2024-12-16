@@ -2,21 +2,12 @@
 #define CSOS_MUTEX_H
 
 #include <list.h>
-#include <task/tss.h>
-#include <task/simple.h>
+#include <task.h>
 
 typedef struct mutex_t
 {
-    #ifdef TASK_SIMPLE
-        // 锁的拥有者
-        simple_task_t *owner;
-    #endif
-
-    #ifdef TASK_TSS
-        // 锁的拥有者
-        tss_task_t *owner;
-    #endif
-
+    // 锁的拥有者
+    task_t *owner;
     // 重入次数
     uint32_t locker;
     // 等待队列

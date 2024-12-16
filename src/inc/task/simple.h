@@ -1,7 +1,8 @@
 #ifndef CSOS_TASK_SIMPLE_H
 #define CSOS_TASK_SIMPLE_H
 
-#include <task.h>
+#include <kernel.h>
+#include <list.h>
 
 typedef struct simple_task_t
 {
@@ -60,7 +61,5 @@ void simple_task_notify(simple_task_t *task);
 void simple_task_dispatch();
 
 void simple_task_init(simple_task_t *task, const char *name, uint32_t entry, uint32_t esp);
-
-void simple_task_switch(simple_task_t *from, simple_task_t *to);
 
 #endif

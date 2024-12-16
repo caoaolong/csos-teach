@@ -1,7 +1,6 @@
 #include <csos/sem.h>
 #include <interrupt.h>
-#include <task/simple.h>
-#include <task/tss.h>
+#include <task.h>
 #include <csos/mutex.h>
 
 extern mutex_t mutex;
@@ -19,19 +18,10 @@ void sem_wait(sem_t *sem)
     {
         sem->counter --;
     } else {
-        #ifdef TASK_SIMPLE
-        simple_task_t *task = get_running_simple_task();
-        simple_task_set_block(task);
+        task_t *task = get_running_task();
+        task_set_block(task);
         list_insert_back(&sem->wait_list, &task->wait_node);
-        simple_task_dispatch();
-        #endif
-
-        #ifdef TASK_TSS
-        tss_task_t *task = get_running_tss_task();
-        tss_task_set_block(task);
-        list_insert_back(&sem->wait_list, &task->wait_node);
-        tss_task_dispatch();
-        #endif
+        task_dispatch();
     }
     mutex_unlock(&mutex);
 }
@@ -42,17 +32,9 @@ void sem_notify(sem_t *sem)
     if (!list_is_empty(&sem->wait_list))
     {
         list_node_t *node = list_remove_front(&sem->wait_list);
-        #ifdef TASK_SIMPLE
-        simple_task_t *task = struct_from_field(node, simple_task_t, wait_node);
-        simple_task_set_ready(task);
-        simple_task_dispatch();
-        #endif
-
-        #ifdef TASK_TSS
-        tss_task_t *task = struct_from_field(node, tss_task_t, wait_node);
-        tss_task_set_ready(task);
-        tss_task_dispatch();
-        #endif
+        task_t *task = struct_from_field(node, task_t, wait_node);
+        task_set_ready(task);
+        task_dispatch();
     } else {
         sem->counter ++;
     }

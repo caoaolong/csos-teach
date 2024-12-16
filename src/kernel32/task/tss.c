@@ -132,6 +132,11 @@ void tss_task_notify(tss_task_t *task)
     list_remove(&tss_task_queue.sleep_list, &task->running_node);
 }
 
+void tss_task_switch(tss_task_t *from, tss_task_t *to)
+{
+    far_jump(to->selector, 0);
+}
+
 void tss_task_dispatch()
 {
     protect_state_t ps = protect_enter();
@@ -161,14 +166,11 @@ void tss_task_init(tss_task_t *task, const char *name, uint32_t entry, uint32_t 
     // 插入任务队列
     list_insert_front(&tss_task_queue.task_list, &task->task_node);
     // 插入就绪队列
+    protect_state_t ps = protect_enter();
     tss_task_set_ready(task);
+    protect_exit(ps);
     // 任务时间片初始化
     task->ticks = task->slices = TASK_DEFAULT_TICKS;
     // 延时
     task->sleep = 0;
-}
-
-void tss_task_switch(tss_task_t *from, tss_task_t *to)
-{
-    far_jump(to->selector, 0);
 }

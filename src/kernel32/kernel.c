@@ -3,42 +3,19 @@
 #include <interrupt.h>
 #include <logf.h>
 #include <csos/time.h>
-#include <task/simple.h>
-#include <task/tss.h>
+#include <task.h>
 #include <csos/sem.h>
 
-sem_t sem;
-
 static uint32_t test_task_stack[1024];
-
-#ifdef TASK_SIMPLE
-    static simple_task_t test_task;
-#endif
-
-#ifdef TASK_TSS
-    static tss_task_t test_task;
-#endif
+static task_t test_task;
 
 void test () {
     uint32_t counter = 0;
     while (TRUE)
     {
-        sem_wait(&sem);
-
-        #ifdef TASK_SIMPLE
-            simple_task_t *task = get_running_simple_task();
-        #endif
-
-        #ifdef TASK_TSS
-            tss_task_t *task = get_running_tss_task();
-        #endif
+        task_t *task = get_running_task();
         tty_logf("%s : %d", task->name, counter++);
-        #ifdef TASK_SIMPLE
-            // simple_task_sleep(1000);
-        #endif
-        #ifdef TASK_TSS
-            // tss_task_sleep(1000);
-        #endif
+        task_yield();
     }
 }
 
@@ -52,45 +29,17 @@ void csos_init(memory_info_t* mem_info, uint32_t gdt_info)
     // GDT重载
     gdt32_init((gdt_table_t*)gdt_info);
     // 初始化任务队列
-    #ifdef TASK_SIMPLE
-        simple_task_queue_init();
-    #endif
-    
-    #ifdef TASK_TSS
-        tss_task_queue_init();
-    #endif
-
-    // 初始化default任务
-    #ifdef TASK_SIMPLE
-        simple_task_init(&test_task, "test task", (uint32_t)test, (uint32_t)&test_task_stack[1024]);
-        default_simple_task_init();
-    #endif
-
-    #ifdef TASK_TSS
-        tss_task_init(&test_task, "test task", (uint32_t)test, (uint32_t)&test_task_stack[1024]);
-        default_tss_task_init();
-    #endif
-    // 初始化信号量
-    sem_init(&sem, 0);
+    task_queue_init();
+    // 初始化任务
+    task_init(&test_task, "test task", (uint32_t)test, (uint32_t)&test_task_stack[1024]);
+    default_task_init();
     // 开启中断
     sti();
     // main任务
     int counter = 0;
     while (TRUE) {
-        #ifdef TASK_SIMPLE
-            simple_task_t *task = get_running_simple_task();
-        #endif
-
-        #ifdef TASK_TSS
-            tss_task_t *task = get_running_tss_task();
-        #endif
+        task_t *task = get_running_task();
         tty_logf("%s : %d", task->name, counter++);
-        #ifdef TASK_SIMPLE
-            simple_task_sleep(1000);
-        #endif
-        #ifdef TASK_TSS
-            tss_task_sleep(1000);
-        #endif
-        sem_notify(&sem);
+        task_yield();
     }
 }
