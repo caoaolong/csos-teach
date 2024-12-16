@@ -1,18 +1,46 @@
 #ifndef CSOS_TASK_H
 #define CSOS_TASK_H
 
-#include <kernel.h>
-#include <list.h>
+#include <task/simple.h>
+#include <task/tss.h>
+/*---------------任务模式------------------*/
+#define TASK_SIMPLE
+/*----------------------------------------*/
 
-#define TASK_NAME_SIZE      32
-#define TASK_DEFAULT_TICKS  10
+#ifdef TASK_SIMPLE
 
-typedef enum {
-    TASK_CREATED,
-    TASK_RUNNING,
-    TASK_SLEEP,
-    TASK_READY,
-    TASK_WAITING
-} task_state_t;
+#define task_t              simple_task_t
+#define task_yield          simple_task_yield
+#define task_sleep          simple_task_sleep
+#define task_notify         simple_task_notify
+#define task_init           simple_task_init
+#define task_queue_init     simple_task_queue_init
+#define default_task_init   default_simple_task_init
+#define get_default_task    get_default_simple_task
+#define get_running_task    get_running_simple_task
+#define task_ts             simple_task_ts
+#define task_dispatch       simple_task_dispatch
+#define task_set_ready      simple_task_set_ready
+#define task_set_block      simple_task_set_block
+
+#endif
+
+#ifdef TASK_TSS
+
+#define task_t              tss_task_t
+#define task_yield          tss_task_yield
+#define task_sleep          tss_task_sleep
+#define task_notify         tss_task_notify
+#define task_init           tss_task_init
+#define task_queue_init     tss_task_queue_init
+#define default_task_init   default_tss_task_init
+#define get_default_task    get_default_tss_task
+#define get_running_task    get_running_tss_task
+#define task_ts             tss_task_ts
+#define task_dispatch       tss_task_dispatch
+#define task_set_ready      tss_task_set_ready
+#define task_set_block      tss_task_set_block
+
+#endif
 
 #endif

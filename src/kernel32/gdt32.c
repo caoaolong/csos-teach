@@ -1,10 +1,13 @@
 #include <kernel.h>
 #include <interrupt.h>
+#include <csos/mutex.h>
 
 // 开始索引为3（0: unused, 1: 32-code, 2: 32-data）
 static uint32_t index = 3;
 // GDT指针
 static gdt_table_t *gdt;
+
+extern mutex_t mutex;
 
 void gdt32_init(gdt_table_t *gdt_table)
 {
@@ -13,15 +16,15 @@ void gdt32_init(gdt_table_t *gdt_table)
 
 uint32_t alloc_gdt_table_entry()
 {
-    protect_state_t ps = protect_enter();
+    mutex_lock(&mutex);
     for (int i = index; i < GDT_SIZE; i++)
     {
         if ((gdt + i)->attr == 0) {
-            protect_exit(ps);
+            mutex_unlock(&mutex);
             return i << 3;
         }
     }
-    protect_exit(ps);
+    mutex_unlock(&mutex);
     return -1;
 }
 

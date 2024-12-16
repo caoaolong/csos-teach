@@ -16,9 +16,8 @@ void simple_task_queue_init()
     list_init(&simple_task_queue.task_list);
     list_init(&simple_task_queue.sleep_list);
     simple_task_queue.running_task = NULL;
-        // 初始化空闲任务
+    // 初始化空闲任务
     simple_task_init(&simple_task_queue.idle_task, "idle task", (uint32_t)idle_task_entry, (uint32_t)&idle_task_stack[1024]);
-
 }
 
 void default_simple_task_init()
@@ -112,6 +111,13 @@ void simple_task_notify(simple_task_t *task)
     list_remove(&simple_task_queue.sleep_list, &task->running_node);
 }
 
+extern void simple_switch(uint32_t **from, uint32_t *to);
+
+void simple_task_switch(simple_task_t *from, simple_task_t *to)
+{
+    simple_switch((uint32_t **)&from->stack, to->stack);
+}
+
 void simple_task_dispatch()
 {
     protect_state_t ps = protect_enter();
@@ -155,16 +161,11 @@ void simple_task_init(simple_task_t *task, const char *name, uint32_t entry, uin
     // 插入任务队列
     list_insert_front(&simple_task_queue.task_list, &task->task_node);
     // 插入就绪队列
+    protect_state_t ps = protect_enter();
     simple_task_set_ready(task);
+    protect_exit(ps);
     // 任务时间片初始化
     task->ticks = task->slices = TASK_DEFAULT_TICKS;
     // 延时
     task->sleep = 0;
-}
-
-extern void simple_switch(uint32_t **from, uint32_t *to);
-
-void simple_task_switch(simple_task_t *from, simple_task_t *to)
-{
-    simple_switch((uint32_t **)&from->stack, to->stack);
 }

@@ -2,19 +2,12 @@
 #include <pic.h>
 #include <kernel.h>
 #include <tty.h>
-#include <task/tss.h>
-#include <task/simple.h>
+#include <task.h>
 
 void handler_timer(interrupt_frame_t* frame)
 {
     send_eoi(IRQ0_TIMER);
-    #ifdef TASK_SIMPLE
-        simple_task_ts();
-    #endif
-
-    #ifdef TASK_TSS
-        tss_task_ts();
-    #endif
+    task_ts();
 }
 
 void start_beep()

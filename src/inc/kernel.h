@@ -4,7 +4,18 @@
 #include <types.h>
 #include <os.h>
 
-#define TASK_SIMPLE
+/*==================Task Structires==================*/
+
+#define TASK_NAME_SIZE      32
+#define TASK_DEFAULT_TICKS  10
+
+typedef enum {
+    TASK_CREATED,
+    TASK_RUNNING,
+    TASK_SLEEP,
+    TASK_READY,
+    TASK_WAITING
+} task_state_t;
 
 /*==================Memory Check==================*/
 

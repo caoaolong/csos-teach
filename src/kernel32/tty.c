@@ -4,6 +4,9 @@
 #include <csos/stdio.h>
 #include <kernel.h>
 #include <csos/stdarg.h>
+#include <csos/mutex.h>
+
+mutex_t mutex;
 
 #define CRT_ADDR_REG        0x3D4
 #define CRT_DATA_REG        0x3D5
@@ -195,6 +198,7 @@ uint32_t tty_write(char *buf, uint32_t count)
 void tty_init()
 {
     tty_clear();
+    mutex_init(&mutex);
 }
 
 #define BUFFER_SIZE 1024
@@ -208,8 +212,8 @@ int tty_printf(const char *fmt, ...)
     va_start(args, fmt);
     i = vsprintf(buf, fmt, args);
     va_end(args);
-    protect_state_t ps = protect_enter();
+    mutex_lock(&mutex);
     tty_write(buf, (uint32_t)i);
-    protect_exit(ps);
+    mutex_unlock(&mutex);
     return i;
 }
