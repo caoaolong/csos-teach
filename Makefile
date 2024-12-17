@@ -53,7 +53,8 @@ $(BUILD)/kernel32.elf: $(BUILD)/kernel32/start.o \
 	$(BUILD)/lib/stdio.o \
 	$(BUILD)/lib/stdlib.o \
 	$(BUILD)/lib/logf.o \
-	$(BUILD)/lib/list.o
+	$(BUILD)/lib/list.o \
+	$(BUILD)/lib/bitmap.o
 	$(shell mkdir -p $(dir $@))
 	x86_64-elf-ld -m elf_i386 -T $(SRC)/kernel32.lds $^ -o $@
 

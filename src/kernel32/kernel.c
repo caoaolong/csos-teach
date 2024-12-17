@@ -5,6 +5,7 @@
 #include <csos/time.h>
 #include <task.h>
 #include <csos/sem.h>
+#include <bitmap.h>
 
 static uint32_t test_task_stack[1024];
 static task_t test_task;
@@ -28,6 +29,13 @@ void csos_init(memory_info_t* mem_info, uint32_t gdt_info)
     time_init(OS_TZ);
     // GDT重载
     gdt32_init((gdt_table_t*)gdt_info);
+    // 测试位图
+    uint8_t bits[8];
+    bitmap_t bm;
+    bitmap_init(&bm, bits, 64, FLASE);
+    bitmap_alloc_bits(&bm, FLASE, 10);
+    bitmap_set_bits(&bm, 30, 4, TRUE);
+    BOOL val = bitmap_get_bit(&bm, 4);
     // 初始化任务队列
     task_queue_init();
     // 初始化任务
