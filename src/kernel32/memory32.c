@@ -1,4 +1,5 @@
-#include <memory.h>
+#include <csos/memory.h>
+#include <tty.h>
 
 static void init_memory32_info(memory32_info_t *memory32_info, uint8_t *bits, 
     uint32_t start, uint32_t size, uint32_t page_size)
@@ -35,19 +36,24 @@ void memory_init(memory_info_t *memory_info)
 {
     memory32_info_t memory32_info;
     uint8_t bits[8];
-    uint32_t addr = 0x1000;
-    init_memory32_info(&memory32_info, bits, 0x1000, 64 * 4096, 4096);
-    for (int i = 0; i < 32; i++)
+    uint32_t addr = 0x1000, ps = 4096, as = 8;
+    // 创建一个64个bit的位图, 起始地址为0x1000, 每个bit代表一页内存, 一页内存大小为4096bytes
+    init_memory32_info(&memory32_info, bits, addr, 64 * ps, ps);
+    tty_color_set(COLOR_LIGHT_RED);
+    for (int i = 0; i < 8; i++)
     {
-        addr = memory32_alloc_page(&memory32_info, 2);
-        logf("+ Alloc page(start = 0x%x)", addr);
+        // 每次申请两页内存
+        addr = memory32_alloc_page(&memory32_info, as);
+        tty_printf("+ Alloc page(start = %#x)\n", addr);
     }
-
     addr = 0x1000;
-    for (int i = 0; i < 32; i++)
+    tty_color_set(COLOR_LIGHT_GREEN);
+    for (int i = 0; i < 8; i++)
     {
-        memory32_free_page(&memory32_info, addr, 2);
-        logf("- Free page(start = 0x%x)", addr);
-        addr += 8192;   
+        // 每次释放两页内存
+        memory32_free_page(&memory32_info, addr, as);
+        tty_printf("- Free page(start = %#x)\n", addr);
+        addr += as * ps;
     }
+    tty_color_reset();
 }

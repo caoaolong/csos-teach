@@ -2,7 +2,7 @@
 #define CSOS_MEMORY_H
 
 #include <kernel.h>
-#include <mutex.h>
+#include <csos/mutex.h>
 #include <bitmap.h>
 
 typedef struct memory32_info_t

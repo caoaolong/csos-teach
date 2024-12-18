@@ -5,7 +5,7 @@
 #include <csos/time.h>
 #include <task.h>
 #include <csos/sem.h>
-#include <memory.h>
+#include <csos/memory.h>
 
 static uint32_t test_task_stack[1024];
 static task_t test_task;
