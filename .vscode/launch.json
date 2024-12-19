@@ -35,11 +35,11 @@
                     "description": "加载内核文件",
                     "ignoreFailures": false
                 },
-                // {
-                //     "text": "add-symbol-file ./build/kernel.elf 0x8000",
-                //     "description": "加载内核文件",
-                //     "ignoreFailures": false
-                // },
+                {
+                    "text": "add-symbol-file ./build/kernel.elf 0x8000",
+                    "description": "加载内核文件",
+                    "ignoreFailures": false
+                },
                 {
                     "text": "add-symbol-file ./build/kernel32.elf 0x10000",
                     "description": "加载内核文件",

@@ -5,6 +5,13 @@
 #include <csos/mutex.h>
 #include <bitmap.h>
 
+// 可用内存开始位置
+#define MEMORY_EXT_START    0x100000
+// 可用内存结束位置
+#define MEMORY_EXT_LIMIT    0x8000000
+
+#define MEMORY_EBDA_START   0x80000
+
 typedef struct memory32_info_t
 {
     // 内存分配锁

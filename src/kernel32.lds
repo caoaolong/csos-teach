@@ -4,8 +4,6 @@ SECTIONS
 
     . = 0x00010000;
 
-	PROVIDE(e_kernel = .);
-
 	PROVIDE(b_text = .);
 
 	.text : {
@@ -15,6 +13,8 @@ SECTIONS
 	.rodata : {
 		*(.rodata)
 	}
+
+	. = ALIGN(0x1000);
 
 	PROVIDE(e_text = .);
 
@@ -26,8 +26,6 @@ SECTIONS
 	.bss : {
 		*(.bss)
 	}
-
-	PROVIDE(e_data = .);
 
 	PROVIDE(memory_start = .);
 }

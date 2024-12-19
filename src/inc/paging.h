@@ -3,9 +3,16 @@
 
 #include <kernel.h>
 
+#define KERNEL_PAGE_COUNT   1024
 #define PAGE_SIZE           0x1000
 
 #define PTE_P               (1 << 0)
+#define PTE_W               (1 << 1)
+#define PTE_U               (1 << 2)
+
+#define PDE_P               (1 << 0)
+#define PDE_W               (1 << 1)
+#define PDE_U               (1 << 2)
 
 #define PDE_INDEX(index)    ((index) >> 22)
 #define PTE_INDEX(index)    ((index) >> 12 & 0x3FF)
