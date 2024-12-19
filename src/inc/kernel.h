@@ -183,6 +183,26 @@ static inline void write_tr(uint16_t sel) {
 	__asm__ volatile("ltr %%ax"::"a"(sel));
 }
 
+static inline uint32_t read_cr3() {
+	uint32_t cr3;
+	__asm__ volatile("mov %%cr3, %[v]":[v]"=r"(cr3));
+	return cr3;
+}
+
+static inline uint32_t read_cr4() {
+	uint32_t cr4;
+	__asm__ volatile("mov %%cr4, %[v]":[v]"=r"(cr4));
+	return cr4;
+}
+
+static inline void write_cr3(uint32_t v) {
+	__asm__ volatile("mov %[v], %%cr3"::[v]"r"(v));
+}
+
+static inline void write_cr4(uint32_t v) {
+	__asm__ volatile("mov %[v], %%cr4"::[v]"r"(v));
+}
+
 static inline uint32_t read_eflags() {
 	uint32_t eflags;
 	__asm__ volatile("pushf\n"

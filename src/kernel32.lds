@@ -1,20 +1,33 @@
-SECTIONS {
+SECTIONS
+{
+	PROVIDE(b_kernel = .);
 
-    . = 0x10000;
+    . = 0x00010000;
 
-    .text : {
-        *(.text)
-    }
+	PROVIDE(e_kernel = .);
 
-    .rodata : {
-        *(.rodata)
-    }
+	PROVIDE(b_text = .);
 
-    .data : {
-        *(.data)
-    }
+	.text : {
+		*(.text)
+	} 
 
-    .bss : {
-        *(.bss)
-    }
+	.rodata : {
+		*(.rodata)
+	}
+
+	PROVIDE(e_text = .);
+
+	PROVIDE(b_data = .);
+
+	.data : {
+		*(.data)
+	}
+	.bss : {
+		*(.bss)
+	}
+
+	PROVIDE(e_data = .);
+
+	PROVIDE(memory_start = .);
 }
