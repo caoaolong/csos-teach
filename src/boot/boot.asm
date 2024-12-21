@@ -14,7 +14,7 @@ read_disk:
 	; ch=磁道号 cl=扇区号
 	mov cx, 0x02
 	; ah=2表示读扇区,3表示写扇区 al=读取/写入的扇区数
-	mov ax, 0x209
+	mov ax, 0x240
 	; dh=磁头号 dl=驱动器号(软驱从0开始, 硬盘从80H开始)
 	mov dx, 0x80
 	int 0x13

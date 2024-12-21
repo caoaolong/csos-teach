@@ -7,8 +7,8 @@
 
 // 可用内存开始位置
 #define MEMORY_EXT_START    0x100000
-// 可用内存结束位置
-#define MEMORY_EXT_LIMIT    0x8000000
+// 可用内存结束位置(32M)
+#define MEMORY_EXT_LIMIT    0x2000000
 
 #define MEMORY_EBDA_START   0x80000
 

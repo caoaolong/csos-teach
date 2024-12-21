@@ -67,7 +67,7 @@ extern gdt_table_t gdt_table;
 
 void enable_paging()
 {
-    static uint32_t page_dir[512] __attribute__((aligned(PAGE_SIZE))) = {
+    static uint32_t page_dir[1024] __attribute__((aligned(PAGE_SIZE))) = {
         [0] = PDE_P | PDE_W | PDE_PS | 0
     };
     write_cr4(read_cr4() | CR4_PSE);
@@ -78,9 +78,9 @@ void enable_paging()
 void kernel32_init()
 {
     // 0号扇区: 引导扇区
-    // 1-9: Kernel x16
-    // 10-*: Kernel x86
-    read_disk(10, 500, (uint16_t*)OS_ADDR);
+    // 1-64: Kernel x16
+    // 65-*: Kernel x86
+    read_disk(65, 500, (uint16_t*)OS_ADDR);
     uint32_t addr = read_elf_header((uint8_t*)OS_ADDR);
     if (addr == 0)
         while (TRUE);
