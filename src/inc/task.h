@@ -22,6 +22,7 @@
 #define task_dispatch       simple_task_dispatch
 #define task_set_ready      simple_task_set_ready
 #define task_set_block      simple_task_set_block
+#define task_goto(task)     __asm__ volatile("jmp *%[ip]"::[ip]"r"((task)->entry));
 
 #endif
 
@@ -40,7 +41,7 @@
 #define task_dispatch       tss_task_dispatch
 #define task_set_ready      tss_task_set_ready
 #define task_set_block      tss_task_set_block
-
+#define task_goto(task)     __asm__ volatile("jmp *%[ip]"::[ip]"r"((task)->tss.eip));
 #endif
 
 #endif

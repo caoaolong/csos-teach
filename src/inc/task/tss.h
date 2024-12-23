@@ -71,6 +71,6 @@ void tss_task_notify(tss_task_t *task);
 
 void tss_task_dispatch();
 
-void tss_task_init(tss_task_t *task, const char *name, uint32_t entry, uint32_t esp);
+int tss_task_init(tss_task_t *task, const char *name, uint32_t entry, uint32_t esp);
 
 #endif

@@ -47,6 +47,8 @@ $(BUILD)/kernel32.elf: $(BUILD)/kernel32/start.o \
 	$(BUILD)/kernel32/time.o \
 	$(BUILD)/kernel32/task/simple.o \
 	$(BUILD)/kernel32/task/tss.o \
+	$(BUILD)/kernel32/task/default_entry.o \
+	$(BUILD)/kernel32/task/default.o \
 	$(BUILD)/kernel32/sem.o \
 	$(BUILD)/kernel32/mutex.o \
 	$(BUILD)/kernel32/memory32.o \

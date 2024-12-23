@@ -1,5 +1,7 @@
 #include <task/simple.h>
+#include <csos/memory.h>
 #include <csos/string.h>
+#include <paging.h>
 #include <interrupt.h>
 
 simple_task_queue_t simple_task_queue;
@@ -20,11 +22,14 @@ void simple_task_queue_init()
     simple_task_init(&simple_task_queue.idle_task, "idle task", (uint32_t)idle_task_entry, (uint32_t)&idle_task_stack[1024]);
 }
 
+extern void default_task_entry();
+
 void default_simple_task_init()
 {
     // 初始化任务
-    simple_task_init(&simple_task_queue.default_task, "default task", 0, 0);
+    simple_task_init(&simple_task_queue.default_task, "default task", (uint32_t)default_task_entry, 0);
     simple_task_queue.running_task = &simple_task_queue.default_task;
+    set_pde(simple_task_queue.default_task.pde);
 }
 
 simple_task_t *get_default_simple_task()
@@ -115,6 +120,7 @@ extern void simple_switch(uint32_t **from, uint32_t *to);
 
 void simple_task_switch(simple_task_t *from, simple_task_t *to)
 {
+    set_pde(to->pde);
     simple_switch((uint32_t **)&from->stack, to->stack);
 }
 
@@ -132,13 +138,18 @@ void simple_task_dispatch()
     {
         simple_task_queue.running_task = to;
         to->state = TASK_RUNNING;
+        set_pde(to->pde);
         simple_task_switch(from, to);
     }
     protect_exit(ps);
 }
 
-void simple_task_init(simple_task_t *task, const char *name, uint32_t entry, uint32_t esp)
+int simple_task_init(simple_task_t *task, const char *name, uint32_t entry, uint32_t esp)
 {
+    uint32_t pde = memory32_create_pde();
+    if (pde == 0) return -1;
+    task->pde = pde;
+    task->entry = entry;
     uint32_t *pesp = (uint32_t *)esp;
     if (pesp) {
         *(--pesp) = entry;
@@ -168,4 +179,5 @@ void simple_task_init(simple_task_t *task, const char *name, uint32_t entry, uin
     task->ticks = task->slices = TASK_DEFAULT_TICKS;
     // 延时
     task->sleep = 0;
+    return 0;
 }

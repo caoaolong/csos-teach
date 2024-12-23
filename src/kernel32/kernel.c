@@ -37,12 +37,8 @@ void csos_init(memory_info_t* mem_info, uint32_t gdt_info)
     task_init(&test_task, "test task", (uint32_t)test, (uint32_t)&test_task_stack[1024]);
     default_task_init();
     // 开启中断
-    sti();
-    // main任务
-    int counter = 0;
-    while (TRUE) {
-        task_t *task = get_running_task();
-        tty_logf("%s : %d", task->name, counter++);
-        task_yield();
-    }
+    // sti();
+    // default任务
+    task_t *task = get_running_task();
+    task_goto(task);
 }

@@ -30,7 +30,9 @@ uint32_t alloc_gdt_table_entry()
 
 void free_gdt_table_entry(uint32_t selector)
 {
+    mutex_lock(&mutex);
     gdt[selector >> 3].attr = 0;
+    mutex_unlock(&mutex);
 }
 
 void set_gdt_table_entry(int selector, uint32_t base, uint32_t limit, uint16_t attr)

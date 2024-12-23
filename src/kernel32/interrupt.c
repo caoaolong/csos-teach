@@ -1,7 +1,7 @@
 #include <interrupt.h>
 #include <kernel.h>
 #include <os.h>
-#include <tty.h>
+#include <logf.h>
 #include <pic.h>
 #include <timer.h>
 #include <rtc.h>
@@ -19,111 +19,128 @@ void set_interrupt_gate(int vector, uint32_t offset, uint32_t selector, uint16_t
 
 void handler_default(interrupt_frame_t frame)
 {
-    tty_printf("default handler\n");
-    while (TRUE)
-    {
-        HLT;
-    }
+    tty_logf("default handler");
+    while (TRUE) HLT;
 }
 
 void handler_division(interrupt_frame_t frame)
 {
-    tty_printf("division handler\n");
+    tty_logf("division handler");
+    while (TRUE) HLT;
 }
 
 void handler_debug(interrupt_frame_t frame)
 {
-    tty_printf("debug handler\n");
+    tty_logf("debug handler");
+    while (TRUE) HLT;
 }
 
 void handler_nmi(interrupt_frame_t frame)
 {
-    tty_printf("nmi handler\n");
+    tty_logf("nmi handler");
+    while (TRUE) HLT;
 }
 
 void handler_breakpoint(interrupt_frame_t frame)
 {
-    tty_printf("breakpoint handler\n");
+    tty_logf("breakpoint handler");
+    while (TRUE) HLT;
 }
 
 void handler_overflow(interrupt_frame_t frame)
 {
-    tty_printf("overflow handler\n");
+    tty_logf("overflow handler");
+    while (TRUE) HLT;
 }
 
 void handler_range(interrupt_frame_t frame)
 {
-    tty_printf("range handler\n");
+    tty_logf("range handler");
+    while (TRUE) HLT;
 }
 
 void handler_opcode(interrupt_frame_t frame)
 {
-    tty_printf("opcode handler\n");
+    tty_logf("opcode handler");
+    while (TRUE) HLT;
 }
 
 void handler_device(interrupt_frame_t frame)
 {
-    tty_printf("device handler\n");
+    tty_logf("device handler");
+    while (TRUE) HLT;
 }
 
 void handler_double(interrupt_frame_t frame)
 {
-    tty_printf("double handler\n");
+    tty_logf("double handler");
+    while (TRUE) HLT;
 }
 
 void handler_tss(interrupt_frame_t frame)
 {
-    tty_printf("tss handler\n");
+    tty_logf("tss handler");
+    while (TRUE) HLT;
 }
 
 void handler_segment(interrupt_frame_t frame)
 {
-    tty_printf("segment handler\n");
+    tty_logf("segment handler");
+    while (TRUE) HLT;
 }
 
 void handler_stack(interrupt_frame_t frame)
 {
-    tty_printf("stack handler\n");
+    tty_logf("stack handler");
+    while (TRUE) HLT;
 }
 
 void handler_protection(interrupt_frame_t frame)
 {
-    tty_printf("protection handler\n");
+    tty_logf("protection handler");
+    while (TRUE) HLT;
 }
 
 void handler_page(interrupt_frame_t frame)
 {
-    tty_printf("page handler\n");
+    tty_logf("page handler");
+    while (TRUE) HLT;
 }
 
 void handler_fpu(interrupt_frame_t frame)
 {
-    tty_printf("fpu handler\n");
+    tty_logf("fpu handler");
+    while (TRUE) HLT;
 }
 
 void handler_align(interrupt_frame_t frame)
 {
-    tty_printf("align handler\n");
+    tty_logf("align handler");
+    while (TRUE) HLT;
 }
 
 void handler_machine(interrupt_frame_t frame)
 {
-    tty_printf("machine handler\n");
+    tty_logf("machine handler\n");
+    while (TRUE) HLT;
 }
 
 void handler_simd(interrupt_frame_t frame)
 {
-    tty_printf("simd handler\n");
+    tty_logf("simd handler");
+    while (TRUE) HLT;
 }
 
 void handler_virtual(interrupt_frame_t frame)
 {
-    tty_printf("virtual handler\n");
+    tty_logf("virtual handler");
+    while (TRUE) HLT;
 }
 
 void handler_control(interrupt_frame_t frame)
 {
-    tty_printf("control handler\n");
+    tty_logf("control handler");
+    while (TRUE) HLT;
 }
 
 void install_interrupt_handler(int vector, uint32_t handler)
@@ -165,7 +182,7 @@ void interrupt_init()
 
     pic_init();
     timer_init();
-    rtc_init();
+    // rtc_init();
 }
 
 protect_state_t protect_enter()

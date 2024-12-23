@@ -38,6 +38,8 @@ typedef struct memory32_map_t
     uint32_t perm;
 } memory32_map_t;
 
+uint32_t memory32_create_pde();
+
 void memory_init(memory_info_t *memory_info);
 
 #endif

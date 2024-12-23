@@ -1,7 +1,8 @@
 #include <task/tss.h>
 #include <csos/string.h>
+#include <csos/memory.h>
+#include <paging.h>
 #include <interrupt.h>
-#include <timer.h>
 
 tss_task_queue_t tss_task_queue;
 
@@ -11,10 +12,10 @@ static void idle_task_entry()
     while (TRUE) HLT;
 }
 
-static void tss_init(tss_task_t *task, uint32_t entry, uint32_t esp)
+static int tss_init(tss_task_t *task, uint32_t entry, uint32_t esp)
 {
     uint32_t selector = alloc_gdt_table_entry();
-    if (selector < 0) return;
+    if (selector < 0) return selector;
 
     tss_t *tss = &task->tss;
     set_gdt_table_entry(selector, (uint32_t)tss, sizeof(tss_t),
@@ -27,7 +28,14 @@ static void tss_init(tss_task_t *task, uint32_t entry, uint32_t esp)
     tss->cs = KERNEL_CODE_SEG;
     tss->eflags = EFLAGS_DEFAULT | EFLAGS_IF;
 
+    uint32_t pde = memory32_create_pde();
+    if (pde == 0) {
+        free_gdt_table_entry(selector);
+        return -1;
+    }
+    tss->cr3 = pde;
     task->selector = selector;
+    return 0;
 }
 
 void tss_task_queue_init()
@@ -40,12 +48,15 @@ void tss_task_queue_init()
     tss_task_init(&tss_task_queue.idle_task, "idle task", (uint32_t)idle_task_entry, (uint32_t)&idle_task_stack[1024]);
 }
 
+extern void default_task_entry();
+
 void default_tss_task_init()
 {
     // 初始化任务
-    tss_task_init(&tss_task_queue.default_task, "default task", 0, 0);
+    tss_task_init(&tss_task_queue.default_task, "default task", (uint32_t)default_task_entry, 0);
     write_tr(tss_task_queue.default_task.selector);
     tss_task_queue.running_task = &tss_task_queue.default_task;
+    set_pde(tss_task_queue.default_task.tss.cr3);
 }
 
 tss_task_t *get_default_tss_task()
@@ -151,14 +162,17 @@ void tss_task_dispatch()
     {
         tss_task_queue.running_task = to;
         to->state = TASK_RUNNING;
+        set_pde(to->tss.cr3);
         tss_task_switch(from, to);
     }
     protect_exit(ps);
 }
 
-void tss_task_init(tss_task_t *task, const char *name, uint32_t entry, uint32_t esp)
+int tss_task_init(tss_task_t *task, const char *name, uint32_t entry, uint32_t esp)
 {
-    tss_init(task, entry, esp);
+    int r = tss_init(task, entry, esp);
+    if (r < 0) return r;
+
     kernel_strcpy(task->name, name);
     task->state = TASK_CREATED;
     list_node_init(&task->task_node);
@@ -173,4 +187,5 @@ void tss_task_init(tss_task_t *task, const char *name, uint32_t entry, uint32_t 
     task->ticks = task->slices = TASK_DEFAULT_TICKS;
     // 延时
     task->sleep = 0;
+    return 0;
 }

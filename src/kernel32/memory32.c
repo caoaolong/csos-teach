@@ -104,6 +104,20 @@ static void kernel_pagging()
     }
 }
 
+uint32_t memory32_create_pde()
+{
+    pde_t *pde = (pde_t *)memory32_alloc_page(&memory32_info, 1);
+    if (pde == 0) return 0;
+    kernel_memset((void *)pde, 0, PAGE_SIZE);
+    uint32_t user_pde_start = PDE_INDEX(MEMORY_EXT_LIMIT);
+    // 映射内核页表
+    for (int i = 0; i < user_pde_start; i++)
+    {
+        pde[i].v = kernel_pde[i].v;
+    }
+    return (uint32_t)pde;
+}
+
 void memory_init(memory_info_t *memory_info)
 {
     uint32_t total_size = 0;

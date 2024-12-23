@@ -7,6 +7,10 @@
 typedef struct simple_task_t
 {
     uint32_t *stack;
+    // pde
+    uint32_t pde;
+    // entry
+    uint32_t entry;
     task_state_t state;
     char name[TASK_NAME_SIZE];
     // 当前正在运行的任务列表节点
@@ -60,6 +64,6 @@ void simple_task_notify(simple_task_t *task);
 
 void simple_task_dispatch();
 
-void simple_task_init(simple_task_t *task, const char *name, uint32_t entry, uint32_t esp);
+int simple_task_init(simple_task_t *task, const char *name, uint32_t entry, uint32_t esp);
 
 #endif
