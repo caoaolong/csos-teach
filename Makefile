@@ -47,8 +47,8 @@ $(BUILD)/kernel32.elf: $(BUILD)/kernel32/start.o \
 	$(BUILD)/kernel32/time.o \
 	$(BUILD)/kernel32/task/simple.o \
 	$(BUILD)/kernel32/task/tss.o \
-	$(BUILD)/kernel32/task/default_entry.o \
-	$(BUILD)/kernel32/task/default.o \
+	$(BUILD)/kernel32/init/init_task_entry.o \
+	$(BUILD)/kernel32/init/init_task.o \
 	$(BUILD)/kernel32/sem.o \
 	$(BUILD)/kernel32/mutex.o \
 	$(BUILD)/kernel32/memory32.o \
@@ -68,6 +68,7 @@ master: $(BUILD)/boot.bin \
 	$(shell mkdir -p $(INFO))
 	dd if=$(BUILD)/boot.bin of=master.img bs=512 count=1 conv=notrunc
 	dd if=$(BUILD)/kernel.bin of=master.img bs=512 count=64 seek=1 conv=notrunc
+	${TOOL_PREFIX}readelf -a $(BUILD)/kernel.elf > $(INFO)/kernel.txt
 	dd if=$(BUILD)/kernel32.elf of=master.img bs=512 count=500 seek=65 conv=notrunc
 	${TOOL_PREFIX}readelf -a $(BUILD)/kernel32.elf > $(INFO)/kernel32.txt
 

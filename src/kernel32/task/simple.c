@@ -22,14 +22,23 @@ void simple_task_queue_init()
     simple_task_init(&simple_task_queue.idle_task, "idle task", (uint32_t)idle_task_entry, (uint32_t)&idle_task_stack[1024]);
 }
 
-extern void default_task_entry();
-
 void default_simple_task_init()
 {
+    // init task 入口
+    void init_task_entry();
+    // init task 代码开始结束位置
+    extern uint8_t b_init_task[], e_init_task[];
+    // 计算需要拷贝的字节数
+    uint32_t copy_size = (uint32_t)(e_init_task - b_init_task);
+    // 分配空间
+    uint32_t alloc_size = PAGE_SIZE * 10;
     // 初始化任务
-    simple_task_init(&simple_task_queue.default_task, "default task", (uint32_t)default_task_entry, 0);
+    uint32_t init_start = (uint32_t)init_task_entry;
+    simple_task_init(&simple_task_queue.default_task, "default task", init_start, 0);
     simple_task_queue.running_task = &simple_task_queue.default_task;
     set_pde(simple_task_queue.default_task.pde);
+    memory32_alloc_pages(init_start, alloc_size, PTE_P | PTE_W);
+    kernel_memcpy((void *)init_start, (void *)b_init_task, copy_size);
 }
 
 simple_task_t *get_default_simple_task()

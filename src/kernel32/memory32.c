@@ -118,6 +118,42 @@ uint32_t memory32_create_pde()
     return (uint32_t)pde;
 }
 
+static int memory32_alloc_task_pages(uint32_t pde, uint32_t index, uint32_t size, uint32_t perm)
+{
+    uint32_t current_index = index;
+    int count = ceil_page(size) / PAGE_SIZE;
+
+    for (int i = 0; i < count; i++)
+    {
+        uint32_t paddr = memory32_alloc_page(&memory32_info, 1);   
+        if (paddr == 0) {
+            tty_printf("memory allocate failed.");
+            return -1;
+        }
+
+        int error = memory32_create_map((pde_t *)pde, current_index, paddr, 1, perm);
+        if (error < 0) {
+            tty_printf("memory create failed.");
+            return -1;
+        }
+
+        current_index += PAGE_SIZE;
+    }
+
+    return 0;
+}
+
+int memory32_alloc_pages(uint32_t index, uint32_t size, uint32_t perm)
+{
+    #ifdef TASK_SIMPLE
+        return memory32_alloc_task_pages(get_running_task()->pde, index, size, perm);
+    #endif
+
+    #ifdef TASK_TSS
+        return memory32_alloc_task_pages(get_running_task()->tss.cr3, index, size, perm);
+    #endif
+}
+
 void memory_init(memory_info_t *memory_info)
 {
     uint32_t total_size = 0;

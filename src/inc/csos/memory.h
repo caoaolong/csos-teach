@@ -40,6 +40,8 @@ typedef struct memory32_map_t
 
 uint32_t memory32_create_pde();
 
+int memory32_alloc_pages(uint32_t index, uint32_t size, uint32_t perm);
+
 void memory_init(memory_info_t *memory_info);
 
 #endif

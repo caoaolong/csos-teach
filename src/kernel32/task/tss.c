@@ -48,15 +48,24 @@ void tss_task_queue_init()
     tss_task_init(&tss_task_queue.idle_task, "idle task", (uint32_t)idle_task_entry, (uint32_t)&idle_task_stack[1024]);
 }
 
-extern void default_task_entry();
-
 void default_tss_task_init()
 {
+    // default task 入口
+    void init_task_entry();
+    // default task 代码开始结束位置
+    extern uint8_t b_init_task[], e_init_task[];
+    // 计算需要拷贝的字节数
+    uint32_t copy_size = (uint32_t)(e_init_task - b_init_task);
+    // 分配空间
+    uint32_t alloc_size = PAGE_SIZE * 10;
     // 初始化任务
-    tss_task_init(&tss_task_queue.default_task, "default task", (uint32_t)default_task_entry, 0);
+    uint32_t init_start = (uint32_t)init_task_entry;
+    tss_task_init(&tss_task_queue.default_task, "default task", init_start, 0);
     write_tr(tss_task_queue.default_task.selector);
     tss_task_queue.running_task = &tss_task_queue.default_task;
     set_pde(tss_task_queue.default_task.tss.cr3);
+    memory32_alloc_pages(init_start, alloc_size, PTE_P | PTE_W);
+    kernel_memcpy((void *)init_start, (void *)b_init_task, copy_size);
 }
 
 tss_task_t *get_default_tss_task()

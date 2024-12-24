@@ -2,11 +2,11 @@
 #include <logf.h>
 #include <task.h>
 
-void default_entry()
+void init_entry()
 {
     while (TRUE)
     {
-        tty_logf("default task...");
+        tty_logf("init task...");
         task_yield();
     }
 }
