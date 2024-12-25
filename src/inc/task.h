@@ -4,7 +4,7 @@
 #include <task/simple.h>
 #include <task/tss.h>
 /*---------------任务模式------------------*/
-#define TASK_SIMPLE
+#define TASK_TSS
 /*----------------------------------------*/
 
 #ifdef TASK_SIMPLE
