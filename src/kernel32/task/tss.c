@@ -22,10 +22,14 @@ static int tss_init(tss_task_t *task, uint32_t entry, uint32_t esp)
         SEG_ATTR_P | SEG_ATTR_DPL0 | SEG_TYPE_TSS);
 
     kernel_memset(tss, 0, sizeof(tss_t));
+
+    uint32_t uc_selector = tss_task_queue.uc_selector | SEG_ATTR_CPL3;
+    uint32_t ud_selector = tss_task_queue.ud_selector | SEG_ATTR_CPL3;
+
     tss->eip = entry;
     tss->esp = tss->esp0 = esp;
-    tss->es = tss->ds =  tss->fs =  tss->gs = tss->ss = tss->ss0 = KERNEL_DATA_SEG;
-    tss->cs = KERNEL_CODE_SEG;
+    tss->ss = tss->ss0 = tss->es = tss->ds = tss->fs = tss->gs = ud_selector;
+    tss->cs = uc_selector;
     tss->eflags = EFLAGS_DEFAULT | EFLAGS_IF;
 
     uint32_t pde = memory32_create_pde();
@@ -40,6 +44,16 @@ static int tss_init(tss_task_t *task, uint32_t entry, uint32_t esp)
 
 void tss_task_queue_init()
 {
+    uint32_t ud_selector = alloc_gdt_table_entry();
+    set_gdt_table_entry(ud_selector, 0x0, 0xFFFFFFFF,
+        SEG_ATTR_P | SEG_ATTR_DPL3 | SEG_NORMAL | SEG_TYPE_DATA | SEG_TYPE_RW | SEG_ATTR_D);
+    tss_task_queue.ud_selector = ud_selector;
+
+    uint32_t uc_selector = alloc_gdt_table_entry();
+    set_gdt_table_entry(uc_selector, 0x0, 0xFFFFFFFF,
+        SEG_ATTR_P | SEG_ATTR_DPL3 | SEG_NORMAL | SEG_TYPE_CODE | SEG_TYPE_RW | SEG_ATTR_D);
+    tss_task_queue.uc_selector = uc_selector;
+
     list_init(&tss_task_queue.ready_list);
     list_init(&tss_task_queue.task_list);
     list_init(&tss_task_queue.sleep_list);

@@ -47,6 +47,10 @@ typedef struct tss_task_queue_t
     tss_task_t idle_task;
     // 当前正在运行的任务
     tss_task_t *running_task;
+    // 应用级代码段选择子
+    uint32_t uc_selector;
+    // 应用级数据段选择子
+    uint32_t ud_selector;
 } tss_task_queue_t;
 
 void tss_task_queue_init();

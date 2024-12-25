@@ -16,14 +16,14 @@ _start:
 .text
 .global simple_switch
 simple_switch:
-    mov 4(%esp), %eax
+    mov 4(%esp), %ecx
     mov 8(%esp), %edx
     push %ebp
     push %ebx
     push %esi
     push %edi
     pushf
-    mov %esp, (%eax)
+    mov %esp, (%ecx)
     mov %edx, %esp
     popf
     pop %edi

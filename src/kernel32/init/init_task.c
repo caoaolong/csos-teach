@@ -7,6 +7,6 @@ void init_entry()
     while (TRUE)
     {
         tty_logf("init task...");
-        task_yield();
+        task_sleep(1000);
     }
 }

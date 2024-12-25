@@ -7,19 +7,6 @@
 #include <csos/sem.h>
 #include <csos/memory.h>
 
-static uint32_t test_task_stack[1024];
-static task_t test_task;
-
-void test () {
-    uint32_t counter = 0;
-    while (TRUE)
-    {
-        task_t *task = get_running_task();
-        tty_logf("%s : %d", task->name, counter++);
-        task_yield();
-    }
-}
-
 void csos_init(memory_info_t* mem_info, uint32_t gdt_info)
 {
     tty_init();
@@ -34,7 +21,6 @@ void csos_init(memory_info_t* mem_info, uint32_t gdt_info)
     // 初始化任务队列
     task_queue_init();
     // 初始化任务
-    task_init(&test_task, "test task", (uint32_t)test, (uint32_t)&test_task_stack[1024]);
     default_task_init();
     // 开启中断
     // sti();
