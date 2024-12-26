@@ -143,7 +143,12 @@ static int memory32_alloc_task_pages(uint32_t pde, uint32_t index, uint32_t size
     return 0;
 }
 
-int memory32_alloc_pages(uint32_t index, uint32_t size, uint32_t perm)
+uint32_t alloc_page()
+{
+    return memory32_alloc_page(&memory32_info, 1);
+}
+
+int alloc_pages(uint32_t index, uint32_t size, uint32_t perm)
 {
     #ifdef TASK_SIMPLE
         return memory32_alloc_task_pages(get_running_task()->pde, index, size, perm);

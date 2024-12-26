@@ -12,7 +12,7 @@ static void idle_task_entry()
     while (TRUE) HLT;
 }
 
-static int tss_init(tss_task_t *task, uint32_t entry, uint32_t esp)
+static int tss_init(tss_task_t *task, uint32_t flag, uint32_t entry, uint32_t esp)
 {
     uint32_t selector = alloc_gdt_table_entry();
     if (selector < 0) return selector;
@@ -23,12 +23,19 @@ static int tss_init(tss_task_t *task, uint32_t entry, uint32_t esp)
 
     kernel_memset(tss, 0, sizeof(tss_t));
 
-    uint32_t uc_selector = tss_task_queue.uc_selector | SEG_ATTR_CPL3;
-    uint32_t ud_selector = tss_task_queue.ud_selector | SEG_ATTR_CPL3;
+    uint32_t kernel_stack = alloc_page();
+
+    uint32_t uc_selector = KERNEL_CODE_SEG, ud_selector = KERNEL_DATA_SEG;
+    if (flag & TASK_LEVEL_USER) {
+        uc_selector = tss_task_queue.uc_selector | SEG_ATTR_CPL3;
+        ud_selector = tss_task_queue.ud_selector | SEG_ATTR_CPL3;
+    }
 
     tss->eip = entry;
-    tss->esp = tss->esp0 = esp;
-    tss->ss = tss->ss0 = tss->es = tss->ds = tss->fs = tss->gs = ud_selector;
+    tss->esp = esp;
+    tss->esp0 = kernel_stack + PAGE_SIZE;
+    tss->ss = tss->es = tss->ds = tss->fs = tss->gs = ud_selector;
+    tss->ss0 = KERNEL_DATA_SEG;
     tss->cs = uc_selector;
     tss->eflags = EFLAGS_DEFAULT | EFLAGS_IF;
 
@@ -59,7 +66,7 @@ void tss_task_queue_init()
     list_init(&tss_task_queue.sleep_list);
     tss_task_queue.running_task = NULL;
     // 初始化空闲任务
-    tss_task_init(&tss_task_queue.idle_task, "idle task", (uint32_t)idle_task_entry, (uint32_t)&idle_task_stack[1024]);
+    tss_task_init(&tss_task_queue.idle_task, "idle task", TASK_LEVEL_SYSTEM, (uint32_t)idle_task_entry, (uint32_t)&idle_task_stack[1024]);
 }
 
 void default_tss_task_init()
@@ -74,11 +81,11 @@ void default_tss_task_init()
     uint32_t alloc_size = PAGE_SIZE * 10;
     // 初始化任务
     uint32_t init_start = (uint32_t)init_task_entry;
-    tss_task_init(&tss_task_queue.default_task, "default task", init_start, 0);
+    tss_task_init(&tss_task_queue.default_task, "default task", TASK_LEVEL_USER, init_start, 0);
     write_tr(tss_task_queue.default_task.selector);
     tss_task_queue.running_task = &tss_task_queue.default_task;
     set_pde(tss_task_queue.default_task.tss.cr3);
-    memory32_alloc_pages(init_start, alloc_size, PTE_P | PTE_W);
+    alloc_pages(init_start, alloc_size, PTE_P | PTE_W);
     kernel_memcpy((void *)init_start, (void *)b_init_task, copy_size);
 }
 
@@ -191,9 +198,9 @@ void tss_task_dispatch()
     protect_exit(ps);
 }
 
-int tss_task_init(tss_task_t *task, const char *name, uint32_t entry, uint32_t esp)
+int tss_task_init(tss_task_t *task, const char *name, uint32_t flag, uint32_t entry, uint32_t esp)
 {
-    int r = tss_init(task, entry, esp);
+    int r = tss_init(task, flag, entry, esp);
     if (r < 0) return r;
 
     kernel_strcpy(task->name, name);

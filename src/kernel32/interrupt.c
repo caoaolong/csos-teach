@@ -17,127 +17,145 @@ void set_interrupt_gate(int vector, uint32_t offset, uint32_t selector, uint16_t
     entry->offset_h = (offset >> 16) & 0xFFFF;
 }
 
-void handler_default(interrupt_frame_t frame)
+void handler_default(interrupt_frame_t *frame)
 {
     tty_logf("default handler");
     while (TRUE) HLT;
 }
 
-void handler_division(interrupt_frame_t frame)
+void handler_division(interrupt_frame_t *frame)
 {
     tty_logf("division handler");
     while (TRUE) HLT;
 }
 
-void handler_debug(interrupt_frame_t frame)
+void handler_debug(interrupt_frame_t *frame)
 {
     tty_logf("debug handler");
     while (TRUE) HLT;
 }
 
-void handler_nmi(interrupt_frame_t frame)
+void handler_nmi(interrupt_frame_t *frame)
 {
     tty_logf("nmi handler");
     while (TRUE) HLT;
 }
 
-void handler_breakpoint(interrupt_frame_t frame)
+void handler_breakpoint(interrupt_frame_t *frame)
 {
     tty_logf("breakpoint handler");
     while (TRUE) HLT;
 }
 
-void handler_overflow(interrupt_frame_t frame)
+void handler_overflow(interrupt_frame_t *frame)
 {
     tty_logf("overflow handler");
     while (TRUE) HLT;
 }
 
-void handler_range(interrupt_frame_t frame)
+void handler_range(interrupt_frame_t *frame)
 {
     tty_logf("range handler");
     while (TRUE) HLT;
 }
 
-void handler_opcode(interrupt_frame_t frame)
+void handler_opcode(interrupt_frame_t *frame)
 {
     tty_logf("opcode handler");
     while (TRUE) HLT;
 }
 
-void handler_device(interrupt_frame_t frame)
+void handler_device(interrupt_frame_t *frame)
 {
     tty_logf("device handler");
     while (TRUE) HLT;
 }
 
-void handler_double(interrupt_frame_t frame)
+void handler_double(interrupt_frame_t *frame)
 {
     tty_logf("double handler");
     while (TRUE) HLT;
 }
 
-void handler_tss(interrupt_frame_t frame)
+void handler_tss(interrupt_frame_t *frame)
 {
     tty_logf("tss handler");
     while (TRUE) HLT;
 }
 
-void handler_segment(interrupt_frame_t frame)
+void handler_segment(interrupt_frame_t *frame)
 {
     tty_logf("segment handler");
     while (TRUE) HLT;
 }
 
-void handler_stack(interrupt_frame_t frame)
+void handler_stack(interrupt_frame_t *frame)
 {
     tty_logf("stack handler");
     while (TRUE) HLT;
 }
 
-void handler_protection(interrupt_frame_t frame)
+void handler_protection(interrupt_frame_t *frame)
 {
     tty_logf("protection handler");
     while (TRUE) HLT;
 }
 
-void handler_page(interrupt_frame_t frame)
+void handler_page(interrupt_frame_t *frame)
 {
-    tty_logf("page handler");
+    uint32_t la = read_cr2();
+    tty_logf("#PF:");
+    if (frame->code & ERROR_PAGE_P) {
+        tty_logf("  ERR: page-level protection: %08X", la);
+    } else {
+        tty_logf("  ERR: Non-Present          : %08X", la);
+    }
+
+    if (frame->code & ERROR_PAGE_WR) {
+        tty_logf("  ERR: write                : %08X", la);
+    } else {
+        tty_logf("  ERR: read                 : %08X", la);
+    }
+
+    if (frame->code & ERROR_PAGE_US) {
+        tty_logf("  ERR: user-mode            : %08X", la);
+    } else {
+        tty_logf("  ERR: supervisor-mode      : %08X", la);
+    }
     while (TRUE) HLT;
 }
 
-void handler_fpu(interrupt_frame_t frame)
+void handler_fpu(interrupt_frame_t *frame)
 {
     tty_logf("fpu handler");
     while (TRUE) HLT;
 }
 
-void handler_align(interrupt_frame_t frame)
+void handler_align(interrupt_frame_t *frame)
 {
     tty_logf("align handler");
     while (TRUE) HLT;
 }
 
-void handler_machine(interrupt_frame_t frame)
+void handler_machine(interrupt_frame_t *frame)
 {
     tty_logf("machine handler\n");
     while (TRUE) HLT;
 }
 
-void handler_simd(interrupt_frame_t frame)
+void handler_simd(interrupt_frame_t *frame)
 {
     tty_logf("simd handler");
     while (TRUE) HLT;
 }
 
-void handler_virtual(interrupt_frame_t frame)
+void handler_virtual(interrupt_frame_t *frame)
 {
     tty_logf("virtual handler");
     while (TRUE) HLT;
 }
 
-void handler_control(interrupt_frame_t frame)
+void handler_control(interrupt_frame_t *frame)
 {
     tty_logf("control handler");
     while (TRUE) HLT;

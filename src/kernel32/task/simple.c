@@ -37,7 +37,7 @@ void default_simple_task_init()
     simple_task_init(&simple_task_queue.default_task, "default task", init_start, 0);
     simple_task_queue.running_task = &simple_task_queue.default_task;
     set_pde(simple_task_queue.default_task.pde);
-    memory32_alloc_pages(init_start, alloc_size, PTE_P | PTE_W);
+    alloc_pages(init_start, alloc_size, PTE_P | PTE_W);
     kernel_memcpy((void *)init_start, (void *)b_init_task, copy_size);
 }
 

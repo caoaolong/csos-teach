@@ -20,7 +20,9 @@
         "sem.h": "c",
         "paging.h": "c",
         "*.tcc": "c",
-        "logf.h": "c"
+        "logf.h": "c",
+        "system_error": "c",
+        "types.h": "c"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }

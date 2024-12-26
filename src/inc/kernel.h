@@ -6,6 +6,9 @@
 
 /*==================Task Structires==================*/
 
+#define TASK_LEVEL_SYSTEM   (1 << 0)
+#define TASK_LEVEL_USER     (1 << 1)
+
 #define TASK_NAME_SIZE      32
 #define TASK_DEFAULT_TICKS  10
 
@@ -177,6 +180,12 @@ static inline uint32_t read_cr0() {
 
 static inline void write_cr0(uint32_t v) {
 	__asm__ volatile("mov %[v], %%cr0"::[v]"r"(v));
+}
+
+static inline uint32_t read_cr2() {
+	uint32_t cr2;
+	__asm__ volatile("mov %%cr2, %[v]":[v]"=r"(cr2));
+	return cr2;
 }
 
 static inline void write_tr(uint16_t sel) {
