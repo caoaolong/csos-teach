@@ -81,11 +81,11 @@ void default_tss_task_init()
     uint32_t alloc_size = PAGE_SIZE * 10;
     // 初始化任务
     uint32_t init_start = (uint32_t)init_task_entry;
-    tss_task_init(&tss_task_queue.default_task, "default task", TASK_LEVEL_USER, init_start, 0);
+    tss_task_init(&tss_task_queue.default_task, "default task", TASK_LEVEL_USER, init_start, init_start + alloc_size);
     write_tr(tss_task_queue.default_task.selector);
     tss_task_queue.running_task = &tss_task_queue.default_task;
     set_pde(tss_task_queue.default_task.tss.cr3);
-    alloc_pages(init_start, alloc_size, PTE_P | PTE_W);
+    alloc_pages(init_start, alloc_size, PTE_P | PTE_W | PTE_U);
     kernel_memcpy((void *)init_start, (void *)b_init_task, copy_size);
 }
 

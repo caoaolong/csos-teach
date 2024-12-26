@@ -41,7 +41,15 @@
 #define task_dispatch       tss_task_dispatch
 #define task_set_ready      tss_task_set_ready
 #define task_set_block      tss_task_set_block
-#define task_goto(task)     __asm__ volatile("jmp *%[ip]"::[ip]"r"((task)->tss.eip));
+#define task_goto(task)     tss_t *tss = &(task)->tss;                      \
+                            __asm__ volatile("push %[ss]\r\n"               \
+                                    "push %[esp]\r\n"                       \
+                                    "push %[eflags]\r\n"                    \
+                                    "push %[cs]\r\n"                        \
+                                    "push %[eip]\r\n"                       \
+                                    "iret\r\n"                              \
+                                    ::[ss]"r"(tss->ss), [esp]"r"(tss->esp), \
+                                    [eflags]"r"(tss->eflags), [cs]"r"(tss->cs), [eip]"r"(tss->eip));
 #endif
 
 #endif

@@ -16,11 +16,11 @@ static void init_memory32_info(memory32_info_t *memory32_info, uint8_t *bits,
     bitmap_init(&memory32_info->bitmap, bits, size / page_size, FLASE);
 }
 
-static uint32_t memory32_alloc_page(memory32_info_t *memory32_info, uint32_t page_size)
+static uint32_t memory32_alloc_page(memory32_info_t *memory32_info, uint32_t count)
 {
     mutex_lock(&memory32_info->mutex);
     uint32_t addr = 0;
-    int page_index = bitmap_alloc_bits(&memory32_info->bitmap, FLASE, page_size);
+    int page_index = bitmap_alloc_bits(&memory32_info->bitmap, FLASE, count);
     if (page_index >= 0)
     {
         addr = memory32_info->start + page_index * memory32_info->page_size;
@@ -29,11 +29,11 @@ static uint32_t memory32_alloc_page(memory32_info_t *memory32_info, uint32_t pag
     return addr;
 }
 
-static void memory32_free_page(memory32_info_t *memory32_info, uint32_t addr, uint32_t page_size)
+static void memory32_free_page(memory32_info_t *memory32_info, uint32_t addr, uint32_t count)
 {
     mutex_lock(&memory32_info->mutex);
     uint32_t page_index = (addr  - memory32_info->start) / memory32_info->page_size;
-    bitmap_set_bits(&memory32_info->bitmap, page_index, page_size, FLASE);
+    bitmap_set_bits(&memory32_info->bitmap, page_index, count, FLASE);
     mutex_unlock(&memory32_info->mutex);
 }
 
