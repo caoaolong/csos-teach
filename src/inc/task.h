@@ -4,7 +4,7 @@
 #include <task/simple.h>
 #include <task/tss.h>
 /*---------------任务模式------------------*/
-#define TASK_TSS
+#define TASK_SIMPLE
 /*----------------------------------------*/
 
 #ifdef TASK_SIMPLE
@@ -22,7 +22,14 @@
 #define task_dispatch       simple_task_dispatch
 #define task_set_ready      simple_task_set_ready
 #define task_set_block      simple_task_set_block
-#define task_goto(task)     __asm__ volatile("jmp *%[ip]"::[ip]"r"((task)->entry));
+#define task_goto(task)     __asm__ volatile("push %[ss]\r\n"                       \
+                                    "push %[esp]\r\n"                               \
+                                    "push %[eflags]\r\n"                            \
+                                    "push %[cs]\r\n"                                \
+                                    "push %[eip]\r\n"                               \
+                                    "iret\r\n"                                      \
+                                    ::[ss]"r"((task)->ss), [esp]"r"((task)->stack), \
+                                    [eflags]"r"((task)->eflags), [cs]"r"((task)->cs), [eip]"r"((task)->entry));
 
 #endif
 

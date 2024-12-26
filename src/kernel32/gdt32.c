@@ -2,8 +2,8 @@
 #include <interrupt.h>
 #include <csos/mutex.h>
 
-// 开始索引为3（0: unused, 1: 32-code, 2: 32-data）
-static uint32_t index = 3;
+// 开始索引为3（0: unused, 1: kernel 32-code, 2: kernel 32-data, 3: user 32-code, 4: user 32-data）
+static uint32_t index = 5;
 // GDT指针
 static gdt_table_t *gdt;
 

@@ -9,8 +9,11 @@ typedef struct simple_task_t
     uint32_t *stack;
     // pde
     uint32_t pde;
+    // regsiters
+    uint32_t ss, eflags;
     // entry
-    uint32_t entry;
+    uint32_t cs, entry;
+
     task_state_t state;
     char name[TASK_NAME_SIZE];
     // 当前正在运行的任务列表节点
@@ -40,6 +43,10 @@ typedef struct simple_task_queue_t
     simple_task_t default_task;
     // 当前正在运行的任务
     simple_task_t *running_task;
+    // // 应用级代码段选择子
+    // uint32_t uc_selector;
+    // // 应用级数据段选择子
+    // uint32_t ud_selector;
 } simple_task_queue_t;
 
 void simple_task_queue_init();
@@ -64,6 +71,6 @@ void simple_task_notify(simple_task_t *task);
 
 void simple_task_dispatch();
 
-int simple_task_init(simple_task_t *task, const char *name, uint32_t entry, uint32_t esp);
+int simple_task_init(simple_task_t *task, const char *name, uint32_t flag, uint32_t entry, uint32_t esp);
 
 #endif

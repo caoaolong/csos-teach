@@ -31,6 +31,11 @@ void init_gdt()
     set_gdt_table_entry(KERNEL_CODE_SEG, 0, 0xFFFFFFFF, 
         SEG_ATTR_P | SEG_ATTR_DPL0 | SEG_NORMAL | SEG_TYPE_CODE  | SEG_TYPE_RW | SEG_ATTR_D | SEG_ATTR_G);
 
+    set_gdt_table_entry(USER_DATA_SEG, 0, 0xFFFFFFFF, 
+        SEG_ATTR_P | SEG_ATTR_DPL3 | SEG_NORMAL | SEG_TYPE_DATA  | SEG_TYPE_RW | SEG_ATTR_D);
+    set_gdt_table_entry(USER_CODE_SEG, 0, 0xFFFFFFFF, 
+        SEG_ATTR_P | SEG_ATTR_DPL3 | SEG_NORMAL | SEG_TYPE_CODE  | SEG_TYPE_RW | SEG_ATTR_D);
+
     lgdt((uint32_t)gdt_table, (uint32_t)sizeof(gdt_table));
     show_string("GDT init success!\r\n");
 }

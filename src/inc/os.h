@@ -3,6 +3,8 @@
 
 #define KERNEL_CODE_SEG         (1 * 8)
 #define KERNEL_DATA_SEG         (2 * 8)
+#define USER_CODE_SEG           (3 * 8)
+#define USER_DATA_SEG           (4 * 8)
 
 #define KERNEL_VERSION          "1.0.0"
 #define OP_SYS_VERSION          "1.0.0"

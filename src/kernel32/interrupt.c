@@ -97,7 +97,16 @@ void handler_stack(interrupt_frame_t *frame)
 
 void handler_protection(interrupt_frame_t *frame)
 {
-    tty_logf("protection handler");
+    uint32_t la = read_cr2();
+    tty_logf("#GP:");
+    if (!frame->code & ERROR_PROT_EXT) {
+        tty_logf("  ERR     : ext");
+    }
+
+    if (!frame->code & ERROR_PROT_IDT) {
+        tty_logf("  ERR     : idt");
+    }
+    tty_logf("  SELECTOR: %08x", frame->code & 0xFFF8);
     while (TRUE) HLT;
 }
 

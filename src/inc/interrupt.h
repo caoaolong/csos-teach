@@ -96,6 +96,10 @@ void handler_rtc(interrupt_frame_t* frame);
 #define ERROR_PAGE_WR   (1 << 1)
 #define ERROR_PAGE_US   (1 << 2)
 
+// 正常保护异常标志
+#define ERROR_PROT_EXT  (1 << 0)
+#define ERROR_PROT_IDT  (1 << 1)
+
 #define INTERRUPT_GATE_SIZE 0x100
 
 #define GAT_TYPE_INT    (0xE << 8)

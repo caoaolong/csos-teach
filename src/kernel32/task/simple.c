@@ -14,12 +14,22 @@ static void idle_task_entry()
 
 void simple_task_queue_init()
 {
+    // uint32_t ud_selector = alloc_gdt_table_entry();
+    // set_gdt_table_entry(ud_selector, 0x0, 0xFFFFFFFF,
+    //     SEG_ATTR_P | SEG_ATTR_DPL3 | SEG_NORMAL | SEG_TYPE_DATA | SEG_TYPE_RW | SEG_ATTR_D);
+    // simple_task_queue.ud_selector = ud_selector;
+
+    // uint32_t uc_selector = alloc_gdt_table_entry();
+    // set_gdt_table_entry(uc_selector, 0x0, 0xFFFFFFFF,
+    //     SEG_ATTR_P | SEG_ATTR_DPL3 | SEG_NORMAL | SEG_TYPE_CODE | SEG_TYPE_RW | SEG_ATTR_D);
+    // simple_task_queue.uc_selector = uc_selector;
+
     list_init(&simple_task_queue.ready_list);
     list_init(&simple_task_queue.task_list);
     list_init(&simple_task_queue.sleep_list);
     simple_task_queue.running_task = NULL;
     // 初始化空闲任务
-    simple_task_init(&simple_task_queue.idle_task, "idle task", (uint32_t)idle_task_entry, (uint32_t)&idle_task_stack[1024]);
+    simple_task_init(&simple_task_queue.idle_task, "idle task", TASK_LEVEL_SYSTEM, (uint32_t)idle_task_entry, (uint32_t)&idle_task_stack[1024]);
 }
 
 void default_simple_task_init()
@@ -34,10 +44,10 @@ void default_simple_task_init()
     uint32_t alloc_size = PAGE_SIZE * 10;
     // 初始化任务
     uint32_t init_start = (uint32_t)init_task_entry;
-    simple_task_init(&simple_task_queue.default_task, "default task", init_start, 0);
+    simple_task_init(&simple_task_queue.default_task, "default task", TASK_LEVEL_USER, init_start, init_start + alloc_size);
     simple_task_queue.running_task = &simple_task_queue.default_task;
     set_pde(simple_task_queue.default_task.pde);
-    alloc_pages(init_start, alloc_size, PTE_P | PTE_W);
+    alloc_pages(init_start, alloc_size, PTE_P | PTE_W | PTE_U);
     kernel_memcpy((void *)init_start, (void *)b_init_task, copy_size);
 }
 
@@ -153,15 +163,42 @@ void simple_task_dispatch()
     protect_exit(ps);
 }
 
-int simple_task_init(simple_task_t *task, const char *name, uint32_t entry, uint32_t esp)
+int simple_task_init(simple_task_t *task, const char *name, uint32_t flag, uint32_t entry, uint32_t esp)
 {
     uint32_t pde = memory32_create_pde();
     if (pde == 0) return -1;
+
+    // uint32_t kernel_stack = alloc_page();
+
+    // uint32_t uc_selector = KERNEL_CODE_SEG, ud_selector = KERNEL_DATA_SEG;
+    // if (flag & TASK_LEVEL_USER) {
+    //     uc_selector = simple_task_queue.uc_selector | SEG_ATTR_CPL3;
+    //     ud_selector = simple_task_queue.ud_selector | SEG_ATTR_CPL3;
+    // }
     task->pde = pde;
     task->entry = entry;
+    if (flag & TASK_LEVEL_USER) {
+        task->ss = USER_DATA_SEG | SEG_ATTR_CPL3;
+        task->cs = USER_CODE_SEG | SEG_ATTR_CPL3;
+    } else {
+        task->ss = KERNEL_DATA_SEG;
+        task->cs = KERNEL_CODE_SEG;
+    }
+    task->eflags = EFLAGS_DEFAULT | EFLAGS_IF;
     uint32_t *pesp = (uint32_t *)esp;
     if (pesp) {
+        // ss
+        *(--pesp) = task->ss;
+        // esp
+        *(--pesp) = esp;
+        // eflags
+        *(--pesp) = task->eflags;
+        // cs
+        *(--pesp) = task->cs;
+        // eip
         *(--pesp) = entry;
+        // error code
+        *(--pesp) = 0;
         // ebp
         *(--pesp) = 0;
         // ebx
@@ -170,8 +207,6 @@ int simple_task_init(simple_task_t *task, const char *name, uint32_t entry, uint
         *(--pesp) = 2;
         // edi
         *(--pesp) = 3;
-        // eflags
-        *(--pesp) = EFLAGS_DEFAULT | EFLAGS_IF;
         task->stack = pesp;
     }
     kernel_strcpy(task->name, name);
