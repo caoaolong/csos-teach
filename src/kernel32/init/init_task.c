@@ -1,12 +1,9 @@
-#include <kernel.h>
-#include <logf.h>
-#include <task.h>
+#include <csos/syscall.h>
 
 void init_entry()
 {
     while (TRUE)
     {
-        tty_logf("init task...");
-        task_sleep(1000);
+        sys_sleep(1000);
     }
 }

@@ -102,21 +102,6 @@ void handler_rtc(interrupt_frame_t* frame);
 
 #define INTERRUPT_GATE_SIZE 0x100
 
-#define GAT_TYPE_INT    (0xE << 8)
-#define GATE_ATTR_P     (1 << 15)
-#define GATE_ATTR_DPL0  (0 << 13)
-#define GATE_ATTR_DPL3  (3 << 13)
-
-typedef struct gate_t
-{
-    uint16_t offset_l;
-    uint16_t selector;
-    uint16_t attr;
-    uint16_t offset_h;
-} gate_t;
-
-void set_interrupt_gate(int vector, uint32_t offset, uint32_t selector, uint16_t attr);
-
 void install_interrupt_handler(int vector, uint32_t handler);
 
 typedef uint32_t protect_state_t;

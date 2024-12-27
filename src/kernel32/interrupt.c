@@ -6,11 +6,11 @@
 #include <timer.h>
 #include <rtc.h>
 
-gate_t int_table[INTERRUPT_GATE_SIZE];
+gdt_gate_t int_table[INTERRUPT_GATE_SIZE];
 
 void set_interrupt_gate(int vector, uint32_t offset, uint32_t selector, uint16_t attr)
 {
-    gate_t *entry = &int_table[vector];
+    gdt_gate_t *entry = &int_table[vector];
     entry->offset_l = offset & 0xFFFF;
     entry->selector = selector;
     entry->attr = attr;

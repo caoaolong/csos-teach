@@ -32,6 +32,10 @@ simple_switch:
     pop %ebp
     ret
 
+.global syscall_handler
+syscall_handler:
+    ret
+
 .macro interrupt_handler func vector code
 .text
 .global interrupt_handler_\func

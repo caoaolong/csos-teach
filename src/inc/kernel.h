@@ -60,6 +60,12 @@ typedef struct memory_info_t
 #define SEG_TYPE_RW         (1 << 1)
 #define SEG_TYPE_TSS        (9 << 0)
 
+#define GATE_TYPE_IDT		(0xE << 8)		// 中断32位门描述符
+#define GATE_TYPE_SYSCALL   (0xC << 8)		// 系统调用32位门描述符
+#define GATE_ATTR_P 		(1 << 15)		// 是否存在
+#define GATE_ATTR_DPL0		(0 << 13)		// 特权级0，最高特权级
+#define GATE_ATTR_DPL3		(3 << 13)		// 特权级3，最低权限
+
 typedef struct gdt_table_t
 {
     uint16_t limit_l;
@@ -68,6 +74,28 @@ typedef struct gdt_table_t
     uint16_t attr;
     uint8_t base_h;
 } gdt_table_t;
+
+typedef struct gdt_gate_t
+{
+    uint16_t offset_l;
+    uint16_t selector;
+    uint16_t attr;
+    uint16_t offset_h;
+} gdt_gate_t;
+
+/*==================GDT Functions==================*/
+
+void gdt32_init(gdt_table_t *gdt_table);
+
+uint32_t alloc_gdt_table_entry();
+
+void free_gdt_table_entry(uint32_t selector);
+
+void set_gdt_table_entry(int selector, uint32_t base, uint32_t limit, uint16_t attr);
+
+void set_interrupt_gate(int vector, uint32_t offset, uint32_t selector, uint16_t attr);
+
+void set_syscall_gate(int selector, uint16_t segment, uint32_t offset, uint16_t attr);
 
 /*==================ELF Header Structures==================*/
 
@@ -230,15 +258,5 @@ static inline void far_jump(uint32_t selector, uint32_t offset) {
 }
 
 void protect_mode();
-
-/*==================GDT Functions==================*/
-
-void gdt32_init(gdt_table_t *gdt_table);
-
-uint32_t alloc_gdt_table_entry();
-
-void free_gdt_table_entry(uint32_t selector);
-
-void set_gdt_table_entry(int selector, uint32_t base, uint32_t limit, uint16_t attr);
 
 #endif
