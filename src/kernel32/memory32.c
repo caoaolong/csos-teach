@@ -148,6 +148,25 @@ uint32_t alloc_page()
     return memory32_alloc_page(&memory32_info, 1);
 }
 
+void free_page(uint32_t addr)
+{
+    extern uint8_t b_init_task[];
+    if (addr < (uint32_t)b_init_task) {
+        memory32_free_page(&memory32_info, addr, 1);
+    } else {
+        pte_t *pte = NULL;
+        #ifdef TASK_TSS
+            pte = find_pte((pde_t *)get_running_task()->tss.cr3, addr, FLASE);
+        #endif
+
+        #ifdef TASK_SIMPLE
+            pte = find_pte((pde_t *)get_running_task()->pde, addr, FLASE);
+        #endif
+        memory32_free_page(&memory32_info, PTE_INDEX((uint32_t)pte), 1);
+        pte->v = 0;
+    }
+}
+
 int alloc_pages(uint32_t index, uint32_t size, uint32_t perm)
 {
     #ifdef TASK_SIMPLE

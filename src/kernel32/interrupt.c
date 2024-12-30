@@ -173,7 +173,7 @@ void handler_control(interrupt_frame_t *frame)
 void install_interrupt_handler(int vector, uint32_t handler)
 {
     set_interrupt_gate(vector, handler, KERNEL_CODE_SEG, 
-            GATE_ATTR_P | GATE_ATTR_DPL0 | GAT_TYPE_INT);
+            GATE_ATTR_P | GATE_ATTR_DPL0 | GATE_TYPE_IDT);
 }
 
 void interrupt_init()
@@ -182,7 +182,7 @@ void interrupt_init()
     {
         set_interrupt_gate(i, (uint32_t)interrupt_handler_default, 
             KERNEL_CODE_SEG, 
-            GATE_ATTR_P | GATE_ATTR_DPL0 | GAT_TYPE_INT);
+            GATE_ATTR_P | GATE_ATTR_DPL0 | GATE_TYPE_IDT);
     }
     install_interrupt_handler(IRQ0_DE, (uint32_t)interrupt_handler_division);
     install_interrupt_handler(IRQ1_DB, (uint32_t)interrupt_handler_debug);
