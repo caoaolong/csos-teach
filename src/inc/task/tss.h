@@ -31,6 +31,8 @@ typedef struct tss_task_t {
     uint32_t slices;
     // 延时
     uint32_t sleep;
+    // 任务ID
+    uint32_t pid;
 } tss_task_t;
 
 typedef struct tss_task_queue_t
@@ -52,6 +54,8 @@ typedef struct tss_task_queue_t
     // 应用级数据段选择子
     uint32_t ud_selector;
 } tss_task_queue_t;
+
+uint32_t tss_task_getpid();
 
 void tss_task_queue_init();
 

@@ -6,6 +6,8 @@
 
 tss_task_queue_t tss_task_queue;
 
+static uint32_t task_pid = 0;
+
 static uint32_t idle_task_stack[1024];
 static void idle_task_entry()
 {
@@ -47,6 +49,12 @@ static int tss_init(tss_task_t *task, uint32_t flag, uint32_t entry, uint32_t es
     tss->cr3 = pde;
     task->selector = selector;
     return 0;
+}
+
+uint32_t tss_task_getpid()
+{
+    task_t *task = get_running_task();
+    return task->pid;
 }
 
 void tss_task_queue_init()
@@ -217,5 +225,6 @@ int tss_task_init(tss_task_t *task, const char *name, uint32_t flag, uint32_t en
     task->ticks = task->slices = TASK_DEFAULT_TICKS;
     // 延时
     task->sleep = 0;
+    task->pid = task_pid++;
     return 0;
 }
