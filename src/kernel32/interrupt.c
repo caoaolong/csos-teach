@@ -5,6 +5,7 @@
 #include <pic.h>
 #include <timer.h>
 #include <rtc.h>
+#include <csos/syscall.h>
 
 gdt_gate_t int_table[INTERRUPT_GATE_SIZE];
 
@@ -172,8 +173,13 @@ void handler_control(interrupt_frame_t *frame)
 
 void install_interrupt_handler(int vector, uint32_t handler)
 {
+    install_interrupt_handler_dpl(vector, handler, GATE_ATTR_DPL0);
+}
+
+void install_interrupt_handler_dpl(int vector, uint32_t handler, uint16_t dpl)
+{
     set_interrupt_gate(vector, handler, KERNEL_CODE_SEG, 
-            GATE_ATTR_P | GATE_ATTR_DPL0 | GATE_TYPE_IDT);
+            GATE_ATTR_P | dpl | GATE_TYPE_IDT);
 }
 
 void interrupt_init()
@@ -204,6 +210,8 @@ void interrupt_init()
     install_interrupt_handler(IRQ13_XM, (uint32_t)interrupt_handler_simd);
     install_interrupt_handler(IRQ14_VE, (uint32_t)interrupt_handler_virtual);
     install_interrupt_handler(IRQ15_CP, (uint32_t)interrupt_handler_control);
+
+    install_interrupt_handler_dpl(IRQ_SYSCALL, (uint32_t)interrupt_handler_syscall, GATE_ATTR_DPL3);
 
     lidt((uint32_t)int_table, sizeof(int_table));
 

@@ -8,6 +8,8 @@
 #define SYS_NR_GETPID       2
 #define SYS_NR_LOGF         3
 
+#define SYSCALL_INT
+
 void syscall_handler();
 
 typedef struct syscall_frame_t
@@ -30,10 +32,13 @@ typedef struct syscall_arg_t
     int arg0, arg1, arg2, arg3;
 } syscall_arg_t;
 
+typedef int (*syscall_handler_t)(uint32_t arg0, uint32_t arg1, uint32_t arg2, uint32_t arg3);
+
 static inline int _syscall(syscall_arg_t *arg)
 {
     uint32_t addr[] = { 0, SYSCALL_GATE_SEG | 0 };
     uint32_t ret;
+    #ifdef SYSCALL_LCALL
     __asm__ volatile("push %[arg3]\r\n"
             "push %[arg2]\r\n"
             "push %[arg1]\r\n"
@@ -42,6 +47,13 @@ static inline int _syscall(syscall_arg_t *arg)
             "lcalll *(%[a])\r\n"
             :"=a"(ret)
             :[arg3]"r"(arg->arg3), [arg2]"r"(arg->arg2), [arg1]"r"(arg->arg1), [arg0]"r"(arg->arg0), [id]"r"(arg->id), [a]"r"(addr));
+    #endif
+
+    #ifdef SYSCALL_INT
+    __asm__ volatile("int $0x80\r\n"
+            :"=a"(ret)
+            :"S"(arg->arg3), "d"(arg->arg2), "c"(arg->arg1), "b"(arg->arg0), "a"(arg->id));
+    #endif
     return ret;
 }
 

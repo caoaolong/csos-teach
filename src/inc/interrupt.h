@@ -89,6 +89,10 @@ void handler_timer(interrupt_frame_t* frame);
 extern void interrupt_handler_rtc();
 void handler_rtc(interrupt_frame_t* frame);
 
+#define IRQ_SYSCALL         0x80
+extern void interrupt_handler_syscall();
+void handler_syscall(interrupt_frame_t* frame);
+
 #define IRQ0_CASCADE        0x22
 
 // 缺页异常标志
@@ -103,6 +107,8 @@ void handler_rtc(interrupt_frame_t* frame);
 #define INTERRUPT_GATE_SIZE 0x100
 
 void install_interrupt_handler(int vector, uint32_t handler);
+
+void install_interrupt_handler_dpl(int vector, uint32_t handler, uint16_t dpl);
 
 typedef uint32_t protect_state_t;
 
