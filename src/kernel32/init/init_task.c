@@ -2,10 +2,18 @@
 
 void init_entry()
 {
-    uint32_t counter = 0;
+    int pid = fork();
+    if (pid < 0) {
+        logf("fork failed...", 0);
+    } else if (pid == 0) {
+        logf("child task...", 0);
+    } else {
+        logf("parent: child task id = %d", pid);
+    }
+
     while (TRUE)
     {
-        sys_logf("init task : %d", sys_getpid());
-        sys_sleep(1000);
+        logf("task id = %d", getpid());
+        sleep(1000);
     }
 }

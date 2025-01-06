@@ -37,7 +37,7 @@ static void memory32_free_page(memory32_info_t *memory32_info, uint32_t addr, ui
     mutex_unlock(&memory32_info->mutex);
 }
 
-pte_t *find_pte(pde_t *page_dir, uint32_t vaddr, BOOL alloc)
+static pte_t *find_pte(pde_t *page_dir, uint32_t vaddr, BOOL alloc)
 {
     pte_t *pte;
     pde_t *pde = page_dir + PDE_INDEX(vaddr);
@@ -88,8 +88,8 @@ static void kernel_pagging()
     static memory32_map_t kernel_map[] = {
         { b_kernel, b_text, b_kernel, PTE_W },
         { b_text, e_text, b_text, 0 },
-        { b_data, (void *)MEMORY_EBDA_START, b_data, PTE_W },
-        { (void *)MEMORY_EXT_START, (void *)MEMORY_EXT_LIMIT, (void *)MEMORY_EXT_START, PTE_W }
+        { b_data, (void *)PM_EBDA_START, b_data, PTE_W },
+        { (void *)PM_EXT_START, (void *)PM_EXT_LIMIT, (void *)PM_EXT_START, PTE_W }
     };
     uint32_t count = sizeof(kernel_map) / sizeof(memory32_map_t);
     for (int i = 0; i < count; i++)
@@ -104,12 +104,69 @@ static void kernel_pagging()
     }
 }
 
+int copy_page(uint32_t index)
+{
+    uint32_t to_pde = memory32_create_pde();
+    if (to_pde == 0) {
+        return -1;
+    }
+
+    uint32_t pde_start = PDE_INDEX(VM_TASK_BASE);
+    pde_t *pde = (pde_t *)index + pde_start;
+    for (int i = pde_start; i < PDE_COUNT; i++, pde++)
+    {
+        if (!pde->present) {
+            continue;
+        }
+        pte_t *pte = (pte_t *)PDE_ADDRESS(pde);
+        for (int k = 0; k < PTE_COUNT; k++, pte++)
+        {
+            if (!pte->present) {
+                continue;
+            }
+            uint32_t page = memory32_alloc_page(&memory32_info, 1);
+            if (page == 0) {
+                destroy_page(to_pde);
+                return -1;
+            }
+
+            uint32_t vaddr = (i << 22) | (k << 12);
+            int ret = memory32_create_map((pde_t *)to_pde, vaddr, page, 1, PTE_PERM(pte));
+            if (ret < 0) {
+                destroy_page(to_pde);
+                return -1;
+            }
+            kernel_memcpy((void *)page, (void *)vaddr, PAGE_SIZE);
+        }
+    }
+    return to_pde;
+}
+
+void destroy_page(uint32_t index)
+{
+    uint32_t pde_start = PDE_INDEX(VM_TASK_BASE);
+    pde_t *pde = (pde_t *)index + pde_start;
+    for (int i = pde_start; i < PDE_COUNT; i++, pde++) {
+        if (!pde->present) {
+            continue;
+        }
+        pte_t *pte = (pte_t *)PTE_ADDRESS(pde);
+        for (int k = 0; k < PTE_COUNT; k++, pte++) {
+            if (!pte->present) {
+                continue;
+            }
+            memory32_free_page(&memory32_info, (uint32_t)PTE_ADDRESS(pte), 1);
+        }
+    }
+    memory32_free_page(&memory32_info, (uint32_t)PDE_ADDRESS(pde), 1);
+}
+
 uint32_t memory32_create_pde()
 {
     pde_t *pde = (pde_t *)memory32_alloc_page(&memory32_info, 1);
     if (pde == 0) return 0;
     kernel_memset((void *)pde, 0, PAGE_SIZE);
-    uint32_t user_pde_start = PDE_INDEX(MEMORY_EXT_LIMIT);
+    uint32_t user_pde_start = PDE_INDEX(VM_TASK_BASE);
     // 映射内核页表
     for (int i = 0; i < user_pde_start; i++)
     {
@@ -188,7 +245,7 @@ void memory_init(memory_info_t *memory_info)
         if (raw->type == 1)
             total_size += raw->length_l;
     }
-    total_size -= MEMORY_EXT_START;
+    total_size -= PM_EXT_START;
     total_size = floor_page(total_size);
     tty_printf("total available memory size: %#x\n", total_size);
     // 用户内存开始位置
@@ -201,7 +258,7 @@ void memory_init(memory_info_t *memory_info)
     // 初始化内存位图
     init_memory32_info(&memory32_info, 
         (uint8_t *)total_start, 
-        MEMORY_EXT_START, 
+        PM_EXT_START, 
         total_size, 
         PAGE_SIZE);
     tty_printf("total available memory start: %#x\n", total_start);

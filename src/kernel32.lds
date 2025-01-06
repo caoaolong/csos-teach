@@ -29,7 +29,7 @@ SECTIONS
 
 	e_data = .;
 
-	. = 0x1FF6000;
+	. = 0x40000000;
 
 	.init_task : AT(e_data) {
 		*init_task_entry*(.text .rodata .data .bss)

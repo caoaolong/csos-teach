@@ -40,6 +40,7 @@
 #define task_yield          tss_task_yield
 #define task_sleep          tss_task_sleep
 #define task_getpid         tss_task_getpid
+#define task_fork           tss_task_fork
 #define task_notify         tss_task_notify
 #define task_init           tss_task_init
 #define task_queue_init     tss_task_queue_init

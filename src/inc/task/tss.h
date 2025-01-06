@@ -33,6 +33,8 @@ typedef struct tss_task_t {
     uint32_t sleep;
     // 任务ID
     uint32_t pid;
+    // 父任务
+    struct tss_task_t *parent;
 } tss_task_t;
 
 typedef struct tss_task_queue_t
@@ -70,6 +72,10 @@ void tss_task_set_ready(tss_task_t *task);
 void tss_task_set_block(tss_task_t *task);
 
 void tss_task_yield();
+
+int tss_task_fork();
+
+void tss_task_destroy(tss_task_t *task);
 
 void tss_task_ts();
 

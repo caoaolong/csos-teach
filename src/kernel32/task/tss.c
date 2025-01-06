@@ -1,8 +1,12 @@
 #include <task/tss.h>
 #include <csos/string.h>
 #include <csos/memory.h>
+#include <csos/syscall.h>
 #include <paging.h>
 #include <interrupt.h>
+
+static mutex_t task_mutex;
+static tss_task_t task_table[OS_TASK_MAX_SIZE];
 
 tss_task_queue_t tss_task_queue;
 
@@ -51,6 +55,22 @@ static int tss_init(tss_task_t *task, uint32_t flag, uint32_t entry, uint32_t es
     return 0;
 }
 
+static task_t *alloc_task()
+{
+    tss_task_t *task = NULL;
+    mutex_lock(&task_mutex);
+    for (int i = 0; i < OS_TASK_MAX_SIZE; i++)
+    {
+        tss_task_t *t = &task_table[i];
+        if (t->name[0] == 0) {
+            task = t;
+            break;
+        }
+    }
+    mutex_unlock(&task_mutex);
+    return task;
+}
+
 uint32_t tss_task_getpid()
 {
     task_t *task = get_running_task();
@@ -59,6 +79,9 @@ uint32_t tss_task_getpid()
 
 void tss_task_queue_init()
 {
+    kernel_memset(task_table, 0, sizeof(task_table));
+    mutex_init(&task_mutex);
+
     uint32_t ud_selector = alloc_gdt_table_entry();
     set_gdt_table_entry(ud_selector, 0x0, 0xFFFFFFFF,
         SEG_ATTR_P | SEG_ATTR_DPL3 | SEG_NORMAL | SEG_TYPE_DATA | SEG_TYPE_RW | SEG_ATTR_D);
@@ -133,6 +156,63 @@ void tss_task_yield()
         tss_task_set_ready(task);
         tss_task_dispatch();
     }
+}
+
+int tss_task_fork()
+{
+    tss_task_t *parent = get_running_task();
+    tss_task_t *child = alloc_task();
+    if (child == NULL) 
+        return -1;
+    
+    syscall_frame_t *frame = (syscall_frame_t *)(parent->tss.esp0 - sizeof(syscall_frame_t));
+    int ret = tss_task_init(child, parent->name, TASK_LEVEL_USER, 
+            frame->eip, 
+            frame->_esp + sizeof(uint32_t) * SYSCALL_PMC);
+    if (ret != 0) {
+        tss_task_destroy(child);
+        return -1;
+    }
+
+    tss_t *tss = &child->tss;
+    tss->eax = 0;
+    tss->edx = frame->edx;
+    tss->ecx = frame->ecx;
+    tss->ebx = frame->ebx;
+    tss->esi = frame->esi;
+    tss->edi = frame->edi;
+    tss->ebp = frame->ebp;
+    tss->cs = frame->cs;
+    tss->ds = frame->ds;
+    tss->es = frame->es;
+    tss->gs = frame->gs;
+    tss->fs = frame->fs;
+    tss->eflags = frame->eflags;
+
+    child->parent = parent;
+
+    if ((tss->cr3 = copy_page(parent->tss.cr3)) < 0) {
+        tss_task_destroy(child);
+        return -1;
+    }
+
+    return child->pid;
+}
+
+void tss_task_destroy(tss_task_t *task)
+{
+if (task->selector) {
+        free_gdt_table_entry(task->selector);
+    }
+
+    if (task->tss.esp0) {
+        free_page(task->tss.esp - PAGE_SIZE);
+    }
+
+    if (task->tss.cr3) {
+        destroy_page(task->tss.cr3);
+    }
+    kernel_memset(task, 0, sizeof(task_t));
 }
 
 void tss_task_ts()

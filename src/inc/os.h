@@ -12,4 +12,6 @@
 
 #define OS_TZ                   (+8)
 
+#define OS_TASK_MAX_SIZE        128
+
 #endif
