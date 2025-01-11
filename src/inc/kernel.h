@@ -17,7 +17,8 @@ typedef enum {
     TASK_RUNNING,
     TASK_SLEEP,
     TASK_READY,
-    TASK_WAITING
+    TASK_WAITING,
+	TASK_DIED
 } task_state_t;
 
 /*==================Memory Check==================*/

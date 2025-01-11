@@ -199,6 +199,19 @@ int tss_task_fork()
     return child->pid;
 }
 
+void tss_task_exit(int code)
+{
+    task_t *task = get_running_task();
+    if (task->state == TASK_RUNNING) {
+        task->state = TASK_DIED;
+        task->exit_code = code;
+    }
+    list_remove(&tss_task_queue.ready_list, &task->running_node);
+    list_remove(&tss_task_queue.task_list, &task->task_node);
+    tss_task_destroy(task);
+    tss_task_dispatch();
+}
+
 void tss_task_destroy(tss_task_t *task)
 {
 if (task->selector) {

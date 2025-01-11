@@ -35,6 +35,8 @@ typedef struct tss_task_t {
     uint32_t pid;
     // 父任务
     struct tss_task_t *parent;
+    // 退出状态码
+    int exit_code;
 } tss_task_t;
 
 typedef struct tss_task_queue_t
@@ -74,6 +76,8 @@ void tss_task_set_block(tss_task_t *task);
 void tss_task_yield();
 
 int tss_task_fork();
+
+void tss_task_exit(int code);
 
 void tss_task_destroy(tss_task_t *task);
 

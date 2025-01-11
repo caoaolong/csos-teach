@@ -10,10 +10,14 @@ void init_entry()
     } else {
         logf("parent: child task id = %d", pid);
     }
-
+    uint32_t counter = 0;
     while (TRUE)
     {
         logf("task id = %d", getpid());
-        sleep(1000);
+        logf("  counter = %d", counter++);
+        yield();
+        if (pid == 0 && counter >= 100) {
+            exit(0);
+        }
     }
 }

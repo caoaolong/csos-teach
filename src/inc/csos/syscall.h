@@ -8,6 +8,8 @@
 #define SYS_NR_GETPID       2
 #define SYS_NR_LOGF         3
 #define SYS_NR_FORK         4
+#define SYS_NR_YIELD        5
+#define SYS_NR_EXIT         6
 
 #define SYSCALL_LCALL
 
@@ -80,6 +82,18 @@ static inline int fork()
 {
     syscall_arg_t fork_arg = { SYS_NR_FORK, 0, 0, 0, 0 };
     return _syscall(&fork_arg);
+}
+
+static inline int yield()
+{
+    syscall_arg_t yield_arg = { SYS_NR_YIELD, 0, 0, 0, 0 };
+    return _syscall(&yield_arg);
+}
+
+static inline int exit(int code)
+{
+    syscall_arg_t exit_arg = { SYS_NR_EXIT, code, 0, 0, 0 };
+    return _syscall(&exit_arg);
 }
 
 #endif
