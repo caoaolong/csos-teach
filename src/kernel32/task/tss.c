@@ -71,6 +71,16 @@ static task_t *alloc_task()
     return task;
 }
 
+static uint32_t load_elf_file(tss_task_t *task, const char *name, pde_t *pde)
+{
+    read_disk(1000, 500, pde);
+    kernel_memset(pde, 0, PAGE_SIZE);
+    uint32_t pte = alloc_page();
+    pde->v = PTE_INDEX(pte) | PDE_U | PDE_W;
+    uint32_t vaddr = pde << 22 | pte << 12 | PTE_U | PTE_W;
+    return read_elf_header(vaddr);
+}
+
 uint32_t tss_task_getpid()
 {
     task_t *task = get_running_task();
@@ -210,6 +220,20 @@ void tss_task_exit(int code)
     list_remove(&tss_task_queue.task_list, &task->task_node);
     tss_task_destroy(task);
     tss_task_dispatch();
+}
+
+int tss_task_execve(const char *name, const char *args, const char *env)
+{
+    tss_task_t *task = get_running_task();
+    uint32_t origin_pde = task->tss.cr3;
+    uint32_t pde = alloc_page();
+    if (!pde) return -1;
+    uint32_t entry = load_elf_file(task, name, (pde_t*)pde);
+    task->tss.cr3 = pde;
+    set_pde(pde);
+    // 清除原来为进程分配的页
+    destroy_page(pde);
+    return 0;
 }
 
 void tss_task_destroy(tss_task_t *task)

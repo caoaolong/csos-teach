@@ -42,6 +42,7 @@
 #define task_getpid         tss_task_getpid
 #define task_fork           tss_task_fork
 #define task_exit           tss_task_exit
+#define task_execve         tss_task_execve
 #define task_notify         tss_task_notify
 #define task_init           tss_task_init
 #define task_queue_init     tss_task_queue_init

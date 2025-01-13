@@ -10,6 +10,7 @@
 #define SYS_NR_FORK         4
 #define SYS_NR_YIELD        5
 #define SYS_NR_EXIT         6
+#define SYS_NR_EXECVE       7
 
 #define SYSCALL_LCALL
 
@@ -94,6 +95,12 @@ static inline int exit(int code)
 {
     syscall_arg_t exit_arg = { SYS_NR_EXIT, code, 0, 0, 0 };
     return _syscall(&exit_arg);
+}
+
+static inline int execve(const char *name, const char *argv, const char *env)
+{
+    syscall_arg_t execve_arg = { SYS_NR_EXECVE, (uint32_t)name, (uint32_t)argv, (uint32_t)env, 0 };
+    return _syscall(&execve_arg);
 }
 
 #endif

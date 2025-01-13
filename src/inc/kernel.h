@@ -133,6 +133,9 @@ typedef struct {
     Elf32_Word p_align;
 } Elf32_Phdr;
 
+void read_disk(uint32_t sector, uint32_t count, uint16_t* buffer);
+uint32_t read_elf_header(uint8_t *buffer);
+
 #define EFLAGS_DEFAULT      (1 << 1)
 #define EFLAGS_IF           (1 << 9)
 

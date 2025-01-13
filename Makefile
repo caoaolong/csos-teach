@@ -62,6 +62,14 @@ $(BUILD)/kernel32.elf: $(BUILD)/kernel32/start.o \
 	$(shell mkdir -p $(dir $@))
 	x86_64-elf-ld -m elf_i386 -T $(SRC)/kernel32.lds $^ -o $@
 
+$(BUILD)/libapp.a: $(BUILD)/libapp/cstart.o \
+	$(BUILD)/libapp/crt0.o
+	x86_64-elf-ar rcs $@ $^
+
+$(BUILD)/shell.elf: $(BUILD)/libapp.a \
+	$(BUILD)/shell/main.o
+	x86_64-elf-ld -m elf_i386 -L$(BUILD) -lapp -T $(SRC)/shell.lds $^ -o $@
+
 .PHONY: master
 master: $(BUILD)/boot.bin \
 	$(BUILD)/kernel.bin \
@@ -72,6 +80,8 @@ master: $(BUILD)/boot.bin \
 	${TOOL_PREFIX}readelf -a $(BUILD)/kernel.elf > $(INFO)/kernel.txt
 	dd if=$(BUILD)/kernel32.elf of=master.img bs=512 count=500 seek=65 conv=notrunc
 	${TOOL_PREFIX}readelf -a $(BUILD)/kernel32.elf > $(INFO)/kernel32.txt
+	dd if=$(BUILD)/shell.elf of=master.img bs=512 count=500 seek=1000 conv=notrunc
+	${TOOL_PREFIX}readelf -a $(BUILD)/shell.elf > $(INFO)/shell.txt
 
 .PHONY: clean
 clean:

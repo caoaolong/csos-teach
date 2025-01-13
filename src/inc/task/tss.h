@@ -79,6 +79,8 @@ int tss_task_fork();
 
 void tss_task_exit(int code);
 
+int tss_task_execve(const char *name, const char *args, const char *env);
+
 void tss_task_destroy(tss_task_t *task);
 
 void tss_task_ts();
