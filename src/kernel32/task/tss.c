@@ -73,12 +73,12 @@ static task_t *alloc_task()
 
 static uint32_t load_elf_file(tss_task_t *task, const char *name, pde_t *pde)
 {
-    read_disk(1000, 500, pde);
-    kernel_memset(pde, 0, PAGE_SIZE);
-    uint32_t pte = alloc_page();
-    pde->v = PTE_INDEX(pte) | PDE_U | PDE_W;
-    uint32_t vaddr = pde << 22 | pte << 12 | PTE_U | PTE_W;
-    return read_elf_header(vaddr);
+    uint32_t pde_start = PDE_INDEX(VM_SHELL_BASE);
+    pde_t *user_pde = (pde_t *)pde + pde_start;
+    alloc_pages((uint32_t)VM_SHELL_BASE, PAGE_SIZE, PTE_P | PTE_W | PTE_U);
+    
+    read_disk(1000, 500, (uint16_t*)VM_SHELL_BASE);
+    return read_elf_header((uint8_t*)VM_SHELL_BASE);
 }
 
 uint32_t tss_task_getpid()
@@ -224,13 +224,17 @@ void tss_task_exit(int code)
 
 int tss_task_execve(const char *name, const char *args, const char *env)
 {
-    tss_task_t *task = get_running_task();
-    uint32_t origin_pde = task->tss.cr3;
-    uint32_t pde = alloc_page();
-    if (!pde) return -1;
-    uint32_t entry = load_elf_file(task, name, (pde_t*)pde);
+    // TODO: 完善逻辑
+    tss_task_t *task = alloc_task();
+    int ret = tss_task_init(task, name, TASK_LEVEL_USER, VM_SHELL_BASE, VM_SHELL_BASE + PAGE_SIZE);
+    if (ret != 0) return -1;
+    pde_t *pde = task->tss.cr3;
+    pde_t *shell_pde = pde + PDE_INDEX(VM_SHELL_BASE);
+    pte_t *pte = (pte_t *)PDE_ADDRESS(shell_pde);
+    uint32_t paddr = alloc_page();
+    pte->v = paddr | PTE_PERM(shell_pde);
+    uint32_t entry = load_elf_file(task, name, (pde_t*)shell_pde);
     task->tss.cr3 = pde;
-    set_pde(pde);
     // 清除原来为进程分配的页
     destroy_page(pde);
     return 0;

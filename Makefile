@@ -31,7 +31,8 @@ $(BUILD)/kernel.bin: $(BUILD)/kernel/start.o \
 	$(BUILD)/kernel/tty.o \
 	$(BUILD)/kernel/memory.o \
 	$(BUILD)/kernel/gdt.o \
-	$(BUILD)/kernel/kernel32.o
+	$(BUILD)/kernel/kernel32.o \
+	$(BUILD)/lib/stdlib.o
 	$(shell mkdir -p $(dir $@))
 	x86_64-elf-ld -m elf_i386 -Ttext=0x8000 $^ -o $(BUILD)/kernel.elf
 	x86_64-elf-objcopy -O binary $(BUILD)/kernel.elf $(BUILD)/kernel.bin
@@ -73,7 +74,8 @@ $(BUILD)/shell.elf: $(BUILD)/libapp.a \
 .PHONY: master
 master: $(BUILD)/boot.bin \
 	$(BUILD)/kernel.bin \
-	$(BUILD)/kernel32.elf
+	$(BUILD)/kernel32.elf \
+	$(BUILD)/shell.elf
 	$(shell mkdir -p $(INFO))
 	dd if=$(BUILD)/boot.bin of=master.img bs=512 count=1 conv=notrunc
 	dd if=$(BUILD)/kernel.bin of=master.img bs=512 count=64 seek=1 conv=notrunc

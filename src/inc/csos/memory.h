@@ -13,6 +13,8 @@
 #define PM_EBDA_START       0x80000
 // 用户内存开始位置(4GB*(1/4)=1GB)
 #define VM_TASK_BASE        0x40000000
+// SHELL进程开始位置
+#define VM_SHELL_BASE       0x4F000000
 
 typedef struct memory32_info_t
 {
