@@ -175,6 +175,13 @@ uint32_t memory32_create_pde()
     return (uint32_t)pde;
 }
 
+uint32_t memory32_get_paddr(uint32_t pde, uint32_t vaddr)
+{
+    pte_t *pte = find_pte((pde_t *)pde, vaddr, FLASE);
+    if (!pte) return 0;
+    return PTE_ADDRESS(pte) + (vaddr & (PAGE_SIZE - 1));
+}
+
 static int memory32_alloc_task_pages(uint32_t pde, uint32_t index, uint32_t size, uint32_t perm)
 {
     uint32_t current_index = index;
@@ -224,15 +231,9 @@ void free_page(uint32_t addr)
     }
 }
 
-int alloc_pages(uint32_t index, uint32_t size, uint32_t perm)
+int alloc_pages(uint32_t pde, uint32_t index, uint32_t size, uint32_t perm)
 {
-    #ifdef TASK_SIMPLE
-        return memory32_alloc_task_pages(get_running_task()->pde, index, size, perm);
-    #endif
-
-    #ifdef TASK_TSS
-        return memory32_alloc_task_pages(get_running_task()->tss.cr3, index, size, perm);
-    #endif
+    memory32_alloc_task_pages(pde, index, size, perm);
 }
 
 void memory_init(memory_info_t *memory_info)

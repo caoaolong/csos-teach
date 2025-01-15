@@ -71,16 +71,6 @@ static task_t *alloc_task()
     return task;
 }
 
-static uint32_t load_elf_file(tss_task_t *task, const char *name, pde_t *pde)
-{
-    uint32_t pde_start = PDE_INDEX(VM_SHELL_BASE);
-    pde_t *user_pde = (pde_t *)pde + pde_start;
-    alloc_pages((uint32_t)VM_SHELL_BASE, PAGE_SIZE, PTE_P | PTE_W | PTE_U);
-    
-    read_disk(1000, 500, (uint16_t*)VM_SHELL_BASE);
-    return read_elf_header((uint8_t*)VM_SHELL_BASE);
-}
-
 uint32_t tss_task_getpid()
 {
     task_t *task = get_running_task();
@@ -125,8 +115,9 @@ void default_tss_task_init()
     tss_task_init(&tss_task_queue.default_task, "default task", TASK_LEVEL_USER, init_start, init_start + alloc_size);
     write_tr(tss_task_queue.default_task.selector);
     tss_task_queue.running_task = &tss_task_queue.default_task;
-    set_pde(tss_task_queue.default_task.tss.cr3);
-    alloc_pages(init_start, alloc_size, PTE_P | PTE_W | PTE_U);
+    uint32_t pde = tss_task_queue.default_task.tss.cr3;
+    set_pde(pde);
+    alloc_pages(pde, init_start, alloc_size, PTE_P | PTE_W | PTE_U);
     kernel_memcpy((void *)init_start, (void *)b_init_task, copy_size);
 }
 
@@ -222,21 +213,52 @@ void tss_task_exit(int code)
     tss_task_dispatch();
 }
 
+// SHELL程序临时存放位置
+uint8_t SHELL_TMP[512 * 20];
+
+static uint32_t load_elf_file(tss_task_t *task, const char *name, uint32_t pde)
+{
+    read_disk(1000, 20, (uint16_t *)SHELL_TMP);
+    uint8_t *buffer = SHELL_TMP;
+    Elf32_Ehdr *elf_header = (Elf32_Ehdr*)buffer;
+    if (elf_header->e_ident[0] != 0x7F || 
+        elf_header->e_ident[1] != 'E' || 
+        elf_header->e_ident[2] != 'L' || 
+        elf_header->e_ident[3] != 'F') {
+        return -1;
+    }
+
+    for (int i = 0; i < elf_header->e_phnum; i++) {
+        Elf32_Phdr *phdr = (Elf32_Phdr *)(buffer + elf_header->e_phoff) + i;
+        if (phdr->p_type != PT_LOAD) {
+            continue;
+        }
+        alloc_pages(pde, phdr->p_vaddr, phdr->p_memsz, PTE_P | PTE_W | PTE_U);
+        uint32_t vaddr = phdr->p_vaddr;
+        uint32_t size = phdr->p_memsz;
+        while (size > 0)
+        {
+            int cz = (size > PAGE_SIZE) ? PAGE_SIZE : size;
+            uint32_t paddr = memory32_get_paddr(pde, vaddr);
+            kernel_memcpy(buffer, (uint8_t *)paddr, cz);
+            vaddr += cz;
+            buffer += cz;
+            size -= cz;
+        }
+    }
+    return 0;
+}
+
 int tss_task_execve(const char *name, const char *args, const char *env)
 {
-    // TODO: 完善逻辑
-    tss_task_t *task = alloc_task();
-    int ret = tss_task_init(task, name, TASK_LEVEL_USER, VM_SHELL_BASE, VM_SHELL_BASE + PAGE_SIZE);
-    if (ret != 0) return -1;
-    pde_t *pde = task->tss.cr3;
-    pde_t *shell_pde = pde + PDE_INDEX(VM_SHELL_BASE);
-    pte_t *pte = (pte_t *)PDE_ADDRESS(shell_pde);
-    uint32_t paddr = alloc_page();
-    pte->v = paddr | PTE_PERM(shell_pde);
-    uint32_t entry = load_elf_file(task, name, (pde_t*)shell_pde);
-    task->tss.cr3 = pde;
-    // 清除原来为进程分配的页
-    destroy_page(pde);
+    tss_task_t *task = get_running_task();
+    uint32_t origial_pde = task->tss.cr3;
+    uint32_t new_pde = memory32_create_pde();
+    if (new_pde <= 0) return -1;
+    if (load_elf_file(task, name, new_pde) < 0) return -1;
+    task->tss.cr3 = new_pde;
+    set_pde(new_pde);
+    destroy_page(origial_pde);
     return 0;
 }
 

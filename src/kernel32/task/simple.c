@@ -46,8 +46,9 @@ void default_simple_task_init()
     uint32_t init_start = (uint32_t)init_task_entry;
     simple_task_init(&simple_task_queue.default_task, "default task", TASK_LEVEL_USER, init_start, init_start + alloc_size);
     simple_task_queue.running_task = &simple_task_queue.default_task;
-    set_pde(simple_task_queue.default_task.pde);
-    alloc_pages(init_start, alloc_size, PTE_P | PTE_W | PTE_U);
+    uint32_t pde = simple_task_queue.default_task.pde;
+    set_pde(pde);
+    alloc_pages(pde, init_start, alloc_size, PTE_P | PTE_W | PTE_U);
     kernel_memcpy((void *)init_start, (void *)b_init_task, copy_size);
 }
 

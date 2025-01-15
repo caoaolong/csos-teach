@@ -43,8 +43,9 @@ typedef struct memory32_map_t
 } memory32_map_t;
 
 uint32_t memory32_create_pde();
+uint32_t memory32_get_paddr(uint32_t pde, uint32_t vaddr);
 
-int alloc_pages(uint32_t index, uint32_t size, uint32_t perm);
+int alloc_pages(uint32_t pde, uint32_t index, uint32_t size, uint32_t perm);
 uint32_t alloc_page();
 void free_page(uint32_t addr);
 int copy_page(uint32_t index);

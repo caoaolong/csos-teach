@@ -82,7 +82,7 @@ master: $(BUILD)/boot.bin \
 	${TOOL_PREFIX}readelf -a $(BUILD)/kernel.elf > $(INFO)/kernel.txt
 	dd if=$(BUILD)/kernel32.elf of=master.img bs=512 count=500 seek=65 conv=notrunc
 	${TOOL_PREFIX}readelf -a $(BUILD)/kernel32.elf > $(INFO)/kernel32.txt
-	dd if=$(BUILD)/shell.elf of=master.img bs=512 count=500 seek=1000 conv=notrunc
+	dd if=$(BUILD)/shell.elf of=master.img bs=512 count=20 seek=1000 conv=notrunc
 	${TOOL_PREFIX}readelf -a $(BUILD)/shell.elf > $(INFO)/shell.txt
 
 .PHONY: clean
