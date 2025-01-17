@@ -23,7 +23,8 @@
         "logf.h": "c",
         "system_error": "c",
         "types.h": "c",
-        "syscall.h": "c"
+        "syscall.h": "c",
+        "fs.h": "c"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }

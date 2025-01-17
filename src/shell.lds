@@ -1,3 +1,5 @@
+ENTRY(_start)
+
 SECTIONS {
     . = 0x4F000000;
     .text : {

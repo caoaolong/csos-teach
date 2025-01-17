@@ -213,52 +213,72 @@ void tss_task_exit(int code)
     tss_task_dispatch();
 }
 
-// SHELL程序临时存放位置
-uint8_t SHELL_TMP[512 * 20];
+uint16_t SHELL_TMP[10 * 512];
 
 static uint32_t load_elf_file(tss_task_t *task, const char *name, uint32_t pde)
 {
-    read_disk(1000, 20, (uint16_t *)SHELL_TMP);
-    uint8_t *buffer = SHELL_TMP;
-    Elf32_Ehdr *elf_header = (Elf32_Ehdr*)buffer;
-    if (elf_header->e_ident[0] != 0x7F || 
-        elf_header->e_ident[1] != 'E' || 
-        elf_header->e_ident[2] != 'L' || 
-        elf_header->e_ident[3] != 'F') {
-        return -1;
-    }
-
-    for (int i = 0; i < elf_header->e_phnum; i++) {
-        Elf32_Phdr *phdr = (Elf32_Phdr *)(buffer + elf_header->e_phoff) + i;
-        if (phdr->p_type != PT_LOAD) {
+    Elf32_Ehdr elf_hdr;
+    Elf32_Phdr elf_phdr;
+    read_disk(1000, 20, SHELL_TMP);
+    uint8_t *buffer = (uint8_t*)SHELL_TMP;
+    kernel_memcpy(&elf_hdr, buffer, sizeof(Elf32_Ehdr));
+    buffer += sizeof(Elf32_Ehdr);
+    if (elf_hdr.e_ident[0] != 0x7F || elf_hdr.e_ident[1] != 'E' ||elf_hdr.e_ident[2] != 'L' ||elf_hdr.e_ident[3] != 'F')
+        return 0;
+    for (int i = 0; i < elf_hdr.e_phnum; i++) {
+        buffer += elf_hdr.e_phoff;
+        kernel_memcpy(&elf_phdr, buffer, sizeof(Elf32_Phdr));
+        buffer += sizeof(Elf32_Phdr);
+        if ((elf_phdr.p_type != 1) || (elf_phdr.p_vaddr < VM_TASK_BASE))
             continue;
-        }
-        alloc_pages(pde, phdr->p_vaddr, phdr->p_memsz, PTE_P | PTE_W | PTE_U);
-        uint32_t vaddr = phdr->p_vaddr;
-        uint32_t size = phdr->p_memsz;
+        int err = alloc_pages(pde, elf_phdr.p_vaddr, elf_phdr.p_memsz, PTE_P | PTE_U | PTE_W);
+        if (err < 0) return -1;
+        buffer += elf_phdr.p_offset;
+        uint32_t vaddr = elf_phdr.p_vaddr;
+        uint32_t size = elf_phdr.p_filesz;
         while (size > 0)
         {
-            int cz = (size > PAGE_SIZE) ? PAGE_SIZE : size;
+            int cs = (size > PAGE_SIZE) ? PAGE_SIZE : size;
             uint32_t paddr = memory32_get_paddr(pde, vaddr);
-            kernel_memcpy(buffer, (uint8_t *)paddr, cz);
-            vaddr += cz;
-            buffer += cz;
-            size -= cz;
+            kernel_memcpy((void *)paddr, buffer, cs);
+            buffer += cs;
+            size -= cs;
+            vaddr += cs;
         }
     }
-    return 0;
+    return elf_hdr.e_entry;
 }
 
 int tss_task_execve(const char *name, const char *args, const char *env)
 {
     tss_task_t *task = get_running_task();
-    uint32_t origial_pde = task->tss.cr3;
+    uint32_t old_pde = task->tss.cr3;
     uint32_t new_pde = memory32_create_pde();
     if (new_pde <= 0) return -1;
-    if (load_elf_file(task, name, new_pde) < 0) return -1;
+    uint32_t entry = load_elf_file(task, name, new_pde);
+    if (entry == 0) {
+        task->tss.cr3 = old_pde;
+        set_pde(old_pde);
+        destroy_page(old_pde);
+        return -1;
+    }
+    uint32_t stack_top = VM_SHELL_STACK;
+    if (alloc_pages(new_pde, VM_SHELL_STACK - VM_SHELL_STACK_SIZE, VM_SHELL_STACK_SIZE, PTE_U | PTE_W | PTE_P) < 0) {
+        task->tss.cr3 = old_pde;
+        set_pde(old_pde);
+        destroy_page(old_pde);
+        return -1;
+    }
+    syscall_frame_t *frame = (syscall_frame_t *)(task->tss.esp0 - sizeof(syscall_frame_t));
+    frame->eip = entry;
+    frame->eax = frame->ebx = frame->ecx = frame->edx = 0;
+    frame->edi = frame->esi = frame->ebp = 0;
+    frame->eflags = EFLAGS_DEFAULT | EFLAGS_IF;
+    frame->_esp = stack_top - sizeof(uint32_t) * SYSCALL_PMC;
+
     task->tss.cr3 = new_pde;
     set_pde(new_pde);
-    destroy_page(origial_pde);
+    destroy_page(old_pde);
     return 0;
 }
 

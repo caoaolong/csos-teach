@@ -6,15 +6,19 @@
 #include <bitmap.h>
 
 // 可用内存开始位置
-#define PM_EXT_START        0x100000
+#define PM_EXT_START        0x00100000
 // 可用内存结束位置(32M)
-#define PM_EXT_LIMIT        0x2000000
+#define PM_EXT_LIMIT        0x02000000
 
-#define PM_EBDA_START       0x80000
+#define PM_EBDA_START       0x00080000
 // 用户内存开始位置(4GB*(1/4)=1GB)
 #define VM_TASK_BASE        0x40000000
 // SHELL进程开始位置
 #define VM_SHELL_BASE       0x4F000000
+// SHELL进程栈顶位置
+#define VM_SHELL_STACK      0x50000000
+// SHELL进程栈空间大小
+#define VM_SHELL_STACK_SIZE 0x00100000
 
 typedef struct memory32_info_t
 {
