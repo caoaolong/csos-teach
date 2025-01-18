@@ -213,27 +213,28 @@ void tss_task_exit(int code)
     tss_task_dispatch();
 }
 
-uint16_t SHELL_TMP[10 * 512];
+static uint8_t SHELL_TMP[20 * 512];
 
-static uint32_t load_elf_file(tss_task_t *task, const char *name, uint32_t pde)
+static uint32_t load_elf_file(task_t *task, const char *name, uint32_t pde)
 {
     Elf32_Ehdr elf_hdr;
     Elf32_Phdr elf_phdr;
-    read_disk(1000, 20, SHELL_TMP);
-    uint8_t *buffer = (uint8_t*)SHELL_TMP;
+    read_disk(1000, 20, (uint16_t *)SHELL_TMP);
+    uint8_t *buffer = SHELL_TMP;
     kernel_memcpy(&elf_hdr, buffer, sizeof(Elf32_Ehdr));
     buffer += sizeof(Elf32_Ehdr);
     if (elf_hdr.e_ident[0] != 0x7F || elf_hdr.e_ident[1] != 'E' ||elf_hdr.e_ident[2] != 'L' ||elf_hdr.e_ident[3] != 'F')
         return 0;
+    uint32_t e_phoff = elf_hdr.e_phoff;
     for (int i = 0; i < elf_hdr.e_phnum; i++) {
-        buffer = (uint8_t*)SHELL_TMP + elf_hdr.e_phoff;
+        buffer = SHELL_TMP + e_phoff;
         kernel_memcpy(&elf_phdr, buffer, sizeof(Elf32_Phdr));
         buffer += sizeof(Elf32_Phdr);
         if ((elf_phdr.p_type != 1) || (elf_phdr.p_vaddr < VM_TASK_BASE))
             continue;
         int err = alloc_pages(pde, elf_phdr.p_vaddr, elf_phdr.p_memsz, PTE_P | PTE_U | PTE_W);
         if (err < 0) return -1;
-        buffer += elf_phdr.p_offset;
+        buffer = SHELL_TMP + elf_phdr.p_offset;
         uint32_t vaddr = elf_phdr.p_vaddr;
         uint32_t size = elf_phdr.p_filesz;
         while (size > 0)
@@ -249,7 +250,7 @@ static uint32_t load_elf_file(tss_task_t *task, const char *name, uint32_t pde)
     return elf_hdr.e_entry;
 }
 
-int tss_task_execve(const char *name, const char *args, const char *env)
+int tss_task_execve(char *name, char *argv[], char *env[])
 {
     tss_task_t *task = get_running_task();
     uint32_t old_pde = task->tss.cr3;
