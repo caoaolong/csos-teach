@@ -226,7 +226,7 @@ static uint32_t load_elf_file(tss_task_t *task, const char *name, uint32_t pde)
     if (elf_hdr.e_ident[0] != 0x7F || elf_hdr.e_ident[1] != 'E' ||elf_hdr.e_ident[2] != 'L' ||elf_hdr.e_ident[3] != 'F')
         return 0;
     for (int i = 0; i < elf_hdr.e_phnum; i++) {
-        buffer += elf_hdr.e_phoff;
+        buffer = (uint8_t*)SHELL_TMP + elf_hdr.e_phoff;
         kernel_memcpy(&elf_phdr, buffer, sizeof(Elf32_Phdr));
         buffer += sizeof(Elf32_Phdr);
         if ((elf_phdr.p_type != 1) || (elf_phdr.p_vaddr < VM_TASK_BASE))
