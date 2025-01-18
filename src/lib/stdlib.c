@@ -63,3 +63,19 @@ uint32_t read_elf_header(uint8_t *buffer)
     }
     return elf_header->e_entry;
 }
+
+int strings_count(char *argv[])
+{
+    int count = 0;
+    if (argv)
+        while (*argv ++) count ++;
+    return count;
+}
+
+char *get_file_name(char *name)
+{
+    char *s = name;
+    while (*s != '\0') s++;
+    while ((*s != '/') && (*s != '\\') && (s >= name)) s--;
+    return s + 1;
+}

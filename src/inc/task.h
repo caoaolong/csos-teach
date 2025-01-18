@@ -3,6 +3,14 @@
 
 #include <task/simple.h>
 #include <task/tss.h>
+
+typedef struct task_args_t
+{
+    uint32_t ret_addr;
+    uint32_t argc;
+    char **argv;
+} task_args_t;
+
 /*---------------任务模式------------------*/
 /* 注: 由于调试不方便，从系统调用功能开始不再兼容TASK_SIMPLE */
 #define TASK_TSS

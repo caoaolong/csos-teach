@@ -19,6 +19,8 @@
 #define VM_SHELL_STACK      0x50000000
 // SHELL进程栈空间大小
 #define VM_SHELL_STACK_SIZE 0x00100000
+// SHELL进程参数空间大小
+#define VM_SHELL_ARGS_SIZE  0x00002000
 
 typedef struct memory32_info_t
 {
@@ -48,6 +50,7 @@ typedef struct memory32_map_t
 
 uint32_t memory32_create_pde();
 uint32_t memory32_get_paddr(uint32_t pde, uint32_t vaddr);
+int memory32_copy_page_data(uint32_t to, uint32_t pde, uint32_t from, uint32_t size);
 
 int alloc_pages(uint32_t pde, uint32_t index, uint32_t size, uint32_t perm);
 uint32_t alloc_page();

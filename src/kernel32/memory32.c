@@ -182,6 +182,27 @@ uint32_t memory32_get_paddr(uint32_t pde, uint32_t vaddr)
     return PTE_ADDRESS(pte) + (vaddr & (PAGE_SIZE - 1));
 }
 
+int memory32_copy_page_data(uint32_t to, uint32_t pde, uint32_t from, uint32_t size)
+{
+    while (size > 0)
+    {
+        uint32_t to_paddr = memory32_get_paddr(pde, to);
+        if (to_paddr == 0) {
+            return -1;
+        }
+        uint32_t offset_in_page = to_paddr & (PAGE_SIZE - 1);
+        uint32_t current_size = PAGE_SIZE - offset_in_page;
+        if (current_size > size) {
+            current_size = size;
+        }
+        kernel_memcpy((void *)to_paddr, (void *)from, current_size);
+        size -= current_size;
+        to += current_size;
+        from += current_size;
+    }
+    return 0;
+}
+
 static int memory32_alloc_task_pages(uint32_t pde, uint32_t index, uint32_t size, uint32_t perm)
 {
     uint32_t current_index = index;

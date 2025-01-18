@@ -2,6 +2,7 @@
 #include <csos/string.h>
 #include <csos/memory.h>
 #include <csos/syscall.h>
+#include <csos/stdlib.h>
 #include <paging.h>
 #include <interrupt.h>
 
@@ -250,9 +251,30 @@ static uint32_t load_elf_file(task_t *task, const char *name, uint32_t pde)
     return elf_hdr.e_entry;
 }
 
+static int copy_args(uint32_t pde, char *dst, char *argv[], int argc)
+{
+    task_args_t task_args;
+    task_args.argc = argc;
+    task_args.argv = (char **)(dst + sizeof(task_args_t));
+
+    char *dst_arg = dst + sizeof(task_args_t) + sizeof(char *) * argc;
+    char **dst_arg_tb = (char **)memory32_get_paddr(pde, (uint32_t)(dst + sizeof(task_args_t)));
+    for (int i = 0; i < argc; i++)
+    {
+        char *from = argv[i];
+        int len = kernel_strlen(from) + 1;
+        int err = memory32_copy_page_data((uint32_t)dst_arg, pde, (uint32_t)from, len);
+        if (err < 0) return -1;
+        dst_arg_tb[i] = dst_arg;
+        dst_arg += len;
+    }
+    memory32_copy_page_data((uint32_t)dst, pde, (uint32_t)&task_args, sizeof(task_args));
+}
+
 int tss_task_execve(char *name, char *argv[], char *env[])
 {
     tss_task_t *task = get_running_task();
+    kernel_strncpy(task->name, get_file_name(name), TASK_NAME_SIZE);
     uint32_t old_pde = task->tss.cr3;
     uint32_t new_pde = memory32_create_pde();
     if (new_pde <= 0) return -1;
@@ -263,8 +285,15 @@ int tss_task_execve(char *name, char *argv[], char *env[])
         destroy_page(old_pde);
         return -1;
     }
-    uint32_t stack_top = VM_SHELL_STACK;
+    uint32_t stack_top = VM_SHELL_STACK - VM_SHELL_ARGS_SIZE;
     if (alloc_pages(new_pde, VM_SHELL_STACK - VM_SHELL_STACK_SIZE, VM_SHELL_STACK_SIZE, PTE_U | PTE_W | PTE_P) < 0) {
+        task->tss.cr3 = old_pde;
+        set_pde(old_pde);
+        destroy_page(old_pde);
+        return -1;
+    }
+    int argc = strings_count(argv);
+    if (copy_args(new_pde, (char *)stack_top, argv, argc) < 0) {
         task->tss.cr3 = old_pde;
         set_pde(old_pde);
         destroy_page(old_pde);
