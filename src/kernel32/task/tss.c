@@ -114,6 +114,8 @@ void default_tss_task_init()
     // 初始化任务
     uint32_t init_start = (uint32_t)init_task_entry;
     tss_task_init(&tss_task_queue.default_task, "default task", TASK_LEVEL_USER, init_start, init_start + alloc_size);
+    tss_task_queue.default_task.bheap = (uint32_t)e_init_task;
+    tss_task_queue.default_task.eheap = (uint32_t)e_init_task;
     write_tr(tss_task_queue.default_task.selector);
     tss_task_queue.running_task = &tss_task_queue.default_task;
     uint32_t pde = tss_task_queue.default_task.tss.cr3;
@@ -247,6 +249,7 @@ static uint32_t load_elf_file(task_t *task, const char *name, uint32_t pde)
             size -= cs;
             vaddr += cs;
         }
+        task->eheap = task->bheap = elf_phdr.p_vaddr + elf_phdr.p_memsz;
     }
     return elf_hdr.e_entry;
 }
@@ -310,6 +313,34 @@ int tss_task_execve(char *name, char *argv[], char *env[])
     set_pde(new_pde);
     destroy_page(old_pde);
     return 0;
+}
+
+uint8_t *tss_task_sbrk(uint32_t size)
+{
+    tss_task_t *task = get_running_task();
+    uint8_t *peheap = (uint8_t*)task->eheap;
+    if (size == 0) return peheap;
+
+    uint32_t start = task->eheap;
+    uint32_t stop = start + size;
+    int start_offset = start % PAGE_SIZE;
+    if (start_offset) {
+        if (start_offset + size <= PAGE_SIZE) {
+            task->eheap = stop;
+        } else {
+            uint32_t cs = PAGE_SIZE - start_offset;
+            start += cs;
+            size -= cs;
+        }
+    }
+
+    uint32_t cs = stop - start;
+    if (alloc_pages(task->tss.cr3, start, cs, PTE_P | PTE_U | PTE_W) < 0) {
+        return (uint8_t*)NULL;
+    }
+
+    task->eheap = stop;
+    return peheap;
 }
 
 void tss_task_destroy(tss_task_t *task)
@@ -419,5 +450,6 @@ int tss_task_init(tss_task_t *task, const char *name, uint32_t flag, uint32_t en
     // 延时
     task->sleep = 0;
     task->pid = task_pid++;
+    task->bheap = task->eheap = 0;
     return 0;
 }

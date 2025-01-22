@@ -37,6 +37,9 @@ typedef struct tss_task_t {
     struct tss_task_t *parent;
     // 退出状态码
     int exit_code;
+    // 堆空间起止位置
+    uint32_t bheap;
+    uint32_t eheap;
 } tss_task_t;
 
 typedef struct tss_task_queue_t
@@ -80,6 +83,8 @@ int tss_task_fork();
 void tss_task_exit(int code);
 
 int tss_task_execve(char *name, char *argv[], char *env[]);
+
+uint8_t *tss_task_sbrk(uint32_t size);
 
 void tss_task_destroy(tss_task_t *task);
 
