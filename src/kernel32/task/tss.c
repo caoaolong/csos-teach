@@ -327,6 +327,7 @@ uint8_t *tss_task_sbrk(uint32_t size)
     if (start_offset) {
         if (start_offset + size <= PAGE_SIZE) {
             task->eheap = stop;
+            return peheap;
         } else {
             uint32_t cs = PAGE_SIZE - start_offset;
             start += cs;
@@ -334,9 +335,11 @@ uint8_t *tss_task_sbrk(uint32_t size)
         }
     }
 
-    uint32_t cs = stop - start;
-    if (alloc_pages(task->tss.cr3, start, cs, PTE_P | PTE_U | PTE_W) < 0) {
-        return (uint8_t*)NULL;
+    if (size) {
+        uint32_t cs = stop - start;
+        if (alloc_pages(task->tss.cr3, start, cs, PTE_P | PTE_U | PTE_W) < 0) {
+            return (uint8_t*)NULL;
+        }
     }
 
     task->eheap = stop;
