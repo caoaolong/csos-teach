@@ -68,6 +68,7 @@ $(BUILD)/libapp.a: $(BUILD)/libapp/cstart.o \
 	x86_64-elf-ar -crv $@ $^
 
 $(BUILD)/shell.elf: $(BUILD)/libapp.a \
+	$(BUILD)/lib/stdio.o \
 	$(BUILD)/shell/main.o
 	x86_64-elf-ld -m elf_i386 -L$(BUILD) -lapp -T $(SRC)/shell.lds $^ -o $@
 

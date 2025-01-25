@@ -89,6 +89,7 @@ static void kernel_pagging()
         { b_kernel, b_text, b_kernel, PTE_W },
         { b_text, e_text, b_text, 0 },
         { b_data, (void *)PM_EBDA_START, b_data, PTE_W },
+        { (void *)PM_VGA_START, (void *)PM_VGA_STOP, (void *)PM_VGA_START, PTE_W },
         { (void *)PM_EXT_START, (void *)PM_EXT_LIMIT, (void *)PM_EXT_START, PTE_W }
     };
     uint32_t count = sizeof(kernel_map) / sizeof(memory32_map_t);

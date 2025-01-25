@@ -217,3 +217,10 @@ int tty_printf(const char *fmt, ...)
     mutex_unlock(&mutex);
     return i;
 }
+
+void usr_printf(char *msg, uint32_t length)
+{
+    mutex_lock(&mutex);
+    tty_write(msg, length);
+    mutex_unlock(&mutex);
+}

@@ -2,6 +2,8 @@
 #define CSOS_SYSCALL_H
 
 #include <kernel.h>
+#include <csos/stdarg.h>
+#include <csos/stdio.h>
 
 #define SYSCALL_PMC         5
 #define SYS_NR_SLEEP        1
@@ -12,6 +14,7 @@
 #define SYS_NR_EXIT         6
 #define SYS_NR_EXECVE       7
 #define SYS_NR_SBRK         8
+#define SYS_NR_PRINTF       9
 
 #define SYSCALL_LCALL
 
@@ -108,6 +111,17 @@ static inline int malloc(uint32_t size)
 {
     syscall_arg_t sbrk_arg = { SYS_NR_SBRK, size, 0, 0, 0 };
     return _syscall(&sbrk_arg);
+}
+
+static inline int printf(const char *fmt, ...)
+{
+    char buffer[1024];
+    va_list args;
+    va_start(args, fmt);
+    int i = vsprintf(buffer, fmt, args);
+    va_end(args);
+    syscall_arg_t printf_arg = { SYS_NR_PRINTF, (uint32_t)buffer, i, 0, 0 };
+    return _syscall(&printf_arg);
 }
 
 #endif

@@ -2,6 +2,7 @@
 #define CSOS_TTY_H
 
 #include <types.h>
+#include <csos/stdarg.h>
 
 #define COLOR_BLACK             0b0000
 #define COLOR_BLUE              0b0001
@@ -32,5 +33,7 @@ uint32_t tty_write(char *buf, uint32_t count);
 void tty_init();
 
 int tty_printf(const char *fmt, ...);
+
+void usr_printf(char *msg, uint32_t length);
 
 #endif

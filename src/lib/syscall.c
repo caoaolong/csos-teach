@@ -17,7 +17,8 @@ static const syscall_handler_t syscall_handler_table[] = {
     [SYS_NR_YIELD]      = (syscall_handler_t)task_yield,
     [SYS_NR_EXIT]       = (syscall_handler_t)task_exit,
     [SYS_NR_EXECVE]     = (syscall_handler_t)task_execve,
-    [SYS_NR_SBRK]       = (syscall_handler_t)task_sbrk
+    [SYS_NR_SBRK]       = (syscall_handler_t)task_sbrk,
+    [SYS_NR_PRINTF]     = (syscall_handler_t)usr_printf
 };
 // 远调用实现
 void syscall(syscall_frame_t *frame)

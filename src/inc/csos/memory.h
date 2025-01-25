@@ -9,7 +9,11 @@
 #define PM_EXT_START        0x00100000
 // 可用内存结束位置(32M)
 #define PM_EXT_LIMIT        0x02000000
-
+// 显卡映射内存开始位置
+#define PM_VGA_START        0x000A0000
+// 显卡映射内存结束位置
+#define PM_VGA_STOP         0x000C0000
+// EBDA开始位置
 #define PM_EBDA_START       0x00080000
 // 用户内存开始位置(4GB*(1/4)=1GB)
 #define VM_TASK_BASE        0x40000000

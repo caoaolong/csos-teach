@@ -85,6 +85,18 @@ static char * number(char * str, int num, int base, int size, int precision
     return str;
 }
 
+static uint32_t strlen(const char *str)
+{
+    if (!str) return 0;
+
+    const char *c = str;
+    uint32_t length = 0;
+    while (*c++) 
+        length++;
+
+    return length;
+}
+
 int vsprintf(char *buf, const char *fmt, va_list args)
 {
     int len;
@@ -164,7 +176,7 @@ int vsprintf(char *buf, const char *fmt, va_list args)
 
             case 's':
                 s = va_arg(args, char *);
-                len = kernel_strlen(s);
+                len = strlen(s);
                 if (precision < 0)
                     precision = len;
                 else if (len > precision)
