@@ -4,6 +4,13 @@
 #include <types.h>
 #include <csos/stdarg.h>
 
+#define TTY_DEV_NR              1
+
+#define PM_VGA_BEGIN            0xB8000
+#define PM_VGA_END              0XBFFFF
+#define SCREEN_ROWS             25
+#define SCREEN_COLUMNS          80
+
 #define COLOR_BLACK             0b0000
 #define COLOR_BLUE              0b0001
 #define COLOR_GREEN             0b0010
@@ -21,14 +28,37 @@
 #define COLOR_YELLOW            0b1110
 #define COLOR_WHITE             0b1111
 
+typedef union tty_char_t {
+    struct {
+        char c;
+        char fg:4;
+        char bg:3;
+        char blink:1;
+    };
+    uint16_t v;
+} tty_char_t;
 
-void tty_clear();
+
+typedef struct dev_terminal_t {
+    // 屏幕的内存位置
+    tty_char_t *base;
+    // 屏幕当前显示模式的行列数
+    int rows, columns;
+    // 光标所在行列数
+    int cr, cc;
+    // 颜色
+    uint8_t fg, bg;
+} dev_terminal_t;
+
+void tty_clear(dev_terminal_t *term);
 
 void tty_color_set(uint8_t color);
 
 void tty_color_reset();
 
 uint32_t tty_write(char *buf, uint32_t count);
+
+uint32_t tty_dev_write(dev_terminal_t *term, char *buf, uint32_t count);
 
 void tty_init();
 

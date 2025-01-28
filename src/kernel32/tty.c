@@ -8,6 +8,8 @@
 
 mutex_t mutex;
 
+static dev_terminal_t terminals[TTY_DEV_NR];
+
 #define CRT_ADDR_REG        0x3D4
 #define CRT_DATA_REG        0x3D5
 
@@ -96,16 +98,14 @@ static void set_cursor()
     outb(CRT_DATA_REG, ((pos - MEM_BASE) >> 1) & 0XFF);
 }
 
-void tty_clear()
+void tty_clear(dev_terminal_t *term)
 {
-    screen = MEM_BASE;
-    set_screen();
-    pos = MEM_BASE;
-    set_cursor();
-
-    uint16_t *ptr = (uint16_t*)MEM_BASE;
-    while (ptr < (uint16_t*)MEM_END) {
-        *ptr++ = erase;
+    int size = term->columns * term->rows;
+    for (int i = 0; i < size; i++) {
+        tty_char_t *tc = term->base + i;
+        tc->c = ' ';
+        tc->bg = term->bg;
+        tc->fg = term->fg;
     }
 }
 
@@ -123,36 +123,33 @@ static void com_del()
     *(uint16_t*)pos = erase;
 }
 
-static void com_cr()
+static void com_cr(dev_terminal_t *term)
 {
-    pos -= (x << 1);
-    x = 0;
+    term->cc = 0;
 }
 
-static void scroll_up()
+static void scroll_up(dev_terminal_t *term, int lines)
 {
-    if (screen + SCR_SIZE + ROW_SIZE >= MEM_END) {
-        kernel_memcpy((uint32_t*)MEM_BASE, (uint32_t*)screen, SCR_SIZE);
-        pos -= (screen - MEM_BASE);
-        screen = MEM_BASE;
+    // 向上滚动n行
+    int total = term->columns * term->rows;
+    int size = term->columns * lines;
+    tty_char_t *dst = term->base;
+    tty_char_t *src = term->base + size;
+    kernel_memcpy((char*)dst, (char*)src, (total - size) * 2);
+    // 清空最后n行
+    tty_char_t *ptr = term->base + (total - size);
+    for (int i = 0; i < size; i++) {
+        (ptr + i)->c = ' ';
     }
-    uint32_t *ptr = (uint32_t*)(screen + SCR_SIZE);
-    for (int i = 0; i < WIDTH; ++i) {
-        *ptr++ = erase;
-    }
-    screen += ROW_SIZE;
-    pos += ROW_SIZE;
-    set_screen();
 }
 
-static void com_lf()
+static void com_lf(dev_terminal_t *term)
 {
-    if (y + 1 < HEIGHT) {
-        y ++;
-        pos += ROW_SIZE;
+    if (term->cr + 1 < term->rows) {
+        term->cr++;
         return;
     }
-    scroll_up();
+    scroll_up(term, 1);
 }
 
 void tty_color_set(uint8_t color)
@@ -167,37 +164,61 @@ void tty_color_reset()
 
 uint32_t tty_write(char *buf, uint32_t count)
 {
-    char c;
-    char *ptr = (char *)pos;
-    uint32_t nr = 0;
-    while (nr ++ < count)
-    {
-        c = *buf++;
-        switch (c) {
-            case ASCII_NUL: break;
-            case ASCII_BS: com_bs(); break;
-            case ASCII_LF: com_lf(); com_cr(); ptr = (char*)pos; break;
-            case ASCII_FF: com_lf(); break;
-            case ASCII_CR: com_cr(); break;
-            case ASCII_DEL: com_del(); break;
-            default:
-                if (x >= WIDTH) {
-                    x -= WIDTH;
-                    pos -= ROW_SIZE;
-                    com_lf();
-                }
-                *ptr = c; *(ptr + 1) = (char)attr;
-                ptr += 2; pos += 2; x++;
-                break;
+    return tty_dev_write(&terminals[0], buf, count);
+}
+
+static void tty_cursor_going(dev_terminal_t *term, int n)
+{
+    for (int i = 0; i < n; i++) {
+        if (++term->cc >= term->columns) {
+            term->cr++;
+            term->cc = 0;
         }
     }
-    set_cursor();
+}
+
+static void tty_write_char(dev_terminal_t *term, char c)
+{
+    int offset = term->cc + term->cr * term->columns;
+    tty_char_t *tc = (tty_char_t *)term->base + offset;
+    tc->c = c;
+    tc->fg = term->fg;
+    tc->bg = term->bg;
+    tty_cursor_going(term, 1);
+}
+
+uint32_t tty_dev_write(dev_terminal_t *term, char *buf, uint32_t count)
+{
+    char c;
+    uint32_t nr = 0;
+    while (nr < count)
+    {
+        c = *(buf + nr++);
+        switch (c) {
+            case ASCII_NUL: break;
+            // case ASCII_BS: com_bs(); break;
+            case ASCII_LF: com_lf(term); com_cr(term); /* ptr = (char*)pos; */ break;
+            // case ASCII_FF: com_lf(); break;
+            // case ASCII_CR: com_cr(); break;
+            // case ASCII_DEL: com_del(); break;
+            default: tty_write_char(term, c); break;
+        }
+    }
     return nr;
 }
 
 void tty_init()
 {
-    tty_clear();
+    for (int i = 0; i < TTY_DEV_NR; i++) {
+        dev_terminal_t *dev = &terminals[i];
+        dev->base = (tty_char_t*) PM_VGA_BEGIN + i * (SCREEN_ROWS * SCREEN_COLUMNS);
+        dev->columns = SCREEN_COLUMNS;
+        dev->rows = SCREEN_ROWS;
+        dev->cr = dev->cc = 0;
+        dev->fg = COLOR_WHITE;
+        dev->bg = COLOR_BLACK;
+        tty_clear(dev);
+    }
     mutex_init(&mutex);
 }
 
