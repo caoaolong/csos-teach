@@ -90,12 +90,13 @@ static void get_cursor()
     y = delta / WIDTH;
 }
 
-static void set_cursor()
+static void set_cursor(dev_terminal_t *term)
 {
+    int cursor = term->cr * term->columns + term->cc;
     outb(CRT_ADDR_REG, CRT_CURSOR_H);
-    outb(CRT_DATA_REG, ((pos - MEM_BASE) >> 9) & 0XFF);
+    outb(CRT_DATA_REG, ((uint8_t)(cursor >> 8)) & 0xFF);
     outb(CRT_ADDR_REG, CRT_CURSOR_L);
-    outb(CRT_DATA_REG, ((pos - MEM_BASE) >> 1) & 0XFF);
+    outb(CRT_DATA_REG, ((uint8_t)cursor) & 0xFF);
 }
 
 void tty_clear(dev_terminal_t *term)
@@ -204,6 +205,7 @@ uint32_t tty_dev_write(dev_terminal_t *term, char *buf, uint32_t count)
             default: tty_write_char(term, c); break;
         }
     }
+    set_cursor(term);
     return nr;
 }
 
