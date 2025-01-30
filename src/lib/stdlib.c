@@ -68,7 +68,8 @@ int strings_count(char *argv[])
 {
     int count = 0;
     if (argv)
-        while (*argv ++) count ++;
+        while (*argv ++) 
+            count ++;
     return count;
 }
 

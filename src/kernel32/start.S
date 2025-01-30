@@ -111,6 +111,7 @@ interrupt_handler virtual,          20,     0
 interrupt_handler control,          21,     1
 
 interrupt_handler timer,            0x20,   0
+interrupt_handler kbd,              0x21,   0
 interrupt_handler rtc,              0x28,   0
 
 interrupt_handler syscall,          0x80,   0

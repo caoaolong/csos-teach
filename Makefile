@@ -53,6 +53,7 @@ $(BUILD)/kernel32.elf: $(BUILD)/kernel32/start.o \
 	$(BUILD)/kernel32/sem.o \
 	$(BUILD)/kernel32/mutex.o \
 	$(BUILD)/kernel32/memory32.o \
+	$(BUILD)/kernel32/kbd.o \
 	$(BUILD)/lib/string.o \
 	$(BUILD)/lib/stdio.o \
 	$(BUILD)/lib/stdlib.o \

@@ -6,6 +6,7 @@
 #include <timer.h>
 #include <rtc.h>
 #include <csos/syscall.h>
+#include <kbd.h>
 
 gdt_gate_t int_table[INTERRUPT_GATE_SIZE];
 
@@ -218,6 +219,7 @@ void interrupt_init()
     pic_init();
     timer_init();
     // rtc_init();
+    kbd_init();
 }
 
 protect_state_t protect_enter()

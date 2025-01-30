@@ -26,7 +26,8 @@
         "syscall.h": "c",
         "fs.h": "c",
         "terminal.h": "c",
-        "stdarg.h": "c"
+        "stdarg.h": "c",
+        "kbd.h": "c"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }
