@@ -80,22 +80,73 @@ static key_state_t ks;
 
 static void handle_normal_key(uint8_t rc)
 {
+    // 处理双字节按键
+    if (rc == KEY_E0) 
+        ks.e0 = 1;
     uint8_t is_make = MAKE_CODE(rc);
     uint8_t key = KEY_CODE(rc);
     switch (key) {
+        case KEY_F1:
+        case KEY_F2:
+        case KEY_F3:
+        case KEY_F4:
+        case KEY_F5:
+        case KEY_F6:
+        case KEY_F7:
+        case KEY_F8:
+        case KEY_F9:
+        case KEY_F10:
+        case KEY_F11:
+        case KEY_F12:
+            tty_logf("F-Keys: %d", key);
+            break;
+        case KEY_ESC:
+            if (is_make) tty_logf("ESC");
+            break;
+        case KEY_ENTER:
+            if (is_make) tty_logf("Enter");
+            break;
+        case KEY_SPACE:
+            if (is_make) tty_logf("Space");
+            break;
+        case KEY_CAPS:
+            if (is_make) ks.caps_lock = ~ks.caps_lock;
+            break;
+        case KEY_CTRL:
+            if (ks.e0) {
+                if (is_make) tty_logf("Right Ctrl");
+                ks.rp_ctrl = is_make;
+                ks.e0 = 0;
+            } else {
+                if (is_make) tty_logf("Left Ctrl");
+                ks.lp_ctrl = is_make;
+            }
+            break;
+        case KEY_ALT:
+            if (ks.e0) {
+                if (is_make) tty_logf("Right Alt");
+                ks.rp_alt = is_make;
+                ks.e0 = 0;
+            } else {
+                if (is_make) tty_logf("Left Alt");
+                ks.lp_alt = is_make;
+            }
+            break;
         case KEY_LEFT_SHIFT:
-            ks.lp_shift = is_make ? 1 : 0;
+            ks.lp_shift = is_make;
             break;
         case KEY_RIGHT_SHIFT:
-            ks.rp_shift = is_make ? 1 : 0;
+            ks.rp_shift = is_make;
             break;
         default:
             if (is_make) {
+                // 处理CapsLock和Shift
                 if (ks.lp_shift || ks.rp_shift) {
-                    tty_logf("Key: %c", kmt[key].func);
+                    key = ks.caps_lock ? kmt[key].normal : kmt[key].func;
                 } else {
-                    tty_logf("Key: %c", kmt[key].normal);
+                    key = ks.caps_lock ? kmt[key].func : kmt[key].normal;
                 }
+                tty_logf("Key: %c", key);
             }
             break;
     }
