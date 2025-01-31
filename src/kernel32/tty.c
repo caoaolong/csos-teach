@@ -43,6 +43,7 @@ static dev_terminal_t terminals[TTY_DEV_NR];
 #define ASCII_FF    0x0C
 #define ASCII_CR    0x0D
 #define ASCII_DEL   0x0F
+#define ASCII_ESC   '\033'
 
 // 屏幕当前位置
 static uint32_t screen;
@@ -153,16 +154,6 @@ static void com_lf(dev_terminal_t *term)
     scroll_up(term, 1);
 }
 
-void tty_color_set(uint8_t color)
-{
-    attr = color;
-}
-
-void tty_color_reset()
-{
-    attr = COLOR_LIGHT_GRAY;
-}
-
 uint32_t tty_write(char *buf, uint32_t count)
 {
     return tty_dev_write(&terminals[0], buf, count);
@@ -183,9 +174,73 @@ static void tty_write_char(dev_terminal_t *term, char c)
     int offset = term->cc + term->cr * term->columns;
     tty_char_t *tc = (tty_char_t *)term->base + offset;
     tc->c = c;
-    tc->fg = term->fg;
-    tc->bg = term->bg;
+    tc->fg = term->cfg;
+    tc->bg = term->cbg;
+    tc->blink = term->cb;
     tty_cursor_going(term, 1);
+}
+
+static void com_esc(dev_terminal_t *term, char *buf, uint32_t *nr)
+{
+    char c = *(buf + (*nr)++);
+    if (c != '[') return;
+    c = *(buf + (*nr)++);
+    uint8_t args[3];
+    uint8_t idx = 0;
+    while (TRUE) {
+        if (c == 'm' || c == 'f' || c == 'H') break;
+        if (c == ';') {
+            c = *(buf + (*nr)++);
+            continue;
+        }
+        // 获取参数
+        uint8_t arg = 0;
+        while (c <= '9' && c >= '0') {
+            arg = arg * 10 + (c - '0');
+            c = *(buf + (*nr)++);
+        }
+        args[idx++] = arg;
+    }
+    if (c == 'm') // SGR
+    {
+        for(int i = 0; i < idx; i++) {
+            uint8_t arg = args[i];
+            if (arg >= 30 && arg <= 37) // 设置前景色
+            {
+                term->cfg = arg - 30;
+            }
+            else if (arg >= 40 && arg <= 47) // 设置背景色
+            {
+                term->cbg = arg - 40;
+            }
+            else if (arg == 5 || arg == 6) // 开启闪烁
+            {
+                term->cb = 1;
+            }
+            else if (arg == 25) // 关闭闪烁
+            {
+                term->cb = 0;
+            }
+            else if (arg == 0) // 重置属性
+            {
+                term->cfg = term->fg;
+                term->cbg = term->bg;
+                term->cb = 0;
+            }
+        }
+    } 
+    else if (c == 'f' || c == 'H') // CUP / HVP
+    {
+        if (idx == 2) {
+            term->or = term->cr;
+            term->oc = term->cc;
+            term->cr = args[0];
+            term->cc = args[1];
+        } else if (idx == 1 && args[0] == 0) {
+            term->cr = term->or;
+            term->cc = term->oc;
+        }
+    }
 }
 
 uint32_t tty_dev_write(dev_terminal_t *term, char *buf, uint32_t count)
@@ -196,6 +251,7 @@ uint32_t tty_dev_write(dev_terminal_t *term, char *buf, uint32_t count)
     {
         c = *(buf + nr++);
         switch (c) {
+            case ASCII_ESC: com_esc(term, buf, &nr); break;
             case ASCII_NUL: break;
             // case ASCII_BS: com_bs(); break;
             case ASCII_LF: com_lf(term); com_cr(term); /* ptr = (char*)pos; */ break;
@@ -216,9 +272,11 @@ void tty_init()
         dev->base = (tty_char_t*) PM_VGA_BEGIN + i * (SCREEN_ROWS * SCREEN_COLUMNS);
         dev->columns = SCREEN_COLUMNS;
         dev->rows = SCREEN_ROWS;
+        dev->or = dev->oc = 0;
         dev->cr = dev->cc = 0;
-        dev->fg = COLOR_WHITE;
-        dev->bg = COLOR_BLACK;
+        dev->fg = dev->cfg = COLOR_WHITE;
+        dev->bg = dev->cbg = COLOR_BLACK;
+        dev->cb = 0;
         tty_clear(dev);
     }
     mutex_init(&mutex);

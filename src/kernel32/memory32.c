@@ -1,5 +1,5 @@
 #include <csos/memory.h>
-#include <tty.h>
+#include <logf.h>
 #include <paging.h>
 #include <csos/string.h>
 
@@ -263,14 +263,14 @@ void memory_init(memory_info_t *memory_info)
     uint32_t total_size = 0;
     for (int i = 0; i < memory_info->count; i++) {
         memory_raw_t *raw = &memory_info->raws[i];
-        tty_printf("p.address: %#x, size: %#x, type = %d\n",
+        tty_logf("p.address: %#x, size: %#x, type = %d",
             raw->base_l, raw->length_l, raw->type);
         if (raw->type == 1)
             total_size += raw->length_l;
     }
     total_size -= PM_EXT_START;
     total_size = floor_page(total_size);
-    tty_printf("total available memory size: %#x\n", total_size);
+    tty_logf("total available memory size: %#x", total_size);
     // 用户内存开始位置
     extern uint32_t memory_start[];
     uint32_t total_start = (uint32_t)&memory_start;
@@ -284,7 +284,7 @@ void memory_init(memory_info_t *memory_info)
         PM_EXT_START, 
         total_size, 
         PAGE_SIZE);
-    tty_printf("total available memory start: %#x\n", total_start);
+    tty_logf("total available memory start: %#x", total_start);
     // 映射内核页
     kernel_pagging();
     // 设置内核页

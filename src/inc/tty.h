@@ -44,17 +44,19 @@ typedef struct dev_terminal_t {
     tty_char_t *base;
     // 屏幕当前显示模式的行列数
     int rows, columns;
+    // 原先光标所在行列数
+    int or, oc;
     // 光标所在行列数
     int cr, cc;
     // 颜色
     uint8_t fg, bg;
+    // 当前字符属性
+    uint8_t cfg:4;
+    uint8_t cbg:3;
+    uint8_t cb:1;
 } dev_terminal_t;
 
 void tty_clear(dev_terminal_t *term);
-
-void tty_color_set(uint8_t color);
-
-void tty_color_reset();
 
 uint32_t tty_write(char *buf, uint32_t count);
 

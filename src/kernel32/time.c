@@ -4,7 +4,7 @@
 #include <csos/time.h>
 #include <csos/stdlib.h>
 #include <rtc.h>
-#include <tty.h>
+#include <logf.h>
 
 #define MINUTE 60               // 每分钟的秒数
 #define HOUR (60 * MINUTE)      // 每小时的秒数
@@ -121,8 +121,7 @@ void time_init(int timezone)
     tm time;
     time_read(&time, timezone);
     startup_time = mktime(&time);
-    tty_color_set(COLOR_YELLOW);
-    tty_printf("========================STARTUP TIME: %d%d-%02d-%02d %02d:%02d:%02d=======================",
+    tty_logf("STARTUP TIME: %d%d-%02d-%02d %02d:%02d:%02d",
          century,
          time.tm_year,
          time.tm_mon,
@@ -130,5 +129,4 @@ void time_init(int timezone)
          time.tm_hour,
          time.tm_min,
          time.tm_sec);
-    tty_color_reset();
 }
