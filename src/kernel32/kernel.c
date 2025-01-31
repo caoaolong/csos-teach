@@ -6,12 +6,15 @@
 #include <task.h>
 #include <csos/sem.h>
 #include <csos/memory.h>
+#include <device.h>
 
 void csos_init(memory_info_t* mem_info, uint32_t gdt_info)
 {
-    tty_init();
     interrupt_init();
     tty_logf_init();
+    // 打开所需设备
+    device_open(DEV_TTY, 0, NULL);
+
     tty_logf("KL Version: %s; OS Version: %s", KERNEL_VERSION, OP_SYS_VERSION);
     time_init(OS_TZ);
     // 初始化内存

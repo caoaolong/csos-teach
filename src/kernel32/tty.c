@@ -265,20 +265,16 @@ uint32_t tty_dev_write(dev_terminal_t *term, char *buf, uint32_t count)
     return nr;
 }
 
-void tty_init()
+void tty_init(int index)
 {
-    for (int i = 0; i < TTY_DEV_NR; i++) {
-        dev_terminal_t *dev = &terminals[i];
-        dev->base = (tty_char_t*) PM_VGA_BEGIN + i * (SCREEN_ROWS * SCREEN_COLUMNS);
-        dev->columns = SCREEN_COLUMNS;
-        dev->rows = SCREEN_ROWS;
-        dev->or = dev->oc = 0;
-        dev->cr = dev->cc = 0;
-        dev->fg = dev->cfg = COLOR_WHITE;
-        dev->bg = dev->cbg = COLOR_BLACK;
-        dev->cb = 0;
-        tty_clear(dev);
-    }
+    dev_terminal_t *dev = &terminals[index];
+    dev->base = (tty_char_t*) PM_VGA_BEGIN + index * (SCREEN_ROWS * SCREEN_COLUMNS);
+    dev->columns = SCREEN_COLUMNS;
+    dev->rows = SCREEN_ROWS;
+    dev->or = dev->oc = dev->cr = dev->cc = dev->cb = 0;
+    dev->fg = dev->cfg = COLOR_WHITE;
+    dev->bg = dev->cbg = COLOR_BLACK;
+    tty_clear(dev);
     mutex_init(&mutex);
 }
 

@@ -33,4 +33,14 @@ typedef struct device_handle_t {
     void (*close)(device_t *dev);
 } device_handle_t;
 
+int device_open(int major, int minor, void *data);
+
+int device_read(int device_id, int addr, char *buf, int size);
+
+int device_write(int device_id, int addr, char *buf, int size);
+
+int device_command(int device_id, int cmd, int arg0, int arg1);
+
+void device_close(int device_id);
+
 #endif

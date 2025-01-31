@@ -4,7 +4,7 @@
 #include <types.h>
 #include <csos/stdarg.h>
 
-#define TTY_DEV_NR              1
+#define TTY_DEV_NR              8
 
 #define PM_VGA_BEGIN            0xB8000
 #define PM_VGA_END              0XBFFFF
@@ -56,6 +56,25 @@ typedef struct dev_terminal_t {
     uint8_t cb:1;
 } dev_terminal_t;
 
+typedef struct tty_fifo_t {
+    char *buf;
+    int size;
+    int read, write;
+    int count;
+} tty_fifo_t;
+
+#define TTY_OBUF_SIZE   512
+#define TTY_IBUF_SIZE   512
+
+typedef struct tty_t {
+    char obuf[TTY_OBUF_SIZE];
+    tty_fifo_t ofifo;
+    char ibuf[TTY_IBUF_SIZE];
+    tty_fifo_t ififo;
+
+    int terminal_index;
+} tty_t;
+
 void tty_clear(dev_terminal_t *term);
 
 uint32_t tty_write(char *buf, uint32_t count);
@@ -67,5 +86,7 @@ void tty_init();
 int tty_printf(const char *fmt, ...);
 
 void usr_printf(char *msg, uint32_t length);
+
+void tty_init(int index);
 
 #endif

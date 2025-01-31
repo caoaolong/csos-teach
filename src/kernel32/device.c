@@ -31,6 +31,7 @@ int device_open(int major, int minor, void *data)
     for (idev = 0; idev < sizeof(dt) / sizeof(device_t); idev++) {
         if (dt[idev].opc == 0) {
             dev = &dt[idev];
+            break;
         } else if (dt[idev].handle->major == major && dt[idev].minor == minor) {
             dt[idev].opc++;
             protect_exit(state);
@@ -38,7 +39,7 @@ int device_open(int major, int minor, void *data)
         }
     }
     device_handle_t *handle = NULL;
-    for (int i = 0; i < sizeof(dht) / sizeof(device_handle_t); i++) {
+    for (int i = 0; i < sizeof(dht) / sizeof(void*); i++) {
         if (dht[i]->major == major) {
             handle = dht[i];
             break;
