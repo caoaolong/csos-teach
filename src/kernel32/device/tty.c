@@ -115,7 +115,19 @@ static void com_lf(dev_terminal_t *term)
     scroll_up(term, 1);
 }
 
-static void tty_cursor_going(dev_terminal_t *term, int n)
+static void tty_cursor_backword(dev_terminal_t *term, int n)
+{
+    if (term->cc == 0 && term->cr == 0) return;
+
+    for (int i = 0; i < n; i++) {
+        if (--term->cc < 0) {
+            term->cr--;
+            term->cc = term->columns - 1;
+        }
+    }
+}
+
+static void tty_cursor_forward(dev_terminal_t *term, int n)
 {
     for (int i = 0; i < n; i++) {
         if (++term->cc >= term->columns) {
@@ -133,7 +145,7 @@ static void tty_write_char(dev_terminal_t *term, char c)
     tc->fg = term->cfg;
     tc->bg = term->cbg;
     tc->blink = term->cb;
-    tty_cursor_going(term, 1);
+    tty_cursor_forward(term, 1);
 }
 
 static void com_esc(dev_terminal_t *term, tty_t *tty)
@@ -209,6 +221,36 @@ static void com_esc(dev_terminal_t *term, tty_t *tty)
     }
 }
 
+static void com_bs(dev_terminal_t *term)
+{
+    tty_char_t *tc = term->base + term->cc + term->cr * term->columns - 1;
+    // 处理换行
+    int size = 1;
+    tc->c = ' ';
+    if (term->cc == 0) {
+        size = 0;
+        while (tc->c == ' ') {
+            size++;
+            tc--;
+        }
+    }
+    tty_cursor_backword(term, size);
+}
+
+static void com_ht(dev_terminal_t *term)
+{
+    int size = 8 - (term->cc % 8);
+    tty_char_t *tc = term->base + term->cc + term->cr * term->columns;
+    
+    if (term->cc + size >= term->columns)
+        size = term->columns - term->cc - 1;
+    
+    for (int i = 0; i < size; i++)
+        (tc + i)->c = ' ';
+
+    tty_cursor_forward(term, size);
+}
+
 uint32_t tty_write(tty_t *tty)
 {
     dev_terminal_t *term = &terminals[tty->terminal_index];
@@ -220,6 +262,8 @@ uint32_t tty_write(tty_t *tty)
         sem_notify(&tty->osem);
         switch (c) {
             case ASCII_ESC: com_esc(term, tty); break;
+            case ASCII_BS: com_bs(term); break;
+            case ASCII_HT: com_ht(term); break;
             case ASCII_NUL: break;
             case ASCII_LF: com_lf(term); com_cr(term); len++; break;
             default: tty_write_char(term, c); len++; break;

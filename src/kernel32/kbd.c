@@ -3,6 +3,7 @@
 #include <pic.h>
 #include <kernel.h>
 #include <logf.h>
+#include <device.h>
 #include <csos/string.h>
 
 static const key_map_t kmt[] = {
@@ -104,10 +105,20 @@ static void handle_normal_key(uint8_t rc)
             if (is_make) logf("ESC");
             break;
         case KEY_ENTER:
-            if (is_make) logf("Enter");
+            char enter = '\n';
+            if (is_make) device_write(0, 0, &enter, 1);
             break;
         case KEY_SPACE:
-            if (is_make) logf("Space");
+            char space = ' ';
+            if (is_make) device_write(0, 0, &space, 1);
+            break;
+        case KEY_BACKSPACE:
+            char bs = '\b';
+            if (is_make) device_write(0, 0, &bs, 1);
+            break;
+        case KEY_TAB:
+            char tb = '\t';
+            if (is_make) device_write(0, 0, &tb, 1);
             break;
         case KEY_CAPS:
             if (is_make) ks.caps_lock = ~ks.caps_lock;
@@ -146,7 +157,8 @@ static void handle_normal_key(uint8_t rc)
                 } else {
                     key = ks.caps_lock ? kmt[key].func : kmt[key].normal;
                 }
-                logf("Key: %c", key);
+                // logf("Key: %c", key);
+                device_write(0, 0, &key, 1);
             }
             break;
     }

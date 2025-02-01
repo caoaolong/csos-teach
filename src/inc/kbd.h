@@ -29,6 +29,8 @@
 #define KEY_F11             0x57
 #define KEY_F12             0x58
 #define KEY_SPACE           0x39
+#define KEY_BACKSPACE       0x0E
+#define KEY_TAB             0x0F
 
 typedef struct key_map_t {
     // 默认按键
