@@ -4,15 +4,15 @@
 #include <tty.h>
 #include <logf.h>
 
-void syscall_tty_logf(char *fmt, int arg)
-{
-    tty_logf(fmt, arg);
-}
+// void syscall_logf(char *fmt, int arg)
+// {
+//     logf(fmt, arg);
+// }
 
 static const syscall_handler_t syscall_handler_table[] = {
     [SYS_NR_SLEEP]      = (syscall_handler_t)task_sleep,
     [SYS_NR_GETPID]     = (syscall_handler_t)task_getpid,
-    [SYS_NR_LOGF]       = (syscall_handler_t)syscall_tty_logf,
+    // [SYS_NR_LOGF]       = (syscall_handler_t)syscall_logf,
     [SYS_NR_FORK]       = (syscall_handler_t)task_fork,
     [SYS_NR_YIELD]      = (syscall_handler_t)task_yield,
     [SYS_NR_EXIT]       = (syscall_handler_t)task_exit,
@@ -34,7 +34,7 @@ void syscall(syscall_frame_t *frame)
         }
     }
     task_t *task = get_running_task();
-    tty_logf("task: %s syscall(%d) error!", task->name, frame->id);
+    logf("task: %s syscall(%d) error!", task->name, frame->id);
 }
 
 // 软中断实现
@@ -53,5 +53,5 @@ void handler_syscall(interrupt_frame_t* frame)
         }
     }
     task_t *task = get_running_task();
-    tty_logf("task: %s syscall(%d) error!", task->name, id);
+    logf("task: %s syscall(%d) error!", task->name, id);
 }

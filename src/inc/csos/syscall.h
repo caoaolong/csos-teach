@@ -8,7 +8,7 @@
 #define SYSCALL_PMC         5
 #define SYS_NR_SLEEP        1
 #define SYS_NR_GETPID       2
-#define SYS_NR_LOGF         3
+// #define SYS_NR_LOGF         3
 #define SYS_NR_FORK         4
 #define SYS_NR_YIELD        5
 #define SYS_NR_EXIT         6
@@ -77,11 +77,11 @@ static inline uint32_t getpid()
     return _syscall(&getpid_arg);
 }
 
-static inline void logf(const char *fmt, int arg)
-{
-    syscall_arg_t printf_arg = { SYS_NR_LOGF, (uint32_t)fmt, arg, 0, 0 };
-    _syscall(&printf_arg);
-}
+// static inline void logf(const char *fmt, int arg)
+// {
+//     syscall_arg_t printf_arg = { SYS_NR_LOGF, (uint32_t)fmt, arg, 0, 0 };
+//     _syscall(&printf_arg);
+// }
 
 static inline int fork()
 {

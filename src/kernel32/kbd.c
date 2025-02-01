@@ -98,37 +98,37 @@ static void handle_normal_key(uint8_t rc)
         case KEY_F10:
         case KEY_F11:
         case KEY_F12:
-            tty_logf("F-Keys: %d", key);
+            logf("F-Keys: %d", key);
             break;
         case KEY_ESC:
-            if (is_make) tty_logf("ESC");
+            if (is_make) logf("ESC");
             break;
         case KEY_ENTER:
-            if (is_make) tty_logf("Enter");
+            if (is_make) logf("Enter");
             break;
         case KEY_SPACE:
-            if (is_make) tty_logf("Space");
+            if (is_make) logf("Space");
             break;
         case KEY_CAPS:
             if (is_make) ks.caps_lock = ~ks.caps_lock;
             break;
         case KEY_CTRL:
             if (ks.e0) {
-                if (is_make) tty_logf("Right Ctrl");
+                if (is_make) logf("Right Ctrl");
                 ks.rp_ctrl = is_make;
                 ks.e0 = 0;
             } else {
-                if (is_make) tty_logf("Left Ctrl");
+                if (is_make) logf("Left Ctrl");
                 ks.lp_ctrl = is_make;
             }
             break;
         case KEY_ALT:
             if (ks.e0) {
-                if (is_make) tty_logf("Right Alt");
+                if (is_make) logf("Right Alt");
                 ks.rp_alt = is_make;
                 ks.e0 = 0;
             } else {
-                if (is_make) tty_logf("Left Alt");
+                if (is_make) logf("Left Alt");
                 ks.lp_alt = is_make;
             }
             break;
@@ -146,7 +146,7 @@ static void handle_normal_key(uint8_t rc)
                 } else {
                     key = ks.caps_lock ? kmt[key].func : kmt[key].normal;
                 }
-                tty_logf("Key: %c", key);
+                logf("Key: %c", key);
             }
             break;
     }

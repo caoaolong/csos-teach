@@ -121,7 +121,7 @@ void time_init(int timezone)
     tm time;
     time_read(&time, timezone);
     startup_time = mktime(&time);
-    tty_logf("STARTUP TIME: %d%d-%02d-%02d %02d:%02d:%02d",
+    logf("STARTUP TIME: %d%d-%02d-%02d %02d:%02d:%02d",
          century,
          time.tm_year,
          time.tm_mon,

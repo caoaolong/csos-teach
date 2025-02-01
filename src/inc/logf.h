@@ -3,8 +3,8 @@
 
 #define COM1_PORT   0x3F8
 
-void tty_logf_init();
+void logf_init();
 
-void tty_logf(const char * fmt, ...);
+void logf(const char * fmt, ...);
 
 #endif

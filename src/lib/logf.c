@@ -6,7 +6,7 @@
 #include <csos/stdio.h>
 #include <csos/mutex.h>
 
-void tty_logf_init()
+void logf_init()
 {
     // 关闭中断
     outb(COM1_PORT + 1, 0x00);
@@ -26,7 +26,7 @@ void tty_logf_init()
 
 extern mutex_t mutex;
 
-void tty_logf(const char * fmt, ...)
+void logf(const char * fmt, ...)
 {
     char buffer[1024];
     va_list args;

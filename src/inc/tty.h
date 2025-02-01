@@ -3,6 +3,7 @@
 
 #include <types.h>
 #include <csos/stdarg.h>
+#include <csos/sem.h>
 
 #define TTY_DEV_NR              8
 
@@ -71,15 +72,21 @@ typedef struct tty_t {
     tty_fifo_t ofifo;
     char ibuf[TTY_IBUF_SIZE];
     tty_fifo_t ififo;
-
+    sem_t osem;
     int terminal_index;
 } tty_t;
 
+// fifo functions
+
+int tty_fifo_get(tty_fifo_t* fifo, char *c);
+
+int tty_fifo_put(tty_fifo_t* fifo, char c);
+
+// terminal functions
+
 void tty_clear(dev_terminal_t *term);
 
-uint32_t tty_write(char *buf, uint32_t count);
-
-uint32_t tty_dev_write(dev_terminal_t *term, char *buf, uint32_t count);
+uint32_t tty_write(tty_t *tty);
 
 void tty_init();
 

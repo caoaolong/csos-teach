@@ -9,7 +9,7 @@ typedef struct sem_t
     list_t wait_list;
 } sem_t;
 
-void sem_init();
+void sem_init(sem_t *sem, uint32_t count);
 
 void sem_wait(sem_t *sem);
 
