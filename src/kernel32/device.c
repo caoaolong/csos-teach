@@ -5,9 +5,10 @@
 #define DEVICE_TABLE_SIZE   1024
 
 extern device_handle_t device_tty;
+extern device_handle_t device_disk;
 
 static device_handle_t *dht[] = {
-    &device_tty,
+    &device_tty, &device_disk
 };
 
 static device_t dt[DEVICE_TABLE_SIZE];

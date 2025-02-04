@@ -1,9 +1,13 @@
 #include <device.h>
 #include <disk.h>
 #include <logf.h>
+#include <interrupt.h>
+#include <pic.h>
 #include <csos/string.h>
 
 static disk_t disks[DISK_PER_CHANNEL];
+
+static sem_t sem;
 
 static void disk_cmd(disk_t *disk, uint32_t ss, uint32_t sc, uint8_t cmd)
 {
@@ -126,6 +130,7 @@ static void print_disk_part(disk_t *disk)
 
 void disk_init()
 {
+    sem_init(&sem, 0);
     char disk_name[] = "sd*";
     kernel_memset(disks, 0, sizeof(disks));
     for (int i = 0; i < DISK_PER_CHANNEL; i++) {
@@ -134,8 +139,121 @@ void disk_init()
         kernel_strcpy(disk->name, disk_name);
         disk->drive = i == 0 ? DISK_MASTER : DISK_SLAVE;
         disk->port_base = IO_BASE_PRIMARY;
+        mutex_init(&disk->mutex);
         if (!identify_disk(disk)) {
             print_disk_part(disk);
         }
     }
+    install_interrupt_handler(IRQ6_HDC, (uint32_t)interrupt_handler_hdc);
 }
+
+// 打开设备
+int dev_disk_open(device_t *dev)
+{
+    int disk_idx = (dev->minor >> 4) & 0xF;
+    int part_idx = dev->minor & 0xF;
+    if (disk_idx >= DISK_PER_CHANNEL || part_idx >= MBR_PRIMARY_PART_NR) {
+        logf("device minor invalid");
+        return -1;
+    }
+    disk_t *disk = &disks[disk_idx];
+    if (disk->sc == 0) {
+        logf("disk invalid");
+        return -1;
+    }
+    disk_part_t *part = disk->parts[part_idx];
+    if (part->total_sector == 0) {
+        logf("disk partition invalid");
+        return -1;
+    }
+    dev->data = part;
+    irq_enable(IRQ6_HDC);
+    return 0;
+}
+
+void handler_hdc(interrupt_frame_t* frame)
+{
+    sem_notify(&sem);
+    send_eoi(IRQ6_HDC);
+}
+
+// 读取设备
+int dev_disk_read(device_t *dev, int addr, char *buf, int size)
+{
+    disk_part_t *part = (disk_part_t*)dev->data;
+    if (!part) {
+        logf("disk partition invalid");
+        return -1;
+    }
+    disk_t *disk = part->disk;
+    if (!disk) {
+        logf("disk invalid");
+        return -1;
+    }
+    mutex_lock(&disk->mutex);
+    dev_disk_command(dev, DISK_CMD_READ, addr, size);
+    for (int i = 0; i < size; i++) {
+        sem_wait(&sem);
+        int err = disk_wait_data(disk);
+        if (err < 0) {
+            logf("disk read failed");
+            break;
+        }
+        disk_read_data(disk, buf, disk->sz);
+    }
+    mutex_unlock(&disk->mutex);
+    return 0;
+}
+
+// 写入到设备
+int dev_disk_write(device_t *dev, int addr, char *buf, int size)
+{
+    disk_part_t *part = (disk_part_t*)dev->data;
+    if (!part) {
+        logf("disk partition invalid");
+        return -1;
+    }
+    disk_t *disk = part->disk;
+    if (!disk) {
+        logf("disk invalid");
+        return -1;
+    }
+    mutex_lock(&disk->mutex);
+    dev_disk_command(dev, DISK_CMD_WRITE, addr, size);
+    for (int i = 0; i < size; i++) {
+        disk_write_data(disk, buf, disk->sz);
+        sem_wait(&sem);
+        int err = disk_wait_data(disk);
+        if (err < 0) {
+            logf("disk read failed");
+            break;
+        }
+    }
+    mutex_unlock(&disk->mutex);
+    return 0;
+}
+
+// 向设备发送命令
+int dev_disk_command(device_t *dev, int cmd, int arg0, int arg1)
+{
+    disk_part_t *part = (disk_part_t*)dev->data;
+    disk_cmd(part->disk, part->start_sector + arg0, arg1, cmd);
+    return 0;
+}
+
+// 关闭设备
+void dev_disk_close(device_t *dev)
+{
+    dev->data = NULL;
+    irq_disable(IRQ6_HDC);
+}
+
+device_handle_t device_disk = {
+    .name = "disk",
+    .major = DEV_DISK,
+    .open = dev_disk_open,
+    .read = dev_disk_read,
+    .write = dev_disk_write,
+    .command = dev_disk_command,
+    .close = dev_disk_close
+};

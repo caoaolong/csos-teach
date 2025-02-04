@@ -91,6 +91,9 @@ void handler_kbd(interrupt_frame_t* frame);
 #define IRQ1_RTC            0x28
 extern void interrupt_handler_rtc();
 void handler_rtc(interrupt_frame_t* frame);
+#define IRQ6_HDC            0x2E
+extern void interrupt_handler_hdc();
+void handler_hdc(interrupt_frame_t* frame);
 
 #define IRQ_SYSCALL         0x80
 extern void interrupt_handler_syscall();

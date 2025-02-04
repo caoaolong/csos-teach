@@ -2,6 +2,8 @@
 #define CSOS_DISK_H
 
 #include <kernel.h>
+#include <csos/mutex.h>
+#include <csos/sem.h>
 
 #define DISK_NAME_SIZE      32
 #define PART_NAME_SIZE      32
@@ -80,6 +82,8 @@ typedef struct disk_t {
     DRIVE drive;
     // port base
     uint16_t port_base;
+    // mutex
+    mutex_t mutex;
     // part info
     disk_part_t parts[MBR_PRIMARY_PART_NR];
 } disk_t;

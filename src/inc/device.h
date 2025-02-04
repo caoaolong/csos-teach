@@ -5,7 +5,8 @@
 
 enum {
     DEV_UNKNOWN = 0,
-    DEV_TTY
+    DEV_TTY,
+    DEV_DISK
 };
 
 struct device_handle_t;
