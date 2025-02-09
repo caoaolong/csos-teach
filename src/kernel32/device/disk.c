@@ -161,7 +161,7 @@ int dev_disk_open(device_t *dev)
         logf("disk invalid");
         return -1;
     }
-    disk_part_t *part = disk->parts[part_idx];
+    disk_part_t *part = &disk->parts[part_idx];
     if (part->total_sector == 0) {
         logf("disk partition invalid");
         return -1;

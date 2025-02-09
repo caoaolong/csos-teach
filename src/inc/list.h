@@ -38,6 +38,8 @@ list_node_t *list_remove_front(list_t *list);
 
 list_node_t *list_get_first(list_t *list);
 
+list_node_t *list_get_next(list_node_t *node);
+
 #define field_offset(pType, fieldName) \
     ((uint32_t)&(((pType *)0)->fieldName))
 

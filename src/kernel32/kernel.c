@@ -8,6 +8,7 @@
 #include <csos/memory.h>
 #include <device.h>
 #include <disk.h>
+#include <fs.h>
 
 void csos_init(memory_info_t* mem_info, uint32_t gdt_info)
 {
@@ -25,6 +26,8 @@ void csos_init(memory_info_t* mem_info, uint32_t gdt_info)
     gdt32_init((gdt_table_t*)gdt_info);
     // 检测磁盘
     disk_init();
+    // 文件系统初始化
+    fs_init();
     // 初始化任务队列
     task_queue_init();
     // 初始化任务

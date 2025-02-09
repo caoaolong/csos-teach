@@ -30,7 +30,8 @@
         "kbd.h": "c",
         "device.h": "c",
         "mutex.h": "c",
-        "disk.h": "c"
+        "disk.h": "c",
+        "fat.h": "c"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }

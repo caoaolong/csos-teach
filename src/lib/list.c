@@ -77,6 +77,11 @@ list_node_t *list_get_first(list_t *list)
     return list->head;
 }
 
+list_node_t *list_get_next(list_node_t *node)
+{
+    return node->next;
+}
+
 void test_list()
 {
     list_t list;
