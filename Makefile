@@ -56,6 +56,9 @@ $(BUILD)/kernel32.elf: $(BUILD)/kernel32/start.o \
 	$(BUILD)/kernel32/device.o \
 	$(BUILD)/kernel32/device/tty.o \
 	$(BUILD)/kernel32/device/disk.o \
+	$(BUILD)/kernel32/fs.o \
+	$(BUILD)/kernel32/fs/dev.o \
+	$(BUILD)/kernel32/fs/fat.o \
 	$(BUILD)/lib/string.o \
 	$(BUILD)/lib/stdio.o \
 	$(BUILD)/lib/stdlib.o \

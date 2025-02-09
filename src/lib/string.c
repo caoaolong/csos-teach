@@ -33,7 +33,7 @@ int kernel_strncmp(const char *str1, const char *str2, uint32_t size)
         str2++;
     }
 
-    return !((*str1 == '\0') || (*str2 == '\0') || (*str2 == *str2));
+    return !((*str1 == '\0') || (*str2 == '\0') || (*str1 == *str2));
 }
 
 uint32_t kernel_strlen(const char *str)

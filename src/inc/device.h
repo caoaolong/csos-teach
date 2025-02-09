@@ -1,13 +1,14 @@
 #ifndef CSOS_DEVICE_H
 #define CSOS_DEVICE_H
 
-#define DEVICE_NAME_SIZE    32
-
 enum {
     DEV_UNKNOWN = 0,
     DEV_TTY,
     DEV_DISK
 };
+
+#define DEVICE_NAME_SIZE    32
+#define ROOT_DEV            DEV_DISK, 0xb1
 
 struct device_handle_t;
 

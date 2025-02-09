@@ -150,8 +150,8 @@ void disk_init()
 // 打开设备
 int dev_disk_open(device_t *dev)
 {
-    int disk_idx = (dev->minor >> 4) & 0xF;
-    int part_idx = dev->minor & 0xF;
+    int disk_idx = (dev->minor >> 4) - 0xa;
+    int part_idx = dev->minor & 0xF - 1;
     if (disk_idx >= DISK_PER_CHANNEL || part_idx >= MBR_PRIMARY_PART_NR) {
         logf("device minor invalid");
         return -1;

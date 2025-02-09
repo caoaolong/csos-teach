@@ -3,6 +3,7 @@
 
 #include <kernel.h>
 #include <list.h>
+#include <fs/fat.h>
 #include <csos/stdarg.h>
 #include <csos/mutex.h>
 
@@ -15,7 +16,7 @@ typedef enum file_type_t {
 } file_type_t;
 
 typedef enum fs_type_t {
-    FS_DEV
+    FS_DEV, FS_FAT
 } fs_type_t;
 
 #define MOUNT_POINT_SIZE    32
@@ -29,6 +30,10 @@ typedef struct fs_t {
     int devid;
     list_node_t node;
     mutex_t *mutex;
+    // 文件系统数据
+    union {
+        fs_fat_t fat_data;
+    };
 } fs_t;
 
 typedef struct stat_t {
