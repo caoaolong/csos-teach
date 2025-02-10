@@ -128,6 +128,18 @@ static void print_disk_part(disk_t *disk)
     }
 }
 
+static void disk_wait()
+{
+    task_t *task = get_running_task();
+    if (task) sem_wait(&sem);
+}
+
+static void disk_notify()
+{
+    task_t *task = get_running_task();
+    if (task) sem_notify(&sem);
+}
+
 void disk_init()
 {
     sem_init(&sem, 0);
@@ -173,7 +185,7 @@ int dev_disk_open(device_t *dev)
 
 void handler_hdc(interrupt_frame_t* frame)
 {
-    sem_notify(&sem);
+    disk_notify(&sem);
     send_eoi(IRQ6_HDC);
 }
 
@@ -193,7 +205,7 @@ int dev_disk_read(device_t *dev, int addr, char *buf, int size)
     mutex_lock(&disk->mutex);
     dev_disk_command(dev, DISK_CMD_READ, addr, size);
     for (int i = 0; i < size; i++) {
-        sem_wait(&sem);
+        disk_wait(&sem);
         int err = disk_wait_data(disk);
         if (err < 0) {
             logf("disk read failed");

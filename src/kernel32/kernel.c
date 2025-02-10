@@ -26,12 +26,12 @@ void csos_init(memory_info_t* mem_info, uint32_t gdt_info)
     gdt32_init((gdt_table_t*)gdt_info);
     // 检测磁盘
     disk_init();
+    // 文件系统初始化
+    fs_init();
     // 初始化任务队列
     task_queue_init();
     // 初始化任务
     default_task_init();
-    // 文件系统初始化
-    fs_init();
     // 打印信息
     logf("KL Version: %s; OS Version: %s", KERNEL_VERSION, OP_SYS_VERSION);
     // default任务
