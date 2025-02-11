@@ -65,6 +65,16 @@ static fs_t *mount(fs_type_t type, char *mp, int dev_major, int dev_minor)
     return fs;
 }
 
+static void fs_lock(fs_t *fs)
+{
+    if (fs->mutex) mutex_lock(fs->mutex);
+}
+
+static void fs_unlock(fs_t *fs)
+{
+    if (fs->mutex) mutex_unlock(fs->mutex);
+}
+
 void fs_init()
 {
     mount_list_init();
@@ -110,4 +120,28 @@ int fs_fstat(int file)
 char *fs_sbrk(int size)
 {
     return NULL;
+}
+
+int fs_opendir(const char *path, DIR *dir)
+{
+    fs_lock(rootfs);
+    int err = rootfs->op->opendir(rootfs, path, dir);
+    fs_unlock(rootfs);
+    return err;
+}
+
+int fs_readdir(DIR *dir, struct dirent *dirent)
+{
+    fs_lock(rootfs);
+    int err = rootfs->op->readdir(rootfs, dir, dirent);
+    fs_unlock(rootfs);
+    return err;
+}
+
+int fs_closedir(DIR *dir)
+{
+    fs_lock(rootfs);
+    int err = rootfs->op->closedir(rootfs, dir);
+    fs_unlock(rootfs);
+    return err;
 }

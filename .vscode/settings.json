@@ -31,7 +31,8 @@
         "device.h": "c",
         "mutex.h": "c",
         "disk.h": "c",
-        "fat.h": "c"
+        "fat.h": "c",
+        "dir.h": "c"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }

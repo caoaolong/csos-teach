@@ -70,13 +70,14 @@ $(BUILD)/kernel32.elf: $(BUILD)/kernel32/start.o \
 	x86_64-elf-ld -m elf_i386 -T $(SRC)/kernel32.lds $^ -o $@
 
 $(BUILD)/libapp.a: $(BUILD)/libapp/cstart.o \
-	$(BUILD)/libapp/crt0.o
+	$(BUILD)/libapp/crt0.o \
+	$(BUILD)/libapp/fs/dir.o
 	x86_64-elf-ar -crv $@ $^
 
 $(BUILD)/shell.elf: $(BUILD)/libapp.a \
 	$(BUILD)/lib/stdio.o \
 	$(BUILD)/shell/main.o
-	x86_64-elf-ld -m elf_i386 -L$(BUILD) -lapp -T $(SRC)/shell.lds $^ -o $@
+	x86_64-elf-ld -m elf_i386 -T $(SRC)/shell.lds $^ -o $@ -L$(BUILD) -lapp
 
 .PHONY: master
 master: $(BUILD)/boot.bin \

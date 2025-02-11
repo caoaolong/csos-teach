@@ -15,6 +15,9 @@
 #define SYS_NR_EXECVE       7
 #define SYS_NR_SBRK         8
 #define SYS_NR_PRINTF       9
+#define SYS_NR_OPENDIR      10
+#define SYS_NR_READDIR      11
+#define SYS_NR_CLOSEDIR     12
 
 #define SYSCALL_LCALL
 

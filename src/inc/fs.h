@@ -4,6 +4,7 @@
 #include <kernel.h>
 #include <list.h>
 #include <fs/fat.h>
+#include <fs/dir.h>
 #include <csos/stdarg.h>
 #include <csos/mutex.h>
 
@@ -12,7 +13,7 @@
 #define FILE_NAME_SIZE      32
 
 typedef enum file_type_t {
-    FT_NUKNOWN, FILE_TTY
+    FT_NUKNOWN, FT_TTY, FT_FILE, FT_DIR
 } file_type_t;
 
 typedef enum fs_type_t {
@@ -58,6 +59,9 @@ typedef struct fs_op_t {
     void (*close)(file_t *file);
     int (*seek)(file_t *file, uint32_t offset, int dir);
     int (*stat)(file_t *file, stat_t *st);
+    int (*opendir)(fs_t *fs, const char *path, DIR *dir);
+    int (*readdir)(fs_t *fs, DIR *dir, struct dirent *dirent);
+    int (*closedir)(fs_t *fs, DIR *dir);
 } fs_op_t;
 
 void fs_init();
@@ -70,5 +74,9 @@ int fs_close(int file);
 int fs_isatty(int file);
 int fs_fstat(int file);
 char *fs_sbrk(int size);
+
+int fs_opendir(const char *path, DIR *dir);
+int fs_readdir(DIR *dir, struct dirent *dirent);
+int fs_closedir(DIR *dir);
 
 #endif

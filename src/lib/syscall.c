@@ -3,22 +3,20 @@
 #include <task.h>
 #include <tty.h>
 #include <logf.h>
-
-// void syscall_logf(char *fmt, int arg)
-// {
-//     logf(fmt, arg);
-// }
+#include <fs.h>
 
 static const syscall_handler_t syscall_handler_table[] = {
     [SYS_NR_SLEEP]      = (syscall_handler_t)task_sleep,
     [SYS_NR_GETPID]     = (syscall_handler_t)task_getpid,
-    // [SYS_NR_LOGF]       = (syscall_handler_t)syscall_logf,
     [SYS_NR_FORK]       = (syscall_handler_t)task_fork,
     [SYS_NR_YIELD]      = (syscall_handler_t)task_yield,
     [SYS_NR_EXIT]       = (syscall_handler_t)task_exit,
     [SYS_NR_EXECVE]     = (syscall_handler_t)task_execve,
     [SYS_NR_SBRK]       = (syscall_handler_t)task_sbrk,
-    [SYS_NR_PRINTF]     = (syscall_handler_t)usr_printf
+    [SYS_NR_PRINTF]     = (syscall_handler_t)usr_printf,
+    [SYS_NR_OPENDIR]    = (syscall_handler_t)fs_opendir,
+    [SYS_NR_READDIR]    = (syscall_handler_t)fs_readdir,
+    [SYS_NR_CLOSEDIR]   = (syscall_handler_t)fs_closedir,
 };
 // 远调用实现
 void syscall(syscall_frame_t *frame)

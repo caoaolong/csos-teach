@@ -1,6 +1,5 @@
 #include <fs.h>
 #include <device.h>
-#include <fs/fat.h>
 #include <logf.h>
 #include <disk.h>
 #include <csos/memory.h>
@@ -86,6 +85,27 @@ int fat_fs_stat(file_t *file, stat_t *st)
     return 0;
 }
 
+int fat_fs_opendir(fs_t *fs, const char *path, DIR *dir)
+{
+    dir->index = 0;
+    return 0;
+}
+
+int fat_fs_readdir(fs_t *fs, DIR *dir, struct dirent *dirent)
+{
+    if (dir->index++ >= 10) return -1;
+
+    dirent->d_type = FT_FILE;
+    dirent->d_reclen = 1000;
+    kernel_strcpy(dirent->d_name, "hello");
+    return 0;
+}
+
+int fat_fs_closedir(fs_t *fs, DIR *dir)
+{
+    return 0;
+}
+
 fs_op_t fatfs_op = {
     .mount = fat_fs_mount,
     .unmount = fat_fs_unmount,
@@ -94,5 +114,8 @@ fs_op_t fatfs_op = {
     .write = fat_fs_write,
     .close = fat_fs_close,
     .seek = fat_fs_seek,
-    .stat = fat_fs_stat
+    .stat = fat_fs_stat,
+    .opendir = fat_fs_opendir,
+    .readdir = fat_fs_readdir,
+    .closedir = fat_fs_closedir
 };
