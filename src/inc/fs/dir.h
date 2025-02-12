@@ -3,8 +3,6 @@
 
 #include <types.h>
 
-#define FILE_NAME_SIZE  32
-
 struct dirent {
     int d_ino;                      // 文件的 inode 编号
     uint32_t d_reclen;              // 当前 dirent 的长度

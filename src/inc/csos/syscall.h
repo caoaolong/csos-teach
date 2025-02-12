@@ -18,6 +18,9 @@
 #define SYS_NR_OPENDIR      10
 #define SYS_NR_READDIR      11
 #define SYS_NR_CLOSEDIR     12
+#define SYS_NR_FOPEN        13
+#define SYS_NR_FGETS        14
+#define SYS_NR_FCLOSE       15
 
 #define SYSCALL_LCALL
 

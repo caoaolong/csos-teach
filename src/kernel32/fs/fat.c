@@ -107,32 +107,32 @@ void fat_fs_unmount(fs_t *fs)
     device_close(fs->devid);
 }
 
-int fat_fs_open(fs_t *fs, const char *path, file_t *file)
+int fat_fs_open(fs_t *fs, FILE *file, const char *path, const char *mode)
 {
     return 0;
 }
 
-int fat_fs_read(char *buf, int size, file_t *file)
+int fat_fs_read(fs_t *fs, FILE *file, char *buf, int size)
 {
     return device_read(file->devid, file->position, buf, size);
 }
 
-int fat_fs_write(char *buf, int size, file_t *file)
+int fat_fs_write(fs_t *fs, FILE *file, char *buf, int size)
 {
     return device_write(file->devid, file->position, buf, size);
 }
 
-void fat_fs_close(file_t *file)
+void fat_fs_close(fs_t *fs, FILE *file)
 {
     device_close(file->devid);
 }
 
-int fat_fs_seek(file_t *file, uint32_t offset, int dir)
+int fat_fs_seek(fs_t *fs, FILE *file, uint32_t offset, int dir)
 {
     return 0;
 }
 
-int fat_fs_stat(file_t *file, stat_t *st)
+int fat_fs_stat(fs_t *fs, FILE *file, stat_t *st)
 {
     return 0;
 }
@@ -173,12 +173,12 @@ int fat_fs_closedir(fs_t *fs, DIR *dir)
 fs_op_t fatfs_op = {
     .mount = fat_fs_mount,
     .unmount = fat_fs_unmount,
-    .open = fat_fs_open,
-    .read = fat_fs_read,
-    .write = fat_fs_write,
-    .close = fat_fs_close,
-    .seek = fat_fs_seek,
-    .stat = fat_fs_stat,
+    .fopen = fat_fs_open,
+    .fread = fat_fs_read,
+    .fwrite = fat_fs_write,
+    .fclose = fat_fs_close,
+    .lseek = fat_fs_seek,
+    .fstat = fat_fs_stat,
     .opendir = fat_fs_opendir,
     .readdir = fat_fs_readdir,
     .closedir = fat_fs_closedir

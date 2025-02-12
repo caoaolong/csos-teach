@@ -12,32 +12,32 @@ void dev_fs_unmount(fs_t *fs)
 
 }
 
-int dev_fs_open(fs_t *fs, const char *path, file_t *file)
+int dev_fs_open(fs_t *fs, FILE *file, const char *path, const char *mode)
 {
     return 0;
 }
 
-int dev_fs_read(char *buf, int size, file_t *file)
+int dev_fs_read(fs_t *fs, FILE *file, char *buf, int size)
 {
     return device_read(file->devid, file->position, buf, size);
 }
 
-int dev_fs_write(char *buf, int size, file_t *file)
+int dev_fs_write(fs_t *fs, FILE *file, char *buf, int size)
 {
     return device_write(file->devid, file->position, buf, size);
 }
 
-void dev_fs_close(file_t *file)
+void dev_fs_close(fs_t *fs, FILE *file)
 {
     device_close(file->devid);
 }
 
-int dev_fs_seek(file_t *file, uint32_t offset, int dir)
+int dev_fs_seek(fs_t *fs, FILE *file, uint32_t offset, int dir)
 {
     return 0;
 }
 
-int dev_fs_stat(file_t *file, stat_t *st)
+int dev_fs_stat(fs_t *fs, FILE *file, stat_t *st)
 {
     return 0;
 }
@@ -45,10 +45,10 @@ int dev_fs_stat(file_t *file, stat_t *st)
 fs_op_t devfs_op = {
     .mount = dev_fs_mount,
     .unmount = dev_fs_unmount,
-    .open = dev_fs_open,
-    .read = dev_fs_read,
-    .write = dev_fs_write,
-    .close = dev_fs_close,
-    .seek = dev_fs_seek,
-    .stat = dev_fs_stat
+    .fopen = dev_fs_open,
+    .fread = dev_fs_read,
+    .fwrite = dev_fs_write,
+    .fclose = dev_fs_close,
+    .lseek = dev_fs_seek,
+    .fstat = dev_fs_stat
 };

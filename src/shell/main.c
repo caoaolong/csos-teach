@@ -3,16 +3,11 @@
 
 int main(int argc, char *argv[])
 {
-    DIR *dir = opendir("/tmp");
-    if (dir == NULL) return -1;
-
-    struct dirent *dirent;
-    while ((dirent = readdir(dir)) != NULL) {
-        printf("%c %10s %6d\n",
-            dirent->d_type == FT_DIR ? 'd' : 'f',
-            dirent->d_name, 
-            dirent->d_reclen);
-    }
-    closedir(dir);
+    FILE *file = fopen("/tmp.txt", "r");
+    char buf[100];
+    int size = fgets(file, buf, sizeof(buf));
+    if (size < 0)
+        return -1;
+    fclose(file);
     return 0;
 }

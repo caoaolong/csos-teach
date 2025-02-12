@@ -19,6 +19,8 @@ typedef uint32_t Elf32_Word;
 #define TRUE    1
 #define FLASE   0
 
+#define FILE_NAME_SIZE  32
+
 #define HLT __asm__ volatile("hlt")
 
 #endif

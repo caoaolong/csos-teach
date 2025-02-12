@@ -71,7 +71,8 @@ $(BUILD)/kernel32.elf: $(BUILD)/kernel32/start.o \
 
 $(BUILD)/libapp.a: $(BUILD)/libapp/cstart.o \
 	$(BUILD)/libapp/crt0.o \
-	$(BUILD)/libapp/fs/dir.o
+	$(BUILD)/libapp/fs/dir.o \
+	$(BUILD)/libapp/fs/file.o
 	x86_64-elf-ar -crv $@ $^
 
 $(BUILD)/shell.elf: $(BUILD)/libapp.a \

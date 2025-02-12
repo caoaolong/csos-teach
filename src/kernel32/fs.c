@@ -82,28 +82,29 @@ void fs_init()
     rootfs = mount(FS_FAT, "/", ROOT_DEV);
 }
 
-int fs_open(const char *name, int flags, ...)
+int fs_fopen(FILE *file, const char *filepath, const char *mode)
 {
-    return 0;
+    return rootfs->op->fopen(rootfs, file, filepath, mode);
 }
 
-int fs_read(int file, char *buf, int len)
+int fs_fread(FILE *file, char *buf, int size)
 {
-    return 0;
+    return rootfs->op->fread(rootfs, file, buf, size);
 }
 
-int fs_write(int file, char *buf, int len)
+int fs_fwrite(FILE *file, char *buf, int size)
 {
-    return 0;
+    return rootfs->op->fwrite(rootfs, file, buf, size);
 }
 
-int fs_lseek(int file, int pos, int dir)
+int fs_lseek(FILE *file, int pos, int dir)
 {
-    return 0;
+    return rootfs->op->lseek(rootfs, file, pos, dir);
 }
 
-int fs_close(int file)
+int fs_fclose(FILE *file)
 {
+    rootfs->op->fclose(rootfs, file);
     return 0;
 }
 
