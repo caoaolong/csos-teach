@@ -5,6 +5,57 @@
 #include <csos/memory.h>
 #include <csos/string.h>
 
+static int fs_bread(fs_fat_t *fat, int sector)
+{
+    if (sector == fat->pcs) 
+        return 0;
+    if (!device_read(fat->fs->devid, sector, fat->buf, 1)) {
+        fat->pcs = sector;
+        return 0;
+    }
+    return -1;
+}
+
+static fat_dir_t *read_fat_dir(fs_fat_t *fat, int index)
+{
+    if (index < 0 || index >= fat->root_total) 
+        return NULL;
+
+    int offset = index * sizeof(fat_dir_t);
+    int sector = fat->root_start + offset / fat->bps;
+    if (fs_bread(fat, sector) < 0) 
+        return NULL;
+    return (fat_dir_t*)(fat->buf + offset % fat->bps);
+}
+
+static file_type_t read_fat_ftype(fat_dir_t *fdir)
+{
+    file_type_t type = FT_NUKNOWN;
+    if (fdir->attr & (FDA_VOLID | FDA_HIDDEN | FDA_SYSTEM))
+        return type;
+    if (fdir->attr & FDA_LNAME == FDA_LNAME)
+        return type;
+    
+    return fdir->attr & FDA_DIRECT ? FT_DIR : FT_FILE;
+}
+
+static void read_fat_fname(fat_dir_t *fdir, char *dst)
+{
+    kernel_memset(dst, 0, 12);
+    char *c = dst, *ext = NULL;
+    for (int i = 0; i < 11; i++) {
+        if (fdir->name[i] != ' ')
+            *c++ = fdir->name[i];
+        if (i == 7) {
+            ext = c;
+            *c++ = '.';
+        }
+    }
+
+    if (ext && (ext[1] == '\0'))
+        ext[0] = '\0';
+}
+
 int fat_fs_mount(fs_t *fs, int major, int minor)
 {
     int devid = device_open(major, minor, NULL);
@@ -33,9 +84,10 @@ int fat_fs_mount(fs_t *fs, int major, int minor)
     fat->fat_total = br->noc_fats;
     fat->fat_sectors = br->sectors_per_fat;
     fat->root_total = br->max_rde;
-    fat->root_start = fat->fat_start + fat->fat_sectors + fat->fat_total;
+    fat->root_start = fat->fat_start + fat->fat_sectors * fat->fat_total;
     fat->data_start = fat->root_start + fat->root_total * 32 / DISK_SECTOR_SIZE;
     fat->fs = fs;
+    fat->pcs = -1;
     if (fat->fat_total != 2 || kernel_memcmp(br->fat_name, "FAT16", 5)) {
         logf("invalid fat format");
         free_page((uint32_t)br);
@@ -93,12 +145,24 @@ int fat_fs_opendir(fs_t *fs, const char *path, DIR *dir)
 
 int fat_fs_readdir(fs_t *fs, DIR *dir, struct dirent *dirent)
 {
-    if (dir->index++ >= 10) return -1;
-
-    dirent->d_type = FT_FILE;
-    dirent->d_reclen = 1000;
-    kernel_strcpy(dirent->d_name, "hello");
-    return 0;
+    fs_fat_t *fat = (fs_fat_t *)fs->data;
+    while (dir->index < fat->root_total) {
+        fat_dir_t *fdir = read_fat_dir(fat, dir->index);
+        if (fdir == NULL) return -1;
+        if (fdir->name[0] == FDN_END) break;
+        if (fdir->name[0] != FDN_FREE) {
+            file_type_t type = read_fat_ftype(fdir);
+            if (type == FT_DIR || type == FT_FILE) {
+                dirent->d_reclen = fdir->size;
+                dirent->d_type = type;
+                read_fat_fname(fdir, dirent->d_name);
+                dirent->d_ino = dir->index++;
+                return 0;
+            }
+        }
+        dir->index++;
+    }
+    return -1;
 }
 
 int fat_fs_closedir(fs_t *fs, DIR *dir)

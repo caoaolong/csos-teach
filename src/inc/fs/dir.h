@@ -7,7 +7,7 @@
 
 struct dirent {
     int d_ino;                      // 文件的 inode 编号
-    uint16_t d_reclen;              // 当前 dirent 的长度
+    uint32_t d_reclen;              // 当前 dirent 的长度
     uint8_t  d_type;                // 文件类型（如普通文件、目录等）
     char d_name[FILE_NAME_SIZE];    // 文件名（以 null 结尾的字符串）
 };
