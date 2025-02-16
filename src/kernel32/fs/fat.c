@@ -5,15 +5,15 @@
 #include <csos/memory.h>
 #include <csos/string.h>
 
-static int fs_bread(fs_fat_t *fat, int sector)
+static BOOL fs_bread(fs_fat_t *fat, int sector)
 {
     if (sector == fat->pcs) 
-        return 0;
+        return TRUE;
     if (!device_read(fat->fs->devid, sector, fat->buf, 1)) {
         fat->pcs = sector;
-        return 0;
+        return TRUE;
     }
-    return -1;
+    return FLASE;
 }
 
 static fat_dir_t *read_fat_dir(fs_fat_t *fat, int index)
@@ -23,7 +23,7 @@ static fat_dir_t *read_fat_dir(fs_fat_t *fat, int index)
 
     int offset = index * sizeof(fat_dir_t);
     int sector = fat->root_start + offset / fat->bps;
-    if (fs_bread(fat, sector) < 0) 
+    if (!fs_bread(fat, sector)) 
         return NULL;
     return (fat_dir_t*)(fat->buf + offset % fat->bps);
 }
@@ -41,9 +41,9 @@ static file_type_t read_fat_ftype(fat_dir_t *fdir)
 
 static void read_fat_fname(fat_dir_t *fdir, char *dst)
 {
-    kernel_memset(dst, 0, 12);
+    kernel_memset(dst, 0, FAT_FILE_NAME_SIZE + 1);
     char *c = dst, *ext = NULL;
-    for (int i = 0; i < 11; i++) {
+    for (int i = 0; i < FAT_FILE_NAME_SIZE; i++) {
         if (fdir->name[i] != ' ')
             *c++ = fdir->name[i];
         if (i == 7) {
@@ -54,6 +54,83 @@ static void read_fat_fname(fat_dir_t *fdir, char *dst)
 
     if (ext && (ext[1] == '\0'))
         ext[0] = '\0';
+}
+
+static void fat_to_sfn(char *dst, const char *src)
+{
+    kernel_memset(dst, ' ', FAT_FILE_NAME_SIZE);
+    char *pc = dst;
+    char *pe = dst + FAT_FILE_NAME_SIZE;
+    while (*src && (pc < pe)) {
+        char c = *src++;
+        switch (c) {
+            case '.':
+                pc = dst + 8;
+                break;
+            default:
+                if (c >= 'a' && c <= 'z') {
+                    c = c - 'a' + 'A';
+                }
+                *pc++ = c;
+                break;
+        }
+    }
+}
+
+static BOOL match_fat_name(fat_dir_t *fdir, const char *name)
+{
+    char buf[FAT_FILE_NAME_SIZE];
+    fat_to_sfn(buf, name);
+    return !kernel_memcmp(buf, fdir->name, FAT_FILE_NAME_SIZE);
+}
+
+static void read_fat_file(fs_fat_t *fat, FILE *file, fat_dir_t *pdir, int pindex) 
+{
+    file->type = read_fat_ftype(pdir);
+    file->size = pdir->size;
+    file->offset = 0;
+    file->pindex = pindex;
+    file->sblk = (pdir->cluster_h << 16) | pdir->cluster_l;
+    file->cblk = file->sblk;
+}
+
+static BOOL fat_verify_cluster(fat_cluster_t cluster)
+{
+    return (cluster < FAT_CLUSTER_INVALID) && (cluster >= 0x2);
+}
+
+static fat_cluster_t fat_next_cluster(fs_fat_t *fat, fat_cluster_t cc)
+{
+    if (!fat_verify_cluster(cc)) 
+        return FLASE;
+    // 当前簇在FAT表中的字节偏移量
+    int offset = cc * sizeof(fat_cluster_t);
+    // 当前簇在FAT表中的扇区偏移量
+    int sector = offset / fat->bps;
+    if (sector >= fat->fat_sectors) {
+        return FAT_CLUSTER_INVALID;
+    }
+    // 当前簇所在扇区的偏移量
+    int os = offset % fat->bps;
+    if (!fs_bread(fat, fat->fat_start + sector)) {
+        return FAT_CLUSTER_INVALID;
+    }
+    return *(fat_cluster_t *)(fat->buf + os);
+}
+
+static BOOL fat_move_file_offset(fs_fat_t *fat, FILE *file, uint32_t cpb, uint32_t mbytes, int expand)
+{
+    uint32_t co = file->offset % cpb;
+    if (co + mbytes >= cpb) {
+        // 获取簇链中的下一个簇号
+        fat_cluster_t nc = fat_next_cluster(fat, file->cblk);
+        if (nc >= FAT_CLUSTER_INVALID)
+            return FLASE;
+        file->cblk = nc;
+    }
+
+    file->offset += mbytes;
+    return TRUE;
 }
 
 int fat_fs_mount(fs_t *fs, int major, int minor)
@@ -109,17 +186,76 @@ void fat_fs_unmount(fs_t *fs)
 
 int fat_fs_open(fs_t *fs, FILE *file, const char *path, const char *mode)
 {
+    fs_fat_t *fat = (fs_fat_t *)fs->data;
+    fat_dir_t *pdir = NULL;
+    int pindex = 0;
+    for (int i = 0; i < fat->root_total; i++) {
+        fat_dir_t *dir = read_fat_dir(fat, i);
+        if (!dir) return -1;
+        if (dir->name[0] == FDN_END) break;
+        if (dir->name[0] == FDN_FREE) continue;
+        if (match_fat_name(dir, path)) {
+            pdir = dir;
+            pindex = i;
+            break;
+        }
+    }
+    if (!pdir) return -1;
+    
+    read_fat_file(fat, file, pdir, pindex);
     return 0;
 }
 
 int fat_fs_read(fs_t *fs, FILE *file, char *buf, int size)
 {
-    return device_read(file->devid, file->position, buf, size);
+    fs_fat_t *fat = (fs_fat_t *)fs->data;
+    uint32_t nbytes = size;
+    // 判斷要读取的大小是否超过了文件大小
+    if (file->offset + nbytes > file->size) {
+        // 超过则读取剩余字节数
+        nbytes = file->size - file->offset;
+    }
+    // 每簇的字节数
+    uint32_t cpb = fat->bps * fat->spc;
+    // 总共读取的字节数
+    uint32_t total = 0;
+    while (nbytes > 0) {
+        // 本次读取的字节数
+        uint32_t cr = nbytes;
+        // 本次读取的偏移量
+        uint32_t co = file->offset % cpb;
+        // 文件数据所在起始扇区号
+        uint32_t ss = fat->data_start + (file->cblk - 2) * fat->spc;
+        if ((co == 0) && (nbytes == cpb)) {
+            if (device_read(fat->fs->devid, ss, fat->buf, fat->spc) < 0) {
+                return total;
+            }
+            cr = cpb;
+        } else {
+            // 判断要读取的大小是否超过当前簇大小
+            if (co + cr > cpb) {
+                // 超过则读取当前簇剩余的字节数
+                cr = cpb - co;
+            }
+            fat->pcs = -1;
+            if (device_read(fat->fs->devid, ss, fat->buf, fat->spc) < 0) {
+                return total;
+            }
+            kernel_memcpy(buf, fat->buf + co, cr);
+        }
+        buf += cr;
+        nbytes -= cr;
+        total += cr;
+        if (!fat_move_file_offset(fat, file, cpb, cr, 0)) {
+            return total;
+        }
+    }
+    return total;
 }
 
 int fat_fs_write(fs_t *fs, FILE *file, char *buf, int size)
 {
-    return device_write(file->devid, file->position, buf, size);
+    return device_write(file->devid, file->offset, buf, size);
 }
 
 void fat_fs_close(fs_t *fs, FILE *file)

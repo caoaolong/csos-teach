@@ -7,6 +7,7 @@
 #define VOLUME_NAME_SIZE    11
 #define FAT_FILE_NAME_SIZE  11
 #define FAT_NAME_SIZE       8
+#define FAT_CLUSTER_INVALID 0xFFF8
 
 typedef struct boot_record_t {
     uint16_t jump_code;

@@ -104,6 +104,8 @@ static void scroll_up(dev_terminal_t *term, int lines)
     for (int i = 0; i < size; i++) {
         (ptr + i)->c = ' ';
     }
+    term->cc = 0;
+    term->cr--;
 }
 
 static void com_lf(dev_terminal_t *term)
@@ -140,6 +142,9 @@ static void tty_cursor_forward(dev_terminal_t *term, int n)
 static void tty_write_char(dev_terminal_t *term, char c)
 {
     int offset = term->cc + term->cr * term->columns;
+    if (offset >= term->columns * term->rows) {
+        scroll_up(term, 1);
+    }
     tty_char_t *tc = (tty_char_t *)term->base + offset;
     tc->c = c;
     tc->fg = term->cfg;
@@ -265,6 +270,7 @@ uint32_t tty_write(tty_t *tty)
             case ASCII_BS: com_bs(term); break;
             case ASCII_HT: com_ht(term); break;
             case ASCII_NUL: break;
+            case ASCII_CR: com_cr(term); len++; break;
             case ASCII_LF: com_lf(term); com_cr(term); len++; break;
             default: tty_write_char(term, c); len++; break;
         }

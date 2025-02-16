@@ -12,6 +12,8 @@ typedef uint32_t Elf32_Off;
 typedef uint32_t Elf32_Sword;
 typedef uint32_t Elf32_Word;
 
+typedef uint16_t fat_cluster_t;
+
 #define NULL    ((void*)0)
 
 #define BOOL    _Bool

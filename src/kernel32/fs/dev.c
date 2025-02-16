@@ -19,12 +19,12 @@ int dev_fs_open(fs_t *fs, FILE *file, const char *path, const char *mode)
 
 int dev_fs_read(fs_t *fs, FILE *file, char *buf, int size)
 {
-    return device_read(file->devid, file->position, buf, size);
+    return device_read(file->devid, file->offset, buf, size);
 }
 
 int dev_fs_write(fs_t *fs, FILE *file, char *buf, int size)
 {
-    return device_write(file->devid, file->position, buf, size);
+    return device_write(file->devid, file->offset, buf, size);
 }
 
 void dev_fs_close(fs_t *fs, FILE *file)

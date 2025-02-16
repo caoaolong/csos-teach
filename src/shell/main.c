@@ -3,11 +3,18 @@
 
 int main(int argc, char *argv[])
 {
-    FILE *file = fopen("/tmp.txt", "r");
+    FILE *file = fopen("kernel.h", "r");
+    int size = 0;
     char buf[100];
-    int size = fgets(file, buf, sizeof(buf));
-    if (size < 0)
-        return -1;
+    while (size < file->size) {
+        int nbytes = fgets(file, buf, sizeof(buf));
+        if (nbytes < 0) {
+            printf("read failed\n");
+            break;
+        }
+        printf("%s", buf);
+        size += nbytes;
+    }
     fclose(file);
     return 0;
 }

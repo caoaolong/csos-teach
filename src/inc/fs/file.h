@@ -8,12 +8,22 @@ typedef enum file_type_t {
 } file_type_t;
 
 typedef struct FILE {
+    // 文件名称
     char name[FILE_NAME_SIZE];
+    // 文件类型
     file_type_t type;
+    // 文件大小
     uint32_t size;
-    uint32_t ref;
+    // 磁盘设备ID
     uint8_t devid;
-    uint32_t position;
+    // 当前文件指针的偏移量
+    uint32_t offset;
+    // 文件数据开始块（簇）
+    fat_cluster_t sblk;
+    // 当前文件指针所在块（簇）
+    fat_cluster_t cblk;
+    uint32_t pindex;
+    // 文件打开模式
     uint8_t mode;
 } FILE;
 

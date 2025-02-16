@@ -15,8 +15,10 @@ FILE *fopen(const char *filepath, const char *mode)
 
 int fgets(FILE *file, char *buf, uint32_t size)
 {
-    syscall_arg_t args = {SYS_NR_FGETS, (int)file, (int)buf, size, 0};
-    return _syscall(&args);
+    syscall_arg_t args = {SYS_NR_FGETS, (int)file, (int)buf, size - 1, 0};
+    int nbytes = _syscall(&args);
+    buf[nbytes] = 0;
+    return nbytes;
 }
 
 int fclose(FILE *file)
