@@ -40,6 +40,11 @@ typedef struct tss_task_t {
     // 堆空间起止位置
     uint32_t bheap;
     uint32_t eheap;
+    // 当前工作目录
+    struct {
+        int sector;
+        int offset;
+    } wd;
 } tss_task_t;
 
 typedef struct tss_task_queue_t

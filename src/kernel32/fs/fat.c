@@ -2,6 +2,7 @@
 #include <device.h>
 #include <logf.h>
 #include <disk.h>
+#include <task.h>
 #include <csos/memory.h>
 #include <csos/string.h>
 
@@ -56,6 +57,28 @@ static void read_fat_fname(fat_dir_t *fdir, char *dst)
         ext[0] = '\0';
 }
 
+static void fat_to_lfn(char *dst, const char *src)
+{
+    kernel_memset(dst, ' ', FAT_FILE_NAME_SIZE);
+    char *pc = dst;
+    for (int i = 0; i < FAT_FILE_NAME_SIZE; i++) {
+        if (i == 7) {
+            *pc++ = '.';
+        }
+        char c = *(src + i);
+        switch (c) {
+            case ' ':
+                break;
+            default:
+                *pc++ = c - 'A' + 'a';
+                break;
+        }
+    }
+    if (*(pc - 1) == '.') {
+        *(pc - 1) = 0;
+    }
+}
+
 static void fat_to_sfn(char *dst, const char *src)
 {
     kernel_memset(dst, ' ', FAT_FILE_NAME_SIZE);
@@ -64,6 +87,8 @@ static void fat_to_sfn(char *dst, const char *src)
     while (*src && (pc < pe)) {
         char c = *src++;
         switch (c) {
+            case '/':
+                return;
             case '.':
                 pc = dst + 8;
                 break;
@@ -306,6 +331,137 @@ int fat_fs_closedir(fs_t *fs, DIR *dir)
     return 0;
 }
 
+static int fat_fs_init_task_wd(fs_fat_t *fat, task_t *task)
+{
+    task->wd.sector = fat->root_start;
+    task->wd.offset = 0;
+    return 0;
+}
+
+static int fat_fs_read_path(fs_fat_t *fat, int sector, int offset, char *buf)
+{
+    if (sector == fat->root_start && offset == 0) {
+        kernel_strcpy(buf, "/");
+        return 0;
+    }
+    char nbuf[11];
+    char *pbuf = buf;
+    uint32_t srclen = 0;
+    // 保存上一次的簇号
+    uint32_t lcnum = 0;
+    uint32_t dcount = fat->bps * fat->spc / sizeof(fat_dir_t);
+    uint32_t sc = fat->root_start;
+    fat_dir_t dirs[dcount];
+    // 读取当前目录信息
+    if (device_read(fat->fs->devid, sector, (char *)&dirs, 1) < 0) {
+        logf("disk read failed!");
+        return -1;
+    }
+    fat_dir_t *pdir = &dirs[offset];
+    fat_to_lfn(nbuf, pdir->name);
+    srclen = kernel_strlen(nbuf);
+    kernel_reverse_strcpy(pbuf, nbuf, srclen);
+    pbuf += srclen;
+    // 读取父级目录信息
+    do {
+        lcnum = sector;
+        // 读取[..]目录
+        pdir = &dirs[1];
+        sector = (pdir->cluster_h << 16) | pdir->cluster_l - 2;
+        if (sector < 0) {
+            // 表示到达根目录区
+            sector = fat->root_start;
+        } else {
+            sector += fat->data_start;
+        }
+        if (device_read(fat->fs->devid, sector, (char *)&dirs, 1) < 0) {
+            logf("disk read failed!");
+            return -1;
+        }
+        for (int i = 0; i < dcount; i++) {
+            pdir = &dirs[i];
+            if (pdir->name[0] == FDN_END) break;
+            if (pdir->name[0] == FDN_FREE) continue;
+            uint32_t cluster = fat->data_start + (pdir->cluster_h << 16) | pdir->cluster_l - 2;
+            if (cluster == lcnum) {
+                fat_to_lfn(nbuf, pdir->name);
+                srclen = kernel_strlen(nbuf);
+                *pbuf = '/';
+                pbuf++;
+                kernel_reverse_strcpy(pbuf, nbuf, srclen);
+                pbuf += srclen;
+                break;
+            }
+        }
+    } while (sector > fat->root_start);
+    *pbuf = '/';
+    pbuf++;
+    *pbuf = 0;
+    kernel_reverse_str(buf);
+    return 0;
+}
+
+int fat_fs_getcwd(fs_t *fs, char *buf)
+{
+    fs_fat_t *fat = (fs_fat_t *)fs->data;
+    task_t *task = get_running_task();
+    int err = 0;
+
+    if (task->wd.sector < 0 || task->wd.offset < 0) {
+        err = fat_fs_init_task_wd(fat, task);
+        if (err < 0) return -1;
+    }
+
+    return fat_fs_read_path(fat, task->wd.sector, task->wd.offset, buf);
+}
+
+int fat_fs_chdir(fs_t *fs, const char *path)
+{
+    fs_fat_t *fat = (fs_fat_t *)fs->data;
+    task_t *task = get_running_task();
+
+    char buf[10];
+    int si = 0, di = 0;
+
+    uint32_t dcount = fat->bps * fat->spc / sizeof(fat_dir_t);
+    uint32_t sc = fat->root_start;
+    fat_dir_t dirs[dcount];
+    BOOL found = FLASE;
+    while (sc < FAT_CLUSTER_INVALID && *(path + si++) != 0) {
+        kernel_memset(buf, 0, sizeof(buf));
+        do {
+            buf[di] = *(path + si);
+            di++;
+            si++;
+        } while(*(path + si) != '/' && *(path + si) != 0);
+
+        if (device_read(fs->devid, sc, (char *)&dirs, 1) < 0) {
+            logf("device read failed!");
+            return -1;
+        }
+        for (int i = 0; i < dcount; i++) {
+            fat_dir_t *dir = &dirs[i];
+            if (dir->name[0] == FDN_END) break;
+            if (dir->name[0] == FDN_FREE) continue;
+            if (match_fat_name(dir, buf)) {
+                task->wd.sector = sc;
+                task->wd.offset = i;
+                sc = fat->data_start + ((dir->cluster_h << 16) | dir->cluster_l) - 2;
+                found = TRUE;
+                break;
+            }
+        }
+        di = 0;
+        if (found) {
+            continue;
+        } else {
+            sc = (uint32_t)fat_next_cluster(fat, (fat_cluster_t)sc);
+        }
+    }
+
+    return 0;
+}
+
 fs_op_t fatfs_op = {
     .mount = fat_fs_mount,
     .unmount = fat_fs_unmount,
@@ -317,5 +473,7 @@ fs_op_t fatfs_op = {
     .fstat = fat_fs_stat,
     .opendir = fat_fs_opendir,
     .readdir = fat_fs_readdir,
-    .closedir = fat_fs_closedir
+    .closedir = fat_fs_closedir,
+    .getcwd = fat_fs_getcwd,
+    .chdir = fat_fs_chdir
 };

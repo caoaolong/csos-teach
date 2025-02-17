@@ -11,6 +11,29 @@ void kernel_strcpy(char *dst, const char *src)
     *dst = '\0';
 }
 
+void kernel_reverse_strcpy(char *dst, const char *src, uint32_t srclen)
+{
+    if (!src) return;
+    const char *p = src + srclen - 1;
+    while (p >= src) 
+        *dst++ = *p--;
+
+    *dst = '\0';
+}
+
+void kernel_reverse_str(char *str)
+{
+    char c;
+    char *pb = str;
+    char *pe = str + kernel_strlen(str) - 1;
+    while (pb < pe) {
+        // 交换字符
+        c = *pb; *pb = *pe; *pe = c;
+        pb++;
+        pe--;
+    }
+}
+
 void kernel_strncpy(char *dst, const char *src, uint32_t size)
 {
     if (!dst || !src || !size) return;

@@ -30,3 +30,19 @@ int closedir(DIR *dir)
     // TODO: free
     return err;
 }
+
+char *getcwd()
+{
+    char *buf = (char *)malloc(256);
+    syscall_arg_t args = {SYS_NR_GETCWD, (int)buf, 0, 0, 0};
+    if (_syscall(&args) < 0) {
+        return NULL;
+    }
+    return buf;
+}
+
+int chdir(const char *path)
+{
+    syscall_arg_t args = {SYS_NR_CHDIR, (int)path, 0, 0, 0};
+    return _syscall(&args);
+}

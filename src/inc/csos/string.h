@@ -5,6 +5,10 @@
 
 void kernel_strcpy(char *dst, const char *src);
 
+void kernel_reverse_strcpy(char *dst, const char *src, uint32_t srclen);
+
+void kernel_reverse_str(char *str);
+
 void kernel_strncpy(char *dst, const char *src, uint32_t size);
 
 int kernel_strncmp(const char *str1, const char *str2, uint32_t size);

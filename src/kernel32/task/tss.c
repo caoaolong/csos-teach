@@ -454,5 +454,6 @@ int tss_task_init(tss_task_t *task, const char *name, uint32_t flag, uint32_t en
     task->sleep = 0;
     task->pid = task_pid++;
     task->bheap = task->eheap = 0;
+    task->wd.offset = task->wd.sector = -1;
     return 0;
 }

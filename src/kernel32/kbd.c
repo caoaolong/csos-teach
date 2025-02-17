@@ -105,21 +105,21 @@ static void handle_normal_key(uint8_t rc)
             if (is_make) logf("ESC");
             break;
         case KEY_ENTER:
-            char enter = '\n';
+            {char enter = '\n';
             if (is_make) device_write(0, 0, &enter, 1);
-            break;
+            break;}
         case KEY_SPACE:
-            char space = ' ';
+            {char space = ' ';
             if (is_make) device_write(0, 0, &space, 1);
-            break;
+            break;}
         case KEY_BACKSPACE:
-            char bs = '\b';
+            {char bs = '\b';
             if (is_make) device_write(0, 0, &bs, 1);
-            break;
+            break;}
         case KEY_TAB:
-            char tb = '\t';
+            {char tb = '\t';
             if (is_make) device_write(0, 0, &tb, 1);
-            break;
+            break;}
         case KEY_CAPS:
             if (is_make) ks.caps_lock = ~ks.caps_lock;
             break;

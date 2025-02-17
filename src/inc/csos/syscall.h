@@ -21,6 +21,8 @@
 #define SYS_NR_FOPEN        13
 #define SYS_NR_FGETS        14
 #define SYS_NR_FCLOSE       15
+#define SYS_NR_CHDIR        16
+#define SYS_NR_GETCWD       17
 
 #define SYSCALL_LCALL
 

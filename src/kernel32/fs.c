@@ -146,3 +146,13 @@ int fs_closedir(DIR *dir)
     fs_unlock(rootfs);
     return err;
 }
+
+int fs_getcwd(char *buf)
+{
+    return rootfs->op->getcwd(rootfs, buf);
+}
+
+int fs_chdir(const char *path)
+{
+    return rootfs->op->chdir(rootfs, path);
+}

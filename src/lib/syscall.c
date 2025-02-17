@@ -19,7 +19,9 @@ static const syscall_handler_t syscall_handler_table[] = {
     [SYS_NR_CLOSEDIR]   = (syscall_handler_t)fs_closedir,
     [SYS_NR_FOPEN]      = (syscall_handler_t)fs_fopen,
     [SYS_NR_FGETS]      = (syscall_handler_t)fs_fread,
-    [SYS_NR_FCLOSE]     = (syscall_handler_t)fs_fclose
+    [SYS_NR_FCLOSE]     = (syscall_handler_t)fs_fclose,
+    [SYS_NR_GETCWD]     = (syscall_handler_t)fs_getcwd,
+    [SYS_NR_CHDIR]      = (syscall_handler_t)fs_chdir,
 };
 // 远调用实现
 void syscall(syscall_frame_t *frame)
