@@ -32,7 +32,8 @@
         "mutex.h": "c",
         "disk.h": "c",
         "fat.h": "c",
-        "dir.h": "c"
+        "dir.h": "c",
+        "chrono": "c"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }

@@ -22,7 +22,6 @@ typedef struct FILE {
     fat_cluster_t sblk;
     // 当前文件指针所在块（簇）
     fat_cluster_t cblk;
-    uint32_t pindex;
     // 文件打开模式
     uint8_t mode;
 } FILE;

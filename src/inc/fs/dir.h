@@ -11,7 +11,8 @@ struct dirent {
 };
 
 typedef struct DIR {
-    int index;
+    int sector;
+    int offset;
     struct dirent dirent;
 } DIR;
 
