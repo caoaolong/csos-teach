@@ -46,6 +46,19 @@ void kernel_strncpy(char *dst, const char *src, uint32_t size)
     if (size == 0) *(d - 1) = '\0'; else *d = '\0';
 }
 
+int kernel_strcmp(const char *str1, const char *str2)
+{
+    if (!str1 || !str2) return -1;
+
+    while (*str1 && *str2 && (*str1 == *str2))
+    {
+        str1++;
+        str2++;
+    }
+
+    return !(*str1 == *str2);
+}
+
 int kernel_strncmp(const char *str1, const char *str2, uint32_t size)
 {
     if (!str1 || !str2 || !size) return -1;

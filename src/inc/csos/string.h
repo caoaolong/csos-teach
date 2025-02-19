@@ -11,6 +11,8 @@ void kernel_reverse_str(char *str);
 
 void kernel_strncpy(char *dst, const char *src, uint32_t size);
 
+int kernel_strcmp(const char *str1, const char *str2);
+
 int kernel_strncmp(const char *str1, const char *str2, uint32_t size);
 
 uint32_t kernel_strlen(const char *str);

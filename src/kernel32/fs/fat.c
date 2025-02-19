@@ -42,8 +42,14 @@ static void read_fat_fname(fat_dir_t *fdir, char *dst)
     kernel_memset(dst, 0, FAT_FILE_NAME_SIZE + 1);
     char *c = dst, *ext = NULL;
     for (int i = 0; i < FAT_FILE_NAME_SIZE; i++) {
-        if (fdir->name[i] != ' ')
+        if (fdir->name[i] == '.') {
             *c++ = fdir->name[i];
+            continue;
+        }
+        if (fdir->name[i] != ' ') {
+            *c++ = fdir->name[i] - 'A' + 'a';
+            continue;
+        }
         if (i == 7) {
             ext = c;
             *c++ = '.';
@@ -231,7 +237,11 @@ static file_type_t read_fat_path_cluster(fs_t *fs, const char *path, int *sector
 {
     char buf[10];
     int si = 0, di = 0;
-
+    if (!kernel_strcmp(path, "/")) {
+        *sector = 0;
+        *offset = 0;
+        return FT_DIR;
+    }
     fs_fat_t *fat = (fs_fat_t *)fs->data;
     uint32_t dcount = fat->bps * fat->spc / sizeof(fat_dir_t);
     uint32_t sc = fat->root_start;
