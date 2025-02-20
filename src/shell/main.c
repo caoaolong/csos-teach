@@ -27,6 +27,7 @@ int main(int argc, char *argv[])
     fclose(file);
 
     // dir
+    printf("\n");
     DIR *dir = opendir("/home/calong");
     if (dir == NULL) return -1;
     struct dirent *dirent;

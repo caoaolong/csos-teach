@@ -265,17 +265,18 @@ static file_type_t read_fat_path_cluster(fs_t *fs, const char *path, int *sector
             if (dir->name[0] == FDN_END) break;
             if (dir->name[0] == FDN_FREE) continue;
             file_type_t ftype = read_fat_ftype(dir);
-            if (ftype == FT_FILE) {
-                *sector = sc;
-                *offset = i;
-                return FT_FILE;
-            }
-            if (ftype == FT_DIR && match_fat_name(dir, buf)) {
-                *sector = sc;
-                *offset = i;
-                sc = fat->data_start + ((dir->cluster_h << 16) | dir->cluster_l) - 2;
-                found = TRUE;
-                break;
+            if (match_fat_name(dir, buf)) {
+                if (ftype == FT_FILE) {
+                    *sector = sc;
+                    *offset = i;
+                    return FT_FILE;
+                } else if (ftype == FT_DIR) {
+                    *sector = sc;
+                    *offset = i;
+                    sc = fat->data_start + ((dir->cluster_h << 16) | dir->cluster_l) - 2;
+                    found = TRUE;
+                    break;
+                }
             }
         }
         di = 0;
