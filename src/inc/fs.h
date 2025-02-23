@@ -51,6 +51,8 @@ typedef struct fs_op_t {
     int (*closedir)(fs_t *fs, DIR *dir);
     int (*getcwd)(fs_t *fs, char *buf);
     int (*chdir)(fs_t *fs, const char *path);
+    int (*mkdir)(fs_t *fs, char *path);
+    int (*rmdir)(fs_t *fs, char *path);
 } fs_op_t;
 
 void fs_init();
@@ -70,5 +72,7 @@ int fs_closedir(DIR *dir);
 
 int fs_getcwd(char *buf);
 int fs_chdir(const char *path);
+int fs_mkdir(char *path);
+int fs_rmdir(char *path);
 
 #endif

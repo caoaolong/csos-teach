@@ -149,10 +149,32 @@ int fs_closedir(DIR *dir)
 
 int fs_getcwd(char *buf)
 {
-    return rootfs->op->getcwd(rootfs, buf);
+    fs_lock(rootfs);
+    int err = rootfs->op->getcwd(rootfs, buf);
+    fs_unlock(rootfs);
+    return err;
 }
 
 int fs_chdir(const char *path)
 {
-    return rootfs->op->chdir(rootfs, path);
+    fs_lock(rootfs);
+    int err = rootfs->op->chdir(rootfs, path);
+    fs_unlock(rootfs);
+    return err;
+}
+
+int fs_mkdir(char *path)
+{
+    fs_lock(rootfs);
+    int err = rootfs->op->mkdir(rootfs, path);
+    fs_unlock(rootfs);
+    return err;
+}
+
+int fs_rmdir(char *path)
+{
+    fs_lock(rootfs);
+    int err = rootfs->op->rmdir(rootfs, path);
+    fs_unlock(rootfs);
+    return err;
 }

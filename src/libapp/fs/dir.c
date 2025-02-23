@@ -46,3 +46,15 @@ int chdir(const char *path)
     syscall_arg_t args = {SYS_NR_CHDIR, (int)path, 0, 0, 0};
     return _syscall(&args);
 }
+
+int mkdir(const char *path)
+{
+    syscall_arg_t args = {SYS_NR_MKDIR, (int)path, 0, 0, 0};
+    return _syscall(&args);
+}
+
+int rmdir(const char *path)
+{
+    syscall_arg_t args = {SYS_NR_RMDIR, (int)path, 0, 0, 0};
+    return _syscall(&args);
+}

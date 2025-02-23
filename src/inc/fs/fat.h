@@ -51,6 +51,8 @@ typedef struct fs_fat_t {
     char *buf;
     // current sector
     uint32_t pcs;
+    // current free cluster;
+    int free;
 } fs_fat_t;
 
 enum {
@@ -65,6 +67,24 @@ enum {
 
 #define FDN_FREE    0xE5
 #define FDN_END     0x00
+
+typedef union fat_date_t {
+    uint16_t v;
+    struct {
+        uint16_t date:5;
+        uint16_t month:4;
+        uint16_t year:7;
+    };
+} fat_date_t;
+
+typedef union fat_time_t {
+    uint16_t v;
+    struct {
+        uint16_t second:5;
+        uint16_t minute:6;
+        uint16_t hour:5;
+    };
+} fat_time_t;
 
 typedef struct fat_dir_t {
     uint8_t name[FAT_FILE_NAME_SIZE];

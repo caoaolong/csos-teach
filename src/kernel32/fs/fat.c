@@ -3,6 +3,7 @@
 #include <logf.h>
 #include <disk.h>
 #include <task.h>
+#include <csos/time.h>
 #include <csos/memory.h>
 #include <csos/string.h>
 
@@ -105,6 +106,24 @@ static void fat_to_sfn(char *dst, const char *src)
     }
 }
 
+extern int century;
+
+static void fat_to_dt(fat_dir_t *dir, tm *time)
+{
+    fat_date_t date;
+    date.year = century * 100 + time->tm_year - 1980;
+    date.month = time->tm_mon;
+    date.date = time->tm_mday;
+    dir->crt_date = date.v;
+    fat_time_t ftime;
+    ftime.hour = time->tm_hour;
+    ftime.minute = time->tm_min;
+    ftime.second = time->tm_sec / 2;
+    dir->crt_time = ftime.v;
+    // 暂时无法处理
+    dir->crt_hdths = 0;
+}
+
 static BOOL match_fat_name(fat_dir_t *fdir, const char *name)
 {
     char buf[FAT_FILE_NAME_SIZE];
@@ -124,6 +143,69 @@ static void read_fat_file(fs_fat_t *fat, FILE *file, fat_dir_t *pdir)
 static BOOL fat_verify_cluster(fat_cluster_t cluster)
 {
     return (cluster < FAT_CLUSTER_INVALID) && (cluster >= 0x2);
+}
+
+static uint32_t fat_alloc_cluster(fs_fat_t *fat)
+{
+    if (fat->free > 0) {
+        return fat->free++;
+    }
+    fat->free = 0;
+    // 当前簇和偏移量
+    int cps = fat->bps / sizeof(fat_cluster_t);
+    int index = fat->free / cps;
+    int offset = fat->free % cps;
+    char buf[DISK_SECTOR_SIZE];
+    while (index < fat->fat_sectors) {
+        if (device_read(fat->fs->devid, fat->fat_start + index, buf, 1) < 0) {
+            return FAT_CLUSTER_INVALID;
+        }
+        fat_cluster_t *pcc = (fat_cluster_t *)buf;
+        while (*pcc != 0) {
+            fat->free++;
+            pcc++;
+        }
+        if (*pcc == 0) {
+            *pcc = 0xFFFF;
+            if (device_write(fat->fs->devid, fat->fat_start + index, buf, 1) < 0) {
+                logf("fat entry write failed");
+                return FAT_CLUSTER_INVALID;
+            }
+            return fat->free;
+        } else {
+            index++;
+        }
+    }
+    return FAT_CLUSTER_INVALID;
+}
+
+static BOOL fat_free_cluster(fs_fat_t *fat, uint32_t cluster)
+{
+    int cps = fat->bps / sizeof(fat_cluster_t);
+    int index = cluster / cps;
+    int offset = cluster % cps;
+    while (index < fat->fat_sectors) {
+        if (!fs_bread(fat, fat->fat_start + index)) {
+            return FLASE;
+        }
+        fat_cluster_t *pcc = (fat_cluster_t *)fat->buf + offset;
+        BOOL finish = FLASE;
+        for (int i = offset; i < cps; i++) {
+            if (*pcc < FAT_CLUSTER_INVALID) {
+                *pcc++ = 0;
+            } else {
+                finish = TRUE;
+                break;
+            }
+        }
+        if (finish) {
+            return TRUE;
+        } else {
+            index++;
+            offset = 0;
+        }
+    }
+    return FLASE;
 }
 
 static fat_cluster_t fat_next_cluster(fs_fat_t *fat, fat_cluster_t cc)
@@ -324,7 +406,7 @@ int fat_fs_mount(fs_t *fs, int major, int minor)
     fat->root_start = fat->fat_start + fat->fat_sectors * fat->fat_total;
     fat->data_start = fat->root_start + fat->root_total * 32 / DISK_SECTOR_SIZE;
     fat->fs = fs;
-    fat->pcs = -1;
+    fat->pcs = fat->free = -1;
     if (fat->fat_total != 2 || kernel_memcmp(br->fat_name, "FAT16", 5)) {
         logf("invalid fat format");
         free_page((uint32_t)br);
@@ -361,6 +443,7 @@ int fat_fs_open(fs_t *fs, FILE *file, const char *path, const char *mode)
         return -1;
     }
     read_fat_file(fat, file, dir);
+    file->devid = fs->devid;
     return 0;
 }
 
@@ -418,7 +501,7 @@ int fat_fs_write(fs_t *fs, FILE *file, char *buf, int size)
 
 void fat_fs_close(fs_t *fs, FILE *file)
 {
-    device_close(file->devid);
+    kernel_memset(file, 0, sizeof(file));
 }
 
 int fat_fs_seek(fs_t *fs, FILE *file, uint32_t offset, int dir)
@@ -520,6 +603,142 @@ int fat_fs_chdir(fs_t *fs, const char *path)
     return 0;
 }
 
+fat_dir_t *read_fat_dir_from_parent_path(fs_t *fs, char *path, char **name)
+{
+    fs_fat_t *fat = (fs_fat_t*)fs->data;
+    char *dir = path + kernel_strlen(path);
+    while (*dir != '/') dir--;
+    *dir++ = 0;
+    *name = dir;
+    // 处理根目录
+    if (dir - 1 == path) {
+        int index = fat->root_start;
+        while(index < fat->root_total && fs_bread(fat, index)) {
+            fat_dir_t *pdir = (fat_dir_t *)fat->buf;
+            int dcount = fat->bps / sizeof(fat_dir_t);
+            for (int i = 0; i < dcount; i++) {
+                if (pdir->name[0] == FDN_END) {
+                    // 用来临时存储一下当前要写入的簇号
+                    pdir->cluster_h = index >> 16;
+                    pdir->cluster_l = index & 0xFFFF;
+                    return pdir;
+                }
+                if (pdir->name[0] == FDN_FREE) {
+                    pdir++;
+                    continue;
+                }
+                file_type_t ftype = read_fat_ftype(pdir);
+                if (match_fat_name(pdir, dir) && ftype == FT_DIR) {
+                    logf("directory is exists");
+                    return NULL;
+                }
+                pdir++;
+            }
+            index++;
+        }
+        logf("no such directory");
+        return NULL;
+    }
+    int sector = 0, offset = 0;
+    read_fat_path_cluster(fs, path, &sector, &offset);
+    if (sector >= FAT_CLUSTER_INVALID) {
+        logf("read path cluster failed!");
+        return NULL;
+    }
+    return read_fat_dir(fat, sector, offset);
+}
+
+static int fat_fs_write_dir_data(fs_fat_t *fat, fat_dir_t *ndir, uint32_t pc)
+{
+    ndir->attr = FDA_DIRECT;
+    ndir->reserved_nt = 0;
+    char buf[DISK_SECTOR_SIZE];
+    kernel_memset(buf, 0, DISK_SECTOR_SIZE);
+    uint32_t datac = fat->data_start + ((ndir->cluster_h << 16) | ndir->cluster_l) - 2;
+    kernel_memcpy(ndir->name, ".          ", FAT_FILE_NAME_SIZE);
+    kernel_memcpy(buf, ndir, sizeof(fat_dir_t));
+    kernel_memcpy(ndir->name, "..         ", FAT_FILE_NAME_SIZE);
+    ndir->cluster_l = pc & 0xFFFF;
+    ndir->cluster_h = pc >> 16;
+    kernel_memcpy(buf + sizeof(fat_dir_t), ndir, sizeof(fat_dir_t));
+    if (device_write(fat->fs->devid, datac, buf, 1) < 0) {
+        logf("disk write failed");
+        return -1;
+    }
+    return 0;
+}
+
+int fat_fs_mkdir(fs_t *fs, char *path)
+{
+    fs_fat_t *fat = (fs_fat_t*)fs->data;
+    char *name = NULL;
+    fat_dir_t ndir;
+    fat_dir_t *dir = read_fat_dir_from_parent_path(fs, path, &name);
+    if (!dir) return -1;
+    fat_to_sfn(ndir.name, name);
+    ndir.attr = FDA_DIRECT;
+    ndir.reserved_nt = 0x08;
+    ndir.size = 0;
+    tm time;
+    time_read(&time, OS_TZ);
+    fat_to_dt(&ndir, &time);
+    ndir.la_date = ndir.crt_date;
+    ndir.wrt_date = ndir.crt_date;
+    ndir.wrt_time = ndir.crt_time;
+    uint32_t cluster = fat_alloc_cluster(fat);
+    if (cluster >= FAT_CLUSTER_INVALID) {
+        logf("disk is full");
+        return -1;
+    }
+    ndir.cluster_l = cluster & 0xFFFF;
+    ndir.cluster_h = cluster >> 16;
+    // 处理根目录区
+    if (dir->name[0] == FDN_END) {
+        // 写入DIR
+        uint32_t rdatac = (dir->cluster_h << 16) | dir->cluster_l;
+        kernel_memcpy(dir, &ndir, sizeof(fat_dir_t));
+        if (device_write(fs->devid, rdatac, fat->buf, 1) < 0) {
+            logf("disk write failed");
+            return -1;
+        }
+        // 写入[.]和[..]
+        return fat_fs_write_dir_data(fat, &ndir, 0);
+    } else {
+        uint32_t datac = fat->data_start + ((dir->cluster_h << 16) | dir->cluster_l) - 2;
+        do {
+            if (!fs_bread(fat, datac)) {
+                logf("mkdir failed");
+                return -1;
+            }
+            fat_dir_t *cdir = (fat_dir_t *)fat->buf;
+            while (cdir->name[0] != FDN_END && ((char *)cdir - fat->buf) < DISK_SECTOR_SIZE) {
+                if (match_fat_name(cdir, name)) {
+                    logf("directory is exists");
+                    return -1;
+                }
+                cdir++;
+            }
+            if (cdir->name[0] == FDN_END) {
+                // 写入DIR
+                kernel_memcpy(cdir, &ndir, sizeof(fat_dir_t));
+                if (device_write(fs->devid, datac, fat->buf, 1) < 0) {
+                    logf("disk write failed");
+                    return -1;
+                }
+                // 写入[.]和[..]
+                return fat_fs_write_dir_data(fat, &ndir, datac);
+            } else {
+                datac++;
+            }
+        } while(TRUE);
+    }
+}
+
+int fat_fs_rmdir(fs_t *fs, char *path)
+{
+    return 0;
+}
+
 fs_op_t fatfs_op = {
     .mount = fat_fs_mount,
     .unmount = fat_fs_unmount,
@@ -533,5 +752,7 @@ fs_op_t fatfs_op = {
     .readdir = fat_fs_readdir,
     .closedir = fat_fs_closedir,
     .getcwd = fat_fs_getcwd,
-    .chdir = fat_fs_chdir
+    .chdir = fat_fs_chdir,
+    .mkdir = fat_fs_mkdir,
+    .rmdir = fat_fs_rmdir
 };

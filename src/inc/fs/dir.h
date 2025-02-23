@@ -22,4 +22,7 @@ int closedir(DIR *dir);
 
 char *getcwd();
 int chdir(const char *path);
+
+int mkdir(const char *path);
+int rmdir(const char *path);
 #endif

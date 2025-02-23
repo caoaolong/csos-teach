@@ -33,7 +33,9 @@
         "disk.h": "c",
         "fat.h": "c",
         "dir.h": "c",
-        "chrono": "c"
+        "chrono": "c",
+        "typeinfo": "c",
+        "file.h": "c"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }
