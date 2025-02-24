@@ -3,6 +3,6 @@
 
 int main(int argc, char *argv[])
 {
-    mkdir("/root/packages");
+    rmdir("/home/calong/packages");
     return 0;
 }
