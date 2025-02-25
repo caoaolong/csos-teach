@@ -12,7 +12,7 @@ void dev_fs_unmount(fs_t *fs)
 
 }
 
-int dev_fs_open(fs_t *fs, FILE *file, const char *path, const char *mode)
+int dev_fs_open(fs_t *fs, FILE *file, char *path, const char *mode)
 {
     return 0;
 }

@@ -82,7 +82,7 @@ void fs_init()
     rootfs = mount(FS_FAT, "/", ROOT_DEV);
 }
 
-int fs_fopen(FILE *file, const char *filepath, const char *mode)
+int fs_fopen(FILE *file, char *filepath, const char *mode)
 {
     return rootfs->op->fopen(rootfs, file, filepath, mode);
 }

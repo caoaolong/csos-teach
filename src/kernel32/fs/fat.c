@@ -15,7 +15,7 @@ static BOOL fs_bread(fs_fat_t *fat, int sector)
         fat->pcs = sector;
         return TRUE;
     }
-    return FLASE;
+    return FALSE;
 }
 
 static fat_dir_t *read_fat_dir(fs_fat_t *fat, int sector, int offset)
@@ -145,16 +145,10 @@ static BOOL fat_verify_cluster(fat_cluster_t cluster)
     return (cluster < FAT_CLUSTER_INVALID) && (cluster >= 0x2);
 }
 
-static uint32_t fat_alloc_cluster(fs_fat_t *fat)
+static uint32_t fat_alloc_cluster(fs_fat_t *fat, BOOL append)
 {
-    if (fat->free > 0) {
-        return fat->free++;
-    }
-    fat->free = 0;
-    // 当前簇和偏移量
     int cps = fat->bps / sizeof(fat_cluster_t);
-    int index = fat->free / cps;
-    int offset = fat->free % cps;
+    int index = 0, offset = 0;
     char buf[DISK_SECTOR_SIZE];
     while (index < fat->fat_sectors) {
         if (device_read(fat->fs->devid, fat->fat_start + index, buf, 1) < 0) {
@@ -162,16 +156,19 @@ static uint32_t fat_alloc_cluster(fs_fat_t *fat)
         }
         fat_cluster_t *pcc = (fat_cluster_t *)buf;
         while (*pcc != 0) {
-            fat->free++;
             pcc++;
+            offset++;
         }
         if (*pcc == 0) {
+            if (append) {
+                *(pcc - 1) = offset;
+            }
             *pcc = 0xFFFF;
             if (device_write(fat->fs->devid, fat->fat_start + index, buf, 1) < 0) {
                 logf("fat entry write failed");
                 return FAT_CLUSTER_INVALID;
             }
-            return fat->free;
+            return append ? offset - 1 : offset;
         } else {
             index++;
         }
@@ -187,10 +184,10 @@ static BOOL fat_free_cluster(fs_fat_t *fat, uint32_t cluster)
     char buf[DISK_SECTOR_SIZE];
     while (index < fat->fat_sectors) {
         if (device_read(fat->fs->devid, fat->fat_start + index, buf, 1) < 0) {
-            return FLASE;
+            return FALSE;
         }
         fat_cluster_t *pcc = (fat_cluster_t *)buf + offset;
-        BOOL finish = FLASE;
+        BOOL finish = FALSE;
         for (int i = offset; i < cps; i++) {
             if (*pcc == 0xFFFF) {
                 *pcc++ = 0;
@@ -203,7 +200,7 @@ static BOOL fat_free_cluster(fs_fat_t *fat, uint32_t cluster)
         if (finish) {
             if (device_write(fat->fs->devid, fat->fat_start + index, buf, 1) < 0) {
                 logf("fat entry write failed");
-                return FLASE;
+                return FALSE;
             }
             return TRUE;
         } else {
@@ -211,13 +208,13 @@ static BOOL fat_free_cluster(fs_fat_t *fat, uint32_t cluster)
             offset = 0;
         }
     }
-    return FLASE;
+    return FALSE;
 }
 
 static fat_cluster_t fat_next_cluster(fs_fat_t *fat, fat_cluster_t cc)
 {
     if (!fat_verify_cluster(cc)) 
-        return FLASE;
+        return FALSE;
     if (cc == fat->root_start) {
         return cc + 1;
     }
@@ -243,7 +240,7 @@ static BOOL fat_move_file_offset(fs_fat_t *fat, FILE *file, uint32_t cpb, uint32
         // 获取簇链中的下一个簇号
         fat_cluster_t nc = fat_next_cluster(fat, file->cblk);
         if (nc >= FAT_CLUSTER_INVALID)
-            return FLASE;
+            return FALSE;
         file->cblk = nc;
     }
 
@@ -334,7 +331,7 @@ static file_type_t read_fat_path_cluster(fs_t *fs, const char *path, int *sector
     uint32_t dcount = fat->bps * fat->spc / sizeof(fat_dir_t);
     uint32_t sc = fat->root_start;
     fat_dir_t dirs[dcount];
-    BOOL found = FLASE, foundend = FLASE;
+    BOOL found = FALSE, foundend = FALSE;
     while (sc < FAT_CLUSTER_INVALID && *(path + si++) != 0) {
         kernel_memset(buf, 0, sizeof(buf));
         do {
@@ -376,7 +373,7 @@ static file_type_t read_fat_path_cluster(fs_t *fs, const char *path, int *sector
         }
         di = 0;
         if (found) {
-            found = FLASE;
+            found = FALSE;
             continue;
         } else {
             sc = (uint32_t)fat_next_cluster(fat, (fat_cluster_t)sc);
@@ -387,6 +384,127 @@ static file_type_t read_fat_path_cluster(fs_t *fs, const char *path, int *sector
         return FT_NUKNOWN;
     }
     return FT_DIR;
+}
+
+static void fat_set_file_mode(FILE *file, const char *mode) 
+{
+    if (!kernel_strcmp(mode, "r")) {
+        file->mode |= FM_READ;
+    } else if (!kernel_strcmp(mode, "w")) {
+        file->mode |= FM_WRITE;
+    }
+}
+
+static int fat_alloc_dir(fs_fat_t *fat, fat_dir_t *dir, const char *name, uint8_t attr, uint32_t size)
+{
+    fat_to_sfn(dir->name, name);
+    dir->attr = attr;
+    dir->reserved_nt = 0x08;
+    if (attr & FT_FILE) {
+        dir->size = size;
+    } else {
+        dir->size = 0;
+    }
+    tm time;
+    time_read(&time, OS_TZ);
+    fat_to_dt(dir, &time);
+    dir->la_date = dir->crt_date;
+    dir->wrt_date = dir->crt_date;
+    dir->wrt_time = dir->crt_time;
+    uint32_t cluster = fat_alloc_cluster(fat, FALSE);
+    if (cluster >= FAT_CLUSTER_INVALID) {
+        logf("disk is full");
+        return -1;
+    }
+    dir->cluster_l = cluster & 0xFFFF;
+    dir->cluster_h = cluster >> 16;
+    return 0;
+}
+
+// type: 0=mkdir, 1=rmdir
+fat_dir_t *read_fat_dir_from_parent_path(fs_t *fs, char *path, char **name, int type)
+{
+    fs_fat_t *fat = (fs_fat_t*)fs->data;
+    char *dir = path + kernel_strlen(path);
+    while (*dir != '/') dir--;
+    if (type == 0) {
+        *dir++ = 0;
+    } else if (type == 1) {
+        dir++;
+    }
+    *name = dir;
+    // 处理根目录
+    if (dir - 1 == path) {
+        int index = fat->root_start;
+        while(index < fat->data_start && fs_bread(fat, index)) {
+            fat_dir_t *pdir = (fat_dir_t *)fat->buf;
+            int dcount = fat->bps / sizeof(fat_dir_t);
+            for (int i = 0; i < dcount; i++) {
+                if (pdir->name[0] == FDN_END) {
+                    if (type == 0) {
+                        // 用来临时存储一下当前要写入的簇号
+                        pdir->cluster_h = index >> 16;
+                        pdir->cluster_l = index & 0xFFFF;
+                        return pdir;
+                    } else if (type == 1) {
+                        logf("no such directory");
+                        return NULL;
+                    }
+                }
+                if (pdir->name[0] == FDN_FREE) {
+                    pdir++;
+                    continue;
+                }
+                file_type_t ftype = read_fat_ftype(pdir);
+                if (match_fat_name(pdir, dir) && ftype == FT_DIR) {
+                    if (type == 0) {
+                        logf("directory is exists");
+                        return NULL;
+                    } else if (type == 1) {
+                        // 用来临时存储一下当前的簇号
+                        pdir->wrt_date = index >> 16;
+                        pdir->wrt_time = index & 0xFFFF;
+                        return pdir;
+                    }
+                }
+                pdir++;
+            }
+            index++;
+        }
+        logf("no such directory");
+        return NULL;
+    } else {
+        int sector = 0, offset = 0;
+        read_fat_path_cluster(fs, path, &sector, &offset);
+        if (sector >= FAT_CLUSTER_INVALID) {
+            logf("read path cluster failed!");
+            return NULL;
+        }
+        fat_dir_t *pdir = read_fat_dir(fat, sector, offset);
+        pdir->wrt_date = sector >> 16;
+        pdir->wrt_time = sector & 0xFFFF;
+        return pdir;
+    }
+}
+
+static int fat_fs_write_dir_data(fs_fat_t *fat, fat_dir_t *ndir, uint32_t pc)
+{
+    ndir->attr = FDA_DIRECT;
+    ndir->reserved_nt = 0;
+    char buf[DISK_SECTOR_SIZE];
+    kernel_memset(buf, 0, DISK_SECTOR_SIZE);
+    uint32_t datac = fat->data_start + ((ndir->cluster_h << 16) | ndir->cluster_l) - 2;
+    kernel_memcpy(ndir->name, ".          ", FAT_FILE_NAME_SIZE);
+    kernel_memcpy(buf, ndir, sizeof(fat_dir_t));
+    kernel_memcpy(ndir->name, "..         ", FAT_FILE_NAME_SIZE);
+    ndir->cluster_l = pc & 0xFFFF;
+    ndir->cluster_h = pc >> 16;
+    kernel_memcpy(buf + sizeof(fat_dir_t), ndir, sizeof(fat_dir_t));
+    if (device_write(fat->fs->devid, datac, buf, 1) < 0) {
+        logf("disk write failed");
+        return -1;
+    }
+    return 0;
 }
 
 int fat_fs_mount(fs_t *fs, int major, int minor)
@@ -420,7 +538,7 @@ int fat_fs_mount(fs_t *fs, int major, int minor)
     fat->root_start = fat->fat_start + fat->fat_sectors * fat->fat_total;
     fat->data_start = fat->root_start + fat->root_total * 32 / DISK_SECTOR_SIZE;
     fat->fs = fs;
-    fat->pcs = fat->free = -1;
+    fat->pcs = -1;
     if (fat->fat_total != 2 || kernel_memcmp(br->fat_name, "FAT16", 5)) {
         logf("invalid fat format");
         free_page((uint32_t)br);
@@ -440,24 +558,69 @@ void fat_fs_unmount(fs_t *fs)
     device_close(fs->devid);
 }
 
-int fat_fs_open(fs_t *fs, FILE *file, const char *path, const char *mode)
+int fat_fs_open(fs_t *fs, FILE *file, char *path, const char *mode)
 {
+    fat_set_file_mode(file, mode);
     fs_fat_t *fat = (fs_fat_t *)fs->data;
-    fat_dir_t *pdir = NULL;
     int pindex = 0;
-    int sector = 0, offset = 0;
-    file_type_t ftype = read_fat_path_cluster(fs, path, &sector, &offset);
-    if (sector >= FAT_CLUSTER_INVALID) {
-        logf("no such file");
-        return -1;
-    }
-    fat_dir_t *dir = read_fat_dir(fat, sector, offset);
+    char *name = NULL;
+    fat_dir_t *dir = read_fat_dir_from_parent_path(fs, path, &name, 0);
     if (!dir) {
-        logf("no such file");
+        logf("open file failed");
         return -1;
     }
-    read_fat_file(fat, file, dir);
+    uint32_t datac = (dir->cluster_h << 16) | dir->cluster_l;
+    // 不是根目录则定位到数据区
+    if (name - 1 > path) {
+        datac += fat->data_start - 2;
+    }
+    fat_dir_t *pdir = NULL;
+    int index = 0;
+    char buf[DISK_SECTOR_SIZE];
+    int dcount = fat->bps / sizeof(fat_dir_t);
+    int dindex;
+    BOOL found = FALSE;
+    while (!found) {
+        found = FALSE;
+        if (device_read(fs->devid, datac + index, buf, 1) < 0) {
+            logf("disk read failed");
+            return -1;
+        }
+        for (dindex = 0; dindex < dcount; dindex++) {
+            pdir = (fat_dir_t *)buf + dindex;
+            if (pdir->name[0] == FDN_END) {
+                if (file->mode & FM_WRITE) {
+                    found = TRUE;
+                    break;
+                } else {
+                    logf("no such file");
+                    return -1;
+                }
+            }
+            if (pdir->name[0] == FDN_FREE) {
+                continue;
+            }
+            file_type_t ftype = read_fat_ftype(pdir);
+            if (match_fat_name(pdir, name) && ftype == FT_FILE) {
+                break;
+            }
+        }
+        if (!found) {
+            index++;
+        }
+    }
+    if (pdir->name[0] == FDN_END) {
+        if (fat_alloc_dir(fat, pdir, name, FDA_ARCHIVE, 0) < 0) {
+            return -1;
+        }
+        if (device_write(fs->devid, datac + index, buf, 1) < 0) {
+            return -1;
+        }
+    }
+    read_fat_file(fat, file, pdir);
     file->devid = fs->devid;
+    file->dcluster = datac + index;
+    file->doffset = dindex;
     return 0;
 }
 
@@ -510,7 +673,76 @@ int fat_fs_read(fs_t *fs, FILE *file, char *buf, int size)
 
 int fat_fs_write(fs_t *fs, FILE *file, char *buf, int size)
 {
-    return device_write(file->devid, file->offset, buf, size);
+    if (!(file->mode & FM_WRITE)) {
+        logf("currently in read-only mode");
+        return -1;
+    }
+    fs_fat_t *fat = (fs_fat_t *)fs->data;
+    int nbytes = size;
+    while (nbytes > 0) {
+        // 写当前扇区剩余的空间
+        if (nbytes > fat->bps && file->offset % fat->bps > 0) {
+            if (device_write(fs->devid, fat->data_start + file->cblk - 2, buf + (size - nbytes), 1) < 0) {
+                logf("write file failed");
+                return -1;
+            }
+            int cnbytes = (fat->bps - (file->offset % fat->bps));
+            file->offset += cnbytes;
+            nbytes -= cnbytes;
+        // 写整个扇区
+        } else if (nbytes > fat->bps && file->offset % fat->bps == 0) {
+            int cluster = fat_alloc_cluster(fat, TRUE);
+            if (cluster >= FAT_CLUSTER_INVALID) {
+                logf("disk is full");
+                return -1;
+            }
+            if (device_write(fs->devid, fat->data_start + file->cblk - 2, buf + (size - nbytes), 1) < 0) {
+                logf("write file failed");
+                return -1;
+            }
+            file->offset += fat->bps;
+            file->cblk++;
+            nbytes -= fat->bps;
+        // 写剩余扇区
+        } else if (nbytes < fat->bps && file->offset % fat->bps == 0) {
+            int cluster = fat_alloc_cluster(fat, TRUE);
+            if (cluster >= FAT_CLUSTER_INVALID) {
+                logf("disk is full");
+                return -1;
+            }
+            if (device_write(fs->devid, fat->data_start + file->cblk - 2, buf + (size - nbytes), 1) < 0) {
+                logf("write file failed");
+                return -1;
+            }
+            file->offset += nbytes;
+            file->cblk++;
+            nbytes -= nbytes;
+        }
+    }
+    if (!fs_bread(fat, file->dcluster)) {
+        logf("write file failed");
+        return -1;
+    }
+    fat_dir_t *fdir = (fat_dir_t *)fat->buf + file->doffset;
+    fdir->size += size;
+    tm time;
+    time_read(&time, OS_TZ);
+    fat_date_t date;
+    date.date = time.tm_mday;
+    date.month = time.tm_mon;
+    date.year = century * 100 + time.tm_year - 1980;
+    fat_time_t wtime;
+    wtime.hour = time.tm_hour;
+    wtime.minute = time.tm_min;
+    wtime.second = time.tm_sec * 2;
+    fdir->la_date = date.v;
+    fdir->wrt_date = date.v;
+    fdir->wrt_time = wtime.v;
+    if (device_write(fs->devid, file->dcluster, fat->buf, 1) < 0) {
+        logf("write file failed");
+        return -1;
+    }
+    return size;
 }
 
 void fat_fs_close(fs_t *fs, FILE *file)
@@ -617,92 +849,6 @@ int fat_fs_chdir(fs_t *fs, const char *path)
     return 0;
 }
 
-// type: 0=mkdir, 1=rmdir
-fat_dir_t *read_fat_dir_from_parent_path(fs_t *fs, char *path, char **name, int type)
-{
-    fs_fat_t *fat = (fs_fat_t*)fs->data;
-    char *dir = path + kernel_strlen(path);
-    while (*dir != '/') dir--;
-    if (type == 0) {
-        *dir++ = 0;
-    } else if (type == 1) {
-        dir++;
-    }
-    *name = dir;
-    // 处理根目录
-    if (dir - 1 == path) {
-        int index = fat->root_start;
-        while(index < fat->data_start && fs_bread(fat, index)) {
-            fat_dir_t *pdir = (fat_dir_t *)fat->buf;
-            int dcount = fat->bps / sizeof(fat_dir_t);
-            for (int i = 0; i < dcount; i++) {
-                if (pdir->name[0] == FDN_END) {
-                    if (type == 0) {
-                        // 用来临时存储一下当前要写入的簇号
-                        pdir->cluster_h = index >> 16;
-                        pdir->cluster_l = index & 0xFFFF;
-                        return pdir;
-                    } else if (type == 1) {
-                        logf("no such directory");
-                        return NULL;
-                    }
-                }
-                if (pdir->name[0] == FDN_FREE) {
-                    pdir++;
-                    continue;
-                }
-                file_type_t ftype = read_fat_ftype(pdir);
-                if (match_fat_name(pdir, dir) && ftype == FT_DIR) {
-                    if (type == 0) {
-                        logf("directory is exists");
-                        return NULL;
-                    } else if (type == 1) {
-                        // 用来临时存储一下当前的簇号
-                        pdir->wrt_date = index >> 16;
-                        pdir->wrt_time = index & 0xFFFF;
-                        return pdir;
-                    }
-                }
-                pdir++;
-            }
-            index++;
-        }
-        logf("no such directory");
-        return NULL;
-    } else {
-        int sector = 0, offset = 0;
-        read_fat_path_cluster(fs, path, &sector, &offset);
-        if (sector >= FAT_CLUSTER_INVALID) {
-            logf("read path cluster failed!");
-            return NULL;
-        }
-        fat_dir_t *pdir = read_fat_dir(fat, sector, offset);
-        pdir->wrt_date = sector >> 16;
-        pdir->wrt_time = sector & 0xFFFF;
-        return pdir;
-    }
-}
-
-static int fat_fs_write_dir_data(fs_fat_t *fat, fat_dir_t *ndir, uint32_t pc)
-{
-    ndir->attr = FDA_DIRECT;
-    ndir->reserved_nt = 0;
-    char buf[DISK_SECTOR_SIZE];
-    kernel_memset(buf, 0, DISK_SECTOR_SIZE);
-    uint32_t datac = fat->data_start + ((ndir->cluster_h << 16) | ndir->cluster_l) - 2;
-    kernel_memcpy(ndir->name, ".          ", FAT_FILE_NAME_SIZE);
-    kernel_memcpy(buf, ndir, sizeof(fat_dir_t));
-    kernel_memcpy(ndir->name, "..         ", FAT_FILE_NAME_SIZE);
-    ndir->cluster_l = pc & 0xFFFF;
-    ndir->cluster_h = pc >> 16;
-    kernel_memcpy(buf + sizeof(fat_dir_t), ndir, sizeof(fat_dir_t));
-    if (device_write(fat->fs->devid, datac, buf, 1) < 0) {
-        logf("disk write failed");
-        return -1;
-    }
-    return 0;
-}
-
 int fat_fs_mkdir(fs_t *fs, char *path)
 {
     fs_fat_t *fat = (fs_fat_t*)fs->data;
@@ -710,23 +856,9 @@ int fat_fs_mkdir(fs_t *fs, char *path)
     fat_dir_t ndir;
     fat_dir_t *dir = read_fat_dir_from_parent_path(fs, path, &name, 0);
     if (!dir) return -1;
-    fat_to_sfn(ndir.name, name);
-    ndir.attr = FDA_DIRECT;
-    ndir.reserved_nt = 0x08;
-    ndir.size = 0;
-    tm time;
-    time_read(&time, OS_TZ);
-    fat_to_dt(&ndir, &time);
-    ndir.la_date = ndir.crt_date;
-    ndir.wrt_date = ndir.crt_date;
-    ndir.wrt_time = ndir.crt_time;
-    uint32_t cluster = fat_alloc_cluster(fat);
-    if (cluster >= FAT_CLUSTER_INVALID) {
-        logf("disk is full");
+    if (fat_alloc_dir(fat, &ndir, name, FDA_DIRECT, 0) < 0) {
         return -1;
     }
-    ndir.cluster_l = cluster & 0xFFFF;
-    ndir.cluster_h = cluster >> 16;
     // 处理根目录区
     if (dir->name[0] == FDN_END) {
         // 写入DIR

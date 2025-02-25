@@ -40,7 +40,7 @@ typedef struct stat_t {
 typedef struct fs_op_t {
     int (*mount)(fs_t *fs, int major, int minor);
     void (*unmount)(fs_t *fs);
-    int (*fopen)(fs_t *fs, FILE *file, const char *path, const char *mode);
+    int (*fopen)(fs_t *fs, FILE *file, char *path, const char *mode);
     int (*fread)(fs_t *fs, FILE *file, char *buf, int size);
     int (*fwrite)(fs_t *fs, FILE *file, char *buf, int size);
     void (*fclose)(fs_t *fs, FILE *file);
@@ -57,7 +57,7 @@ typedef struct fs_op_t {
 
 void fs_init();
 
-int fs_fopen(FILE *file, const char *filepath, const char *mode);
+int fs_fopen(FILE *file, char *filepath, const char *mode);
 int fs_fread(FILE *file, char *buf, int size);
 int fs_fwrite(FILE *file, char *buf, int size);
 int fs_lseek(FILE *file, int pos, int dir);

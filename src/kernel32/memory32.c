@@ -13,14 +13,14 @@ static void init_memory32_info(memory32_info_t *memory32_info, uint8_t *bits,
     memory32_info->size = size;
     memory32_info->page_size = page_size;
     memory32_info->start = start;
-    bitmap_init(&memory32_info->bitmap, bits, size / page_size, FLASE);
+    bitmap_init(&memory32_info->bitmap, bits, size / page_size, FALSE);
 }
 
 static uint32_t memory32_alloc_page(memory32_info_t *memory32_info, uint32_t count)
 {
     mutex_lock(&memory32_info->mutex);
     uint32_t addr = 0;
-    int page_index = bitmap_alloc_bits(&memory32_info->bitmap, FLASE, count);
+    int page_index = bitmap_alloc_bits(&memory32_info->bitmap, FALSE, count);
     if (page_index >= 0)
     {
         addr = memory32_info->start + page_index * memory32_info->page_size;
@@ -33,7 +33,7 @@ static void memory32_free_page(memory32_info_t *memory32_info, uint32_t addr, ui
 {
     mutex_lock(&memory32_info->mutex);
     uint32_t page_index = (addr  - memory32_info->start) / memory32_info->page_size;
-    bitmap_set_bits(&memory32_info->bitmap, page_index, count, FLASE);
+    bitmap_set_bits(&memory32_info->bitmap, page_index, count, FALSE);
     mutex_unlock(&memory32_info->mutex);
 }
 
@@ -178,7 +178,7 @@ uint32_t memory32_create_pde()
 
 uint32_t memory32_get_paddr(uint32_t pde, uint32_t vaddr)
 {
-    pte_t *pte = find_pte((pde_t *)pde, vaddr, FLASE);
+    pte_t *pte = find_pte((pde_t *)pde, vaddr, FALSE);
     if (!pte) return 0;
     return PTE_ADDRESS(pte) + (vaddr & (PAGE_SIZE - 1));
 }
@@ -242,11 +242,11 @@ void free_page(uint32_t addr)
     } else {
         pte_t *pte = NULL;
         #ifdef TASK_TSS
-            pte = find_pte((pde_t *)get_running_task()->tss.cr3, addr, FLASE);
+            pte = find_pte((pde_t *)get_running_task()->tss.cr3, addr, FALSE);
         #endif
 
         #ifdef TASK_SIMPLE
-            pte = find_pte((pde_t *)get_running_task()->pde, addr, FLASE);
+            pte = find_pte((pde_t *)get_running_task()->pde, addr, FALSE);
         #endif
         memory32_free_page(&memory32_info, PTE_INDEX((uint32_t)pte), 1);
         pte->v = 0;

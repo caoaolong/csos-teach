@@ -16,10 +16,10 @@ static device_t dt[DEVICE_TABLE_SIZE];
 static BOOL verify_device_id(int device_id)
 {
     if (device_id < 0 || device_id >= DEVICE_TABLE_SIZE) {
-        return FLASE;
+        return FALSE;
     }
     if (dt[device_id].handle == NULL) {
-        return FLASE;
+        return FALSE;
     }
     return TRUE;
 }

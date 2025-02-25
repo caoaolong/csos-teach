@@ -51,8 +51,6 @@ typedef struct fs_fat_t {
     char *buf;
     // current sector
     uint32_t pcs;
-    // current free cluster;
-    int free;
 } fs_fat_t;
 
 enum {

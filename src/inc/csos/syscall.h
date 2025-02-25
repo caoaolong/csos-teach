@@ -25,6 +25,7 @@
 #define SYS_NR_GETCWD       17
 #define SYS_NR_MKDIR        18
 #define SYS_NR_RMDIR        19
+#define SYS_NR_FPUTS        20
 
 #define SYSCALL_LCALL
 

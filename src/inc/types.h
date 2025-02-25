@@ -19,7 +19,7 @@ typedef uint16_t fat_cluster_t;
 #define BOOL    _Bool
 
 #define TRUE    1
-#define FLASE   0
+#define FALSE   0
 
 #define FILE_NAME_SIZE  32
 

@@ -21,6 +21,13 @@ int fgets(FILE *file, char *buf, uint32_t size)
     return nbytes;
 }
 
+int fputs(FILE *file, char *buf, uint32_t size)
+{
+    syscall_arg_t args = {SYS_NR_FPUTS, (int)file, (int)buf, size, 0};
+    int nbytes = _syscall(&args);
+    return nbytes;
+}
+
 int fclose(FILE *file)
 {
     syscall_arg_t args = {SYS_NR_FCLOSE, (int)file, 0, 0, 0};
