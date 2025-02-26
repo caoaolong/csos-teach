@@ -44,6 +44,7 @@ typedef struct fs_op_t {
     int (*fread)(fs_t *fs, FILE *file, char *buf, int size);
     int (*fwrite)(fs_t *fs, FILE *file, char *buf, int size);
     void (*fclose)(fs_t *fs, FILE *file);
+    int (*remove)(fs_t *fs, char *path);
     int (*lseek)(fs_t *fs, FILE *file, uint32_t offset, int dir);
     int (*fstat)(fs_t *fs, FILE *file, stat_t *st);
     int (*opendir)(fs_t *fs, const char *path, DIR *dir);
@@ -61,6 +62,7 @@ int fs_fopen(FILE *file, char *filepath, const char *mode);
 int fs_fread(FILE *file, char *buf, int size);
 int fs_fwrite(FILE *file, char *buf, int size);
 int fs_lseek(FILE *file, int pos, int dir);
+int fs_remove(char *path);
 int fs_fclose(FILE *file);
 int fs_isatty(int file);
 int fs_fstat(int file);

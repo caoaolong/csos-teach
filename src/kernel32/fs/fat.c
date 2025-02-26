@@ -791,6 +791,19 @@ int fat_fs_seek(fs_t *fs, FILE *file, uint32_t offset, int dir)
     return 0;
 }
 
+int fat_fs_remove(fs_t *fs, char *path)
+{
+    fs_fat_t *fat = (fs_fat_t *)fs->data;
+    char *name = NULL;
+    fat_dir_t *dir = read_fat_dir_from_parent_path(fs, path, &name, 1);
+    if (!fat_free_cluster(fat, (dir->cluster_h << 16) | dir->cluster_l)) {
+        logf("remove file failed");
+        return -1;
+    }
+    dir->name[0] = FDN_FREE;
+    return device_write(fs->devid, (dir->wrt_date << 16) | dir->wrt_time, fat->buf, 1);
+}
+
 int fat_fs_stat(fs_t *fs, FILE *file, stat_t *st)
 {
     return 0;
@@ -967,5 +980,6 @@ fs_op_t fatfs_op = {
     .getcwd = fat_fs_getcwd,
     .chdir = fat_fs_chdir,
     .mkdir = fat_fs_mkdir,
-    .rmdir = fat_fs_rmdir
+    .rmdir = fat_fs_rmdir,
+    .remove = fat_fs_remove
 };

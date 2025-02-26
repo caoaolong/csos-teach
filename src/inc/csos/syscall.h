@@ -27,6 +27,7 @@
 #define SYS_NR_RMDIR        19
 #define SYS_NR_FPUTS        20
 #define SYS_NR_LSEEK        21
+#define SYS_NR_REMOVE       22
 
 #define SYSCALL_LCALL
 

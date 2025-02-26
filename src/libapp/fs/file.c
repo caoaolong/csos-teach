@@ -34,6 +34,12 @@ int fclose(FILE *file)
     return _syscall(&args);
 }
 
+int remove(const char *path)
+{
+    syscall_arg_t args = {SYS_NR_REMOVE, (int)path, 0, 0, 0};
+    return _syscall(&args);
+}
+
 int lseek(FILE *file, int offset, int dir)
 {
     syscall_arg_t args = {SYS_NR_LSEEK, (int)file, offset, dir, 0};

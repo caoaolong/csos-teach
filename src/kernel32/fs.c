@@ -102,6 +102,11 @@ int fs_lseek(FILE *file, int pos, int dir)
     return rootfs->op->lseek(rootfs, file, pos, dir);
 }
 
+int fs_remove(char *path)
+{
+    return rootfs->op->remove(rootfs, path);
+}
+
 int fs_fclose(FILE *file)
 {
     rootfs->op->fclose(rootfs, file);
