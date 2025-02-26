@@ -25,6 +25,7 @@ static const syscall_handler_t syscall_handler_table[] = {
     [SYS_NR_CHDIR]      = (syscall_handler_t)fs_chdir,
     [SYS_NR_MKDIR]      = (syscall_handler_t)fs_mkdir,
     [SYS_NR_RMDIR]      = (syscall_handler_t)fs_rmdir,
+    [SYS_NR_LSEEK]      = (syscall_handler_t)fs_lseek,
 };
 // 远调用实现
 void syscall(syscall_frame_t *frame)

@@ -133,6 +133,7 @@ static BOOL match_fat_name(fat_dir_t *fdir, const char *name)
 
 static void read_fat_file(fs_fat_t *fat, FILE *file, fat_dir_t *pdir) 
 {
+    fat_to_lfn(file->name, pdir->name);
     file->type = read_fat_ftype(pdir);
     file->size = pdir->size;
     file->offset = 0;
@@ -602,6 +603,7 @@ int fat_fs_open(fs_t *fs, FILE *file, char *path, const char *mode)
             }
             file_type_t ftype = read_fat_ftype(pdir);
             if (match_fat_name(pdir, name) && ftype == FT_FILE) {
+                found = TRUE;
                 break;
             }
         }
@@ -681,14 +683,27 @@ int fat_fs_write(fs_t *fs, FILE *file, char *buf, int size)
     int nbytes = size;
     while (nbytes > 0) {
         // 写当前扇区剩余的空间
-        if (nbytes > fat->bps && file->offset % fat->bps > 0) {
-            if (device_write(fs->devid, fat->data_start + file->cblk - 2, buf + (size - nbytes), 1) < 0) {
+        if (file->offset % fat->bps > 0) {
+            char sbuf[DISK_SECTOR_SIZE];
+            // 当前扇区剩余字节数
+            int fbytes = fat->bps - (file->offset % fat->bps);
+            if (device_read(fs->devid, fat->data_start + file->cblk - 2, sbuf, 1) < 0) {
                 logf("write file failed");
                 return -1;
             }
-            int cnbytes = (fat->bps - (file->offset % fat->bps));
-            file->offset += cnbytes;
-            nbytes -= cnbytes;
+            if (size < fbytes) {
+                kernel_memcpy(sbuf + (file->offset % fat->bps), buf, size);
+                file->offset += size;
+                nbytes -= size;
+            } else {
+                kernel_memcpy(sbuf + (file->offset % fat->bps), buf, fbytes);
+                file->offset += fbytes;
+                nbytes -= fbytes;
+            }
+            if (device_write(fs->devid, fat->data_start + file->cblk - 2, sbuf, 1) < 0) {
+                logf("write file failed");
+                return -1;
+            }
         // 写整个扇区
         } else if (nbytes > fat->bps && file->offset % fat->bps == 0) {
             int cluster = fat_alloc_cluster(fat, TRUE);
@@ -703,7 +718,7 @@ int fat_fs_write(fs_t *fs, FILE *file, char *buf, int size)
             file->offset += fat->bps;
             file->cblk++;
             nbytes -= fat->bps;
-        // 写剩余扇区
+        // 在新扇区写剩余数据
         } else if (nbytes < fat->bps && file->offset % fat->bps == 0) {
             int cluster = fat_alloc_cluster(fat, TRUE);
             if (cluster >= FAT_CLUSTER_INVALID) {
@@ -725,6 +740,7 @@ int fat_fs_write(fs_t *fs, FILE *file, char *buf, int size)
     }
     fat_dir_t *fdir = (fat_dir_t *)fat->buf + file->doffset;
     fdir->size += size;
+    file->offset += size;
     tm time;
     time_read(&time, OS_TZ);
     fat_date_t date;
@@ -752,6 +768,26 @@ void fat_fs_close(fs_t *fs, FILE *file)
 
 int fat_fs_seek(fs_t *fs, FILE *file, uint32_t offset, int dir)
 {
+    fs_fat_t *fat = (fs_fat_t *)fs->data;
+    if (dir == SEEK_SET) {
+        file->cblk = file->sblk + offset / (fat->bps * fat->spc);
+        file->offset = offset;
+        return 0;
+    } else if (dir == SEEK_CUR) {
+        uint32_t off = file->offset % (fat->bps * fat->spc);
+        while (off + offset > (fat->bps * fat->spc)) {
+            file->cblk ++;
+            offset -= (fat->bps * fat->spc);
+            off = 0;
+        }
+        file->offset += offset;
+        return 0;
+    } else if (dir == SEEK_END) {
+        int soff = file->size / (fat->bps * fat->spc);
+        file->offset = file->size;
+        file->cblk = file->sblk + soff;
+        return file->size;
+    }
     return 0;
 }
 

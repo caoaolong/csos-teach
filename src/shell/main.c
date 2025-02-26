@@ -3,14 +3,11 @@
 
 int main(int argc, char *argv[])
 {
-    FILE *file = fopen("/root/bashrc", "w");
-    char content[] = "Test Write FileTest Write FileTest Write FileTest Write FileTest Write FileTest Write FileTest Write File"
-        "Test Write FileTest Write FileTest Write FileTest Write FileTest Write FileTest Write FileTest Write File"
-        "Test Write FileTest Write FileTest Write FileTest Write FileTest Write FileTest Write FileTest Write File"
-        "Test Write FileTest Write FileTest Write FileTest Write FileTest Write FileTest Write FileTest Write File"
-        "Test Write FileTest Write FileTest Write FileTest Write FileTest Write FileTest Write FileTest Write File"
-        "Test Write FileTest Write FileTest Write FileTest Write FileTest Write FileTest Write FileTest Write File";
-    fputs(file, content, sizeof(content));
+    FILE *file = fopen("/kernel.h", "w");
+    int size = lseek(file, 0, SEEK_END);
+    printf("File size: %dKB\n", size / 1024);
+    fputs(file, "Hello,World!", 12);
+    printf("File size: %dKB\n", file->size / 1024);
     fclose(file);
     return 0;
 }

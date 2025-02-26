@@ -43,4 +43,6 @@ int fgets(FILE *file, char *buf, uint32_t size);
 int fputs(FILE *file, char *buf, uint32_t size);
 int fclose(FILE *file);
 
+int lseek(FILE *file, int offset, int dir);
+
 #endif
