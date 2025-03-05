@@ -62,6 +62,9 @@ typedef struct task_args_t
 #define task_dispatch       tss_task_dispatch
 #define task_set_ready      tss_task_set_ready
 #define task_set_block      tss_task_set_block
+#define task_alloc_fd       tss_task_alloc_fd
+#define task_free_fd        tss_task_free_fd
+#define task_file           tss_task_file
 #define task_goto(task)     tss_t *tss = &(task)->tss;                      \
                             __asm__ volatile("push %[ss]\r\n"               \
                                     "push %[esp]\r\n"                       \

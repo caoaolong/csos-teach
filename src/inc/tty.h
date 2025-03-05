@@ -92,8 +92,6 @@ void tty_init();
 
 int tty_printf(const char *fmt, ...);
 
-void usr_printf(char *msg, uint32_t length);
-
 void tty_init(int index);
 
 #endif

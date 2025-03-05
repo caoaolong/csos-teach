@@ -17,6 +17,8 @@ typedef enum file_mode_t {
 } file_mode_t;
 
 typedef struct FILE {
+    // fd
+    int fd;
     // 文件名称
     char name[FILE_NAME_SIZE];
     // 文件类型
@@ -37,6 +39,8 @@ typedef struct FILE {
     // 文件打开模式
     uint8_t mode;
 } FILE;
+
+void printf(const char *fmt, ...);
 
 FILE *fopen(const char *filepath, const char *mode);
 int fgets(FILE *file, char *buf, uint32_t size);

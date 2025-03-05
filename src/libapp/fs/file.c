@@ -1,5 +1,23 @@
-#include <csos/syscall.h>
 #include <fs/file.h>
+#include <csos/syscall.h>
+#include <csos/stdarg.h>
+
+static char buffer[1024];
+static FILE *stdout = NULL;
+static FILE *stdin = NULL;
+
+void printf(const char *fmt, ...)
+{
+    if (stdout == NULL) {
+        stdout = fopen("/dev/tty0", "w");
+    }
+    va_list args;
+    va_start(args, fmt);
+    int i = vsprintf(buffer, fmt, args);
+    va_end(args);
+    syscall_arg_t printf_arg = { SYS_NR_PRINTF, (uint32_t)stdout, (uint32_t)buffer, i, 0 };
+    _syscall(&printf_arg);
+}
 
 FILE *fopen(const char *filepath, const char *mode)
 {

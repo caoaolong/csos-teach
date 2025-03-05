@@ -455,5 +455,36 @@ int tss_task_init(tss_task_t *task, const char *name, uint32_t flag, uint32_t en
     task->pid = task_pid++;
     task->bheap = task->eheap = 0;
     task->wd.offset = task->wd.sector = -1;
+    // 文件表
+    kernel_memset(task->ftb, 0, sizeof(task->ftb));
     return 0;
+}
+
+FILE *tss_task_file(int fd)
+{
+    if (fd >= 0 && fd < TASK_FT_SIZE) {
+        return get_running_task()->ftb[fd];
+    }
+    return NULL;
+}
+
+int tss_task_alloc_fd(FILE *file)
+{
+    task_t *task = get_running_task();
+    for (int i = 0; i < TASK_FT_SIZE; i++) {
+        FILE *file = task->ftb[i];
+        if (file == NULL) {
+            task->ftb[i] = file;
+            return i;
+        }
+    }
+    return -1;
+}
+
+void tss_task_free_fd(int fd)
+{
+    if (fd >= 0 && fd < TASK_FT_SIZE) {
+        task_t *task = get_running_task();
+        task->ftb[fd] = NULL;
+    }
 }

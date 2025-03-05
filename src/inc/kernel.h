@@ -10,6 +10,7 @@
 #define TASK_LEVEL_USER     (1 << 1)
 
 #define TASK_NAME_SIZE      32
+#define TASK_FT_SIZE		32
 #define TASK_DEFAULT_TICKS  10
 
 typedef enum {

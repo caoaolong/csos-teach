@@ -3,6 +3,7 @@
 
 #include <kernel.h>
 #include <list.h>
+#include <fs/file.h>
 
 typedef struct tss_t
 {
@@ -45,6 +46,8 @@ typedef struct tss_task_t {
         int sector;
         int offset;
     } wd;
+    // 进程打开的文件表
+    FILE *ftb[TASK_FT_SIZE];
 } tss_task_t;
 
 typedef struct tss_task_queue_t
@@ -102,5 +105,11 @@ void tss_task_notify(tss_task_t *task);
 void tss_task_dispatch();
 
 int tss_task_init(tss_task_t *task, const char *name, uint32_t flag, uint32_t entry, uint32_t esp);
+
+int tss_task_alloc_fd(FILE *file);
+
+void tss_task_free_fd(int fd);
+
+FILE *tss_task_file(int fd);
 
 #endif

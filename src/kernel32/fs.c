@@ -1,12 +1,14 @@
 #include <fs.h>
 #include <logf.h>
 #include <device.h>
+#include <task.h>
 #include <csos/string.h>
 
 static list_t mounted_list;
 static list_t free_list;
 
 static fs_t *rootfs;
+static fs_t *devfs;
 static fs_t fs_table[FS_TABLE_SIZE];
 
 static void mount_list_init()
@@ -78,13 +80,23 @@ static void fs_unlock(fs_t *fs)
 void fs_init()
 {
     mount_list_init();
-    fs_t *devfs = mount(FS_DEV, "/dev", 0, 0);
+    devfs = mount(FS_DEV, "/dev", 0, 0);
     rootfs = mount(FS_FAT, "/", ROOT_DEV);
 }
 
 int fs_fopen(FILE *file, char *filepath, const char *mode)
 {
-    return rootfs->op->fopen(rootfs, file, filepath, mode);
+    if (!kernel_strncmp(filepath, "/dev/", 5)) {
+        if (devfs->op->fopen(devfs, file, filepath + 5, mode) < 0) {
+            return -1;
+        }
+    } else {
+        if (rootfs->op->fopen(rootfs, file, filepath, mode) < 0) {
+            return -1;
+        }
+    }
+    file->fd = task_alloc_fd(file);
+    return 0;
 }
 
 int fs_fread(FILE *file, char *buf, int size)
@@ -94,7 +106,11 @@ int fs_fread(FILE *file, char *buf, int size)
 
 int fs_fwrite(FILE *file, char *buf, int size)
 {
-    return rootfs->op->fwrite(rootfs, file, buf, size);
+    if (file->type == FT_TTY) {
+        return devfs->op->fwrite(devfs, file, buf, size);
+    } else {
+        return rootfs->op->fwrite(rootfs, file, buf, size);
+    }
 }
 
 int fs_lseek(FILE *file, int pos, int dir)

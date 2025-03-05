@@ -372,10 +372,3 @@ int tty_printf(const char *fmt, ...)
     mutex_unlock(&mutex);
     return i;
 }
-
-void usr_printf(char *msg, uint32_t length)
-{
-    mutex_lock(&mutex);
-    device_write(0, 0, msg, length);
-    mutex_unlock(&mutex);
-}

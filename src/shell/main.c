@@ -3,6 +3,7 @@
 
 int main(int argc, char *argv[])
 {
-    remove("/home/calong/banner.txt");
+    fopen("/dev/tty0", "r");
+    printf("Hello,World!\n");
     return 0;
 }
