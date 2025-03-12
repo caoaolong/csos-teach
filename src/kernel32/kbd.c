@@ -4,6 +4,7 @@
 #include <kernel.h>
 #include <logf.h>
 #include <device.h>
+#include <tty.h>
 #include <csos/string.h>
 
 static const key_map_t kmt[] = {
@@ -79,6 +80,18 @@ static key_state_t ks;
 #define MAKE_CODE(rc)       !((rc) & 0x80)
 #define KEY_CODE(rc)        ((rc) & 0x7F)
 
+extern tty_t ttys[TTY_DEV_NR];
+
+static void tty_put(int index, char ch)
+{
+    tty_t *tty = &ttys[index];
+    if (sem_count(&tty->isem) >= TTY_IBUF_SIZE) {
+        return;
+    }
+    tty_fifo_put(&tty->ififo, ch);
+    sem_notify(&tty->isem);
+}
+
 static void handle_normal_key(uint8_t rc)
 {
     // 处理双字节按键
@@ -106,19 +119,19 @@ static void handle_normal_key(uint8_t rc)
             break;
         case KEY_ENTER:
             {char enter = '\n';
-            if (is_make) device_write(0, 0, &enter, 1);
+            if (is_make) tty_put(0, enter);
             break;}
         case KEY_SPACE:
             {char space = ' ';
-            if (is_make) device_write(0, 0, &space, 1);
+            if (is_make) tty_put(0, space);
             break;}
         case KEY_BACKSPACE:
             {char bs = '\b';
-            if (is_make) device_write(0, 0, &bs, 1);
+            if (is_make) tty_put(0, bs);
             break;}
         case KEY_TAB:
             {char tb = '\t';
-            if (is_make) device_write(0, 0, &tb, 1);
+            if (is_make) tty_put(0, tb);
             break;}
         case KEY_CAPS:
             if (is_make) ks.caps_lock = ~ks.caps_lock;
@@ -158,7 +171,7 @@ static void handle_normal_key(uint8_t rc)
                     key = ks.caps_lock ? kmt[key].func : kmt[key].normal;
                 }
                 // logf("Key: %c", key);
-                device_write(0, 0, &key, 1);
+                tty_put(0, key);
             }
             break;
     }

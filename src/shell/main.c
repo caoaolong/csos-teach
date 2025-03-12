@@ -3,7 +3,10 @@
 
 int main(int argc, char *argv[])
 {
-    fopen("/dev/tty0", "r");
+    fopen("/dev/tty0", "w");
     printf("Hello,World!\n");
+    while(TRUE) {
+        char c = getc();
+    }
     return 0;
 }

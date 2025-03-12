@@ -67,12 +67,15 @@ typedef struct tty_fifo_t {
 #define TTY_OBUF_SIZE   512
 #define TTY_IBUF_SIZE   512
 
+#define TTY_IECHO       (1 << 0)
+
 typedef struct tty_t {
     char obuf[TTY_OBUF_SIZE];
     tty_fifo_t ofifo;
     char ibuf[TTY_IBUF_SIZE];
     tty_fifo_t ififo;
-    sem_t osem;
+    sem_t osem, isem;
+    int iflags, oflags;
     int terminal_index;
 } tty_t;
 

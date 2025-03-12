@@ -87,13 +87,19 @@ void fs_init()
 int fs_fopen(FILE *file, char *filepath, const char *mode)
 {
     if (!kernel_strncmp(filepath, "/dev/", 5)) {
+        fs_lock(devfs);
         if (devfs->op->fopen(devfs, file, filepath + 5, mode) < 0) {
+            fs_unlock(devfs);
             return -1;
         }
+        fs_unlock(devfs);
     } else {
+        fs_lock(rootfs);
         if (rootfs->op->fopen(rootfs, file, filepath, mode) < 0) {
+            fs_unlock(rootfs);
             return -1;
         }
+        fs_unlock(rootfs);
     }
     file->fd = task_alloc_fd(file);
     return 0;
@@ -101,31 +107,60 @@ int fs_fopen(FILE *file, char *filepath, const char *mode)
 
 int fs_fread(FILE *file, char *buf, int size)
 {
-    return rootfs->op->fread(rootfs, file, buf, size);
+    if (file->type == FT_TTY) {
+        fs_lock(devfs);
+        if (devfs->op->fread(rootfs, file, buf, size) < 0) {
+            fs_unlock(devfs);
+            return -1;
+        }
+        fs_unlock(devfs);
+    } else {
+        fs_lock(rootfs);
+        if (rootfs->op->fread(rootfs, file, buf, size) < 0) {
+            fs_unlock(rootfs);
+            return -1;
+        }
+        fs_unlock(rootfs);
+    }
+    return 0;
 }
 
 int fs_fwrite(FILE *file, char *buf, int size)
 {
     if (file->type == FT_TTY) {
-        return devfs->op->fwrite(devfs, file, buf, size);
+        fs_lock(devfs);
+        int ret = devfs->op->fwrite(devfs, file, buf, size);
+        fs_unlock(devfs);
+        return ret;
     } else {
-        return rootfs->op->fwrite(rootfs, file, buf, size);
+        fs_lock(rootfs);
+        int ret = rootfs->op->fwrite(rootfs, file, buf, size);
+        fs_unlock(rootfs);
+        return ret;
     }
 }
 
 int fs_lseek(FILE *file, int pos, int dir)
 {
-    return rootfs->op->lseek(rootfs, file, pos, dir);
+    fs_lock(rootfs);
+    int ret = rootfs->op->lseek(rootfs, file, pos, dir);
+    fs_unlock(rootfs);
+    return ret;
 }
 
 int fs_remove(char *path)
 {
-    return rootfs->op->remove(rootfs, path);
+    fs_lock(rootfs);
+    int ret = rootfs->op->remove(rootfs, path);
+    fs_unlock(rootfs);
+    return ret;
 }
 
 int fs_fclose(FILE *file)
 {
+    fs_lock(rootfs);
     rootfs->op->fclose(rootfs, file);
+    fs_unlock(rootfs);
     return 0;
 }
 
@@ -198,4 +233,21 @@ int fs_rmdir(char *path)
     int err = rootfs->op->rmdir(rootfs, path);
     fs_unlock(rootfs);
     return err;
+}
+
+char fs_getc(FILE *file)
+{
+    fs_lock(devfs);
+    char ch;
+    if (devfs->op->fread(rootfs, file, &ch, 1) < 0) {
+        logf("getc failed");
+        return -1;
+    }
+    fs_unlock(devfs);
+    return ch;
+}
+
+void fs_putc(FILE *file)
+{
+
 }

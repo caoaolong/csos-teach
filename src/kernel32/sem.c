@@ -1,9 +1,7 @@
 #include <csos/sem.h>
 #include <interrupt.h>
+#include <rtc.h>
 #include <task.h>
-#include <csos/mutex.h>
-
-extern mutex_t mutex;
 
 void sem_init(sem_t *sem, uint32_t count)
 {
@@ -13,7 +11,7 @@ void sem_init(sem_t *sem, uint32_t count)
 
 void sem_wait(sem_t *sem)
 {
-    mutex_lock(&mutex);
+    protect_state_t ps = protect_enter();
     if (sem->counter > 0)
     {
         sem->counter --;
@@ -23,12 +21,12 @@ void sem_wait(sem_t *sem)
         list_insert_back(&sem->wait_list, &task->wait_node);
         task_dispatch();
     }
-    mutex_unlock(&mutex);
+    protect_exit(ps);
 }
 
 void sem_notify(sem_t *sem)
 {
-    mutex_lock(&mutex);
+    protect_state_t ps = protect_enter();
     if (!list_is_empty(&sem->wait_list))
     {
         list_node_t *node = list_remove_front(&sem->wait_list);
@@ -38,13 +36,13 @@ void sem_notify(sem_t *sem)
     } else {
         sem->counter ++;
     }
-    mutex_unlock(&mutex);
+    protect_exit(ps);
 }
 
 uint32_t sem_count(sem_t *sem)
 {
-    mutex_lock(&mutex);
+    protect_state_t ps = protect_enter();
     uint32_t count = sem->counter;
-    mutex_unlock(&mutex);
+    protect_exit(ps);
     return count;
 }

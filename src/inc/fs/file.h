@@ -50,4 +50,7 @@ int fclose(FILE *file);
 int lseek(FILE *file, int offset, int dir);
 int remove(const char *path);
 
+char getc();
+void putc();
+
 #endif

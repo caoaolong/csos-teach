@@ -26,10 +26,8 @@
 #define ASCII_ESC   '\033'
 
 mutex_t mutex;
-
+tty_t ttys[TTY_DEV_NR];
 static dev_terminal_t terminals[TTY_DEV_NR];
-
-static tty_t ttys[TTY_DEV_NR];
 
 static void set_cursor(dev_terminal_t *term)
 {
@@ -288,9 +286,15 @@ int dev_tty_open(device_t *dev)
         return -1;
     }
     tty_t *tty = &ttys[index];
+
     tty_fifo_init(&tty->ififo, tty->ibuf, TTY_IBUF_SIZE);
-    sem_init(&tty->osem, TTY_OBUF_SIZE);
+    sem_init(&tty->isem, 0);
     tty_fifo_init(&tty->ofifo, tty->obuf, TTY_OBUF_SIZE);
+    sem_init(&tty->osem, TTY_OBUF_SIZE);
+    
+    // 设置回显
+    tty->iflags = TTY_IECHO;
+
     tty->terminal_index = index;
     tty_init(index);
     return 0;
@@ -299,6 +303,21 @@ int dev_tty_open(device_t *dev)
 // 读取设备
 int dev_tty_read(device_t *dev, int addr, char *buf, int size)
 {
+    if (size <= 0) return 0;
+    tty_t *tty = get_tty(dev);
+    char *pbuf = buf;
+    int len = 0;
+    while (size) {
+        sem_wait(&tty->isem);
+        char ch;
+        int err = tty_fifo_get(&tty->ififo, &ch);
+        if (err < 0) break;
+        len++;
+        size--;
+        if (tty->iflags & TTY_IECHO) {
+            dev_tty_write(dev, 0, &ch, 1);
+        }
+    }
     return 0;
 }
 

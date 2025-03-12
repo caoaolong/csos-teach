@@ -3,19 +3,27 @@
 #include <csos/stdarg.h>
 
 static char buffer[1024];
-static FILE *stdout = NULL;
-static FILE *stdin = NULL;
+static FILE *stdio = NULL;
+
+char getc()
+{
+    syscall_arg_t args = {SYS_NR_GETC, (int)stdio, 0, 0, 0};
+    return _syscall(&args);
+}
+
+void putc()
+{
+    syscall_arg_t args = {SYS_NR_PUTC, (int)stdio, 0, 0, 0};
+    _syscall(&args);
+}
 
 void printf(const char *fmt, ...)
 {
-    if (stdout == NULL) {
-        stdout = fopen("/dev/tty0", "w");
-    }
     va_list args;
     va_start(args, fmt);
     int i = vsprintf(buffer, fmt, args);
     va_end(args);
-    syscall_arg_t printf_arg = { SYS_NR_PRINTF, (uint32_t)stdout, (uint32_t)buffer, i, 0 };
+    syscall_arg_t printf_arg = { SYS_NR_PRINTF, (uint32_t)stdio, (uint32_t)buffer, i, 0 };
     _syscall(&printf_arg);
 }
 
@@ -27,6 +35,9 @@ FILE *fopen(const char *filepath, const char *mode)
     if (err < 0) {
         // TODO: free
         return NULL;
+    }
+    if (file->type == FT_TTY) {
+        stdio = file;
     }
     return file;
 }

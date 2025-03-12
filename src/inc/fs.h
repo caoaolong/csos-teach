@@ -77,4 +77,7 @@ int fs_chdir(const char *path);
 int fs_mkdir(char *path);
 int fs_rmdir(char *path);
 
+char fs_getc(FILE *file);
+void fs_putc(FILE *file);
+
 #endif

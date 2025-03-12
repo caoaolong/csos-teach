@@ -28,6 +28,8 @@
 #define SYS_NR_FPUTS        20
 #define SYS_NR_LSEEK        21
 #define SYS_NR_REMOVE       22
+#define SYS_NR_GETC         23
+#define SYS_NR_PUTC         24
 
 #define SYSCALL_LCALL
 
