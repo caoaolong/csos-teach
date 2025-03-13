@@ -472,8 +472,8 @@ int tss_task_alloc_fd(FILE *file)
 {
     task_t *task = get_running_task();
     for (int i = 0; i < TASK_FT_SIZE; i++) {
-        FILE *file = task->ftb[i];
-        if (file == NULL) {
+        FILE *fp = task->ftb[i];
+        if (fp == NULL) {
             task->ftb[i] = file;
             return i;
         }

@@ -3,6 +3,10 @@
 
 #include <types.h>
 
+#define stdin       0
+#define stdout      1
+#define stderr      2
+
 #define SEEK_SET    0
 #define SEEK_CUR    1
 #define SEEK_END    2
@@ -38,19 +42,23 @@ typedef struct FILE {
     uint32_t cblk;
     // 文件打开模式
     uint8_t mode;
+    // 引用数量
+    int ref;
 } FILE;
 
 void printf(const char *fmt, ...);
+void fprintf(int fd, const char *fmt, ...);
 
-FILE *fopen(const char *filepath, const char *mode);
-int fgets(FILE *file, char *buf, uint32_t size);
-int fputs(FILE *file, char *buf, uint32_t size);
-int fclose(FILE *file);
+int fopen(const char *filepath, const char *mode);
+int fgets(int fd, char *buf, uint32_t size);
+int fputs(int fd, char *buf, uint32_t size);
+int fclose(int fd);
 
-int lseek(FILE *file, int offset, int dir);
+int lseek(int fd, int offset, int dir);
 int remove(const char *path);
 
 char getc();
 void putc();
+int dup(int fd);
 
 #endif

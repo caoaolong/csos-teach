@@ -102,11 +102,17 @@ int fs_fopen(FILE *file, char *filepath, const char *mode)
         fs_unlock(rootfs);
     }
     file->fd = task_alloc_fd(file);
-    return 0;
+    file->ref = 1;
+    return file->fd;
 }
 
-int fs_fread(FILE *file, char *buf, int size)
+int fs_fread(int fd, char *buf, int size)
 {
+    FILE *file = task_file(fd);
+    if (!file) {
+        logf("invalid fd");
+        return -1;
+    }
     if (file->type == FT_TTY) {
         fs_lock(devfs);
         if (devfs->op->fread(rootfs, file, buf, size) < 0) {
@@ -125,8 +131,13 @@ int fs_fread(FILE *file, char *buf, int size)
     return 0;
 }
 
-int fs_fwrite(FILE *file, char *buf, int size)
+int fs_fwrite(int fd, char *buf, int size)
 {
+    FILE *file = task_file(fd);
+    if (!file) {
+        logf("invalid fd");
+        return -1;
+    }
     if (file->type == FT_TTY) {
         fs_lock(devfs);
         int ret = devfs->op->fwrite(devfs, file, buf, size);
@@ -140,8 +151,13 @@ int fs_fwrite(FILE *file, char *buf, int size)
     }
 }
 
-int fs_lseek(FILE *file, int pos, int dir)
+int fs_lseek(int fd, int pos, int dir)
 {
+    FILE *file = task_file(fd);
+    if (!file) {
+        logf("invalid fd");
+        return -1;
+    }
     fs_lock(rootfs);
     int ret = rootfs->op->lseek(rootfs, file, pos, dir);
     fs_unlock(rootfs);
@@ -156,11 +172,20 @@ int fs_remove(char *path)
     return ret;
 }
 
-int fs_fclose(FILE *file)
+int fs_fclose(int fd)
 {
-    fs_lock(rootfs);
-    rootfs->op->fclose(rootfs, file);
-    fs_unlock(rootfs);
+    FILE *file = task_file(fd);
+    if (!file) {
+        logf("invalid fd");
+        return -1;
+    }
+    if (file->ref == 1) {
+        fs_lock(rootfs);
+        rootfs->op->fclose(rootfs, file);
+        fs_unlock(rootfs);
+    } else {
+        file->ref--;
+    }
     return 0;
 }
 
@@ -235,8 +260,13 @@ int fs_rmdir(char *path)
     return err;
 }
 
-char fs_getc(FILE *file)
+char fs_getc(int fd)
 {
+    FILE *file = task_file(fd);
+    if (!file) {
+        logf("invalid fd");
+        return -1;
+    }
     fs_lock(devfs);
     char ch;
     if (devfs->op->fread(rootfs, file, &ch, 1) < 0) {
@@ -247,7 +277,30 @@ char fs_getc(FILE *file)
     return ch;
 }
 
-void fs_putc(FILE *file)
+void fs_putc(int fd)
 {
+    FILE *file = task_file(fd);
+    if (!file) {
+        logf("invalid fd");
+        return;
+    }
+}
 
+int fs_dup(int fd)
+{
+    if (fd < 0 || fd >= TASK_FT_SIZE) {
+        logf("invalid fd");
+        return -1;
+    }
+    FILE *file = task_file(fd);
+    if (!file) {
+        logf("fd is closed");
+        return -1;
+    }
+    int nfd = task_alloc_fd(file);
+    if (nfd >= 0) {
+        file->ref++;
+        return nfd;
+    }
+    return -1;
 }
