@@ -1,6 +1,7 @@
 #include <tty.h>
 #include <device.h>
 #include <logf.h>
+#include <interrupt.h>
 #include <csos/mutex.h>
 #include <csos/string.h>
 #include <csos/stdio.h>
@@ -28,14 +29,18 @@
 mutex_t mutex;
 tty_t ttys[TTY_DEV_NR];
 static dev_terminal_t terminals[TTY_DEV_NR];
+static int tty_now = 0;
 
 static void set_cursor(dev_terminal_t *term)
 {
-    int cursor = term->cr * term->columns + term->cc;
+    int cursor = (term - terminals) * term->columns * term->rows;
+    cursor += term->cr * term->columns + term->cc;
+    protect_state_t ps = protect_enter();
     outb(CRT_ADDR_REG, CRT_CURSOR_H);
     outb(CRT_DATA_REG, ((uint8_t)(cursor >> 8)) & 0xFF);
     outb(CRT_ADDR_REG, CRT_CURSOR_L);
     outb(CRT_DATA_REG, ((uint8_t)cursor) & 0xFF);
+    protect_exit(ps);
 }
 
 static void tty_fifo_init(tty_fifo_t* fifo, char *buf, int size)
@@ -47,19 +52,23 @@ static void tty_fifo_init(tty_fifo_t* fifo, char *buf, int size)
 
 int tty_fifo_put(tty_fifo_t* fifo, char c)
 {
+    protect_state_t ps = protect_enter();
     if (fifo->count >= fifo->size) return -1;
     fifo->buf[fifo->write++] = c;
     if (fifo->write >= fifo->size) fifo->write = 0;
     fifo->count++;
     return 0;
+    protect_exit(ps);
 }
 
 int tty_fifo_get(tty_fifo_t* fifo, char *c)
 {
+    protect_state_t ps = protect_enter();
     if (fifo->count <= 0) return -1;
     *c = fifo->buf[fifo->read++];
     if (fifo->read >= fifo->size) fifo->read = 0;
     fifo->count--;
+    protect_exit(ps);
     return 0;
 }
 
@@ -277,6 +286,21 @@ uint32_t tty_write(tty_t *tty)
     return len;
 }
 
+void tty_select(int index)
+{
+    dev_terminal_t *term = &terminals[index];
+    if (term->base == 0) {
+        tty_init(index);
+    }
+    uint16_t poff = index * term->columns * term->rows;
+    outb(CRT_ADDR_REG, 0xC);
+    outb(CRT_DATA_REG, (uint8_t)((poff >> 8) & 0xFF));
+    outb(CRT_ADDR_REG, 0xD);
+    outb(CRT_DATA_REG, (uint8_t)(poff & 0xFF));
+    set_cursor(term);
+    tty_now = index;
+}
+
 // 打开设备
 int dev_tty_open(device_t *dev)
 {
@@ -304,7 +328,7 @@ int dev_tty_open(device_t *dev)
 int dev_tty_read(device_t *dev, int addr, char *buf, int size)
 {
     if (size <= 0) return 0;
-    tty_t *tty = get_tty(dev);
+    tty_t *tty = get_tty(dev) + addr;
     char *pbuf = buf;
     int len = 0;
     while (size) {
@@ -315,7 +339,7 @@ int dev_tty_read(device_t *dev, int addr, char *buf, int size)
         len++;
         size--;
         if (tty->iflags & TTY_IECHO) {
-            dev_tty_write(dev, 0, &ch, 1);
+            dev_tty_write(dev, tty_now, &ch, 1);
         }
     }
     return 0;
@@ -325,7 +349,7 @@ int dev_tty_read(device_t *dev, int addr, char *buf, int size)
 int dev_tty_write(device_t *dev, int addr, char *buf, int size)
 {
     if (size <= 0) return 0;
-    tty_t *tty = get_tty(dev);
+    tty_t *tty = get_tty(dev) + addr;
     if (!tty) return -1;
     int len = 0;
     while (size) {
@@ -349,7 +373,9 @@ int dev_tty_command(device_t *dev, int cmd, int arg0, int arg1)
 // 关闭设备
 void dev_tty_close(device_t *dev)
 {
-    
+    tty_t *tty = get_tty(dev);
+    dev_terminal_t *term = &terminals[tty->terminal_index];
+    term->base = 0;
 }
 
 device_handle_t device_tty = {

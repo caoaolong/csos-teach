@@ -5,8 +5,6 @@
 #include <csos/stdarg.h>
 #include <csos/sem.h>
 
-#define TTY_DEV_NR              8
-
 #define PM_VGA_BEGIN            0xB8000
 #define PM_VGA_END              0XBFFFF
 #define SCREEN_ROWS             25
@@ -87,11 +85,11 @@ int tty_fifo_put(tty_fifo_t* fifo, char c);
 
 // terminal functions
 
+void tty_select(int index);
+
 void tty_clear(dev_terminal_t *term);
 
 uint32_t tty_write(tty_t *tty);
-
-void tty_init();
 
 int tty_printf(const char *fmt, ...);
 

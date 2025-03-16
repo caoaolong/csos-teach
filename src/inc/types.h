@@ -21,7 +21,8 @@ typedef uint16_t fat_cluster_t;
 #define TRUE    1
 #define FALSE   0
 
-#define FILE_NAME_SIZE  32
+#define FILE_NAME_SIZE          32
+#define TTY_DEV_NR              8
 
 #define HLT __asm__ volatile("hlt")
 

@@ -76,19 +76,31 @@ static const key_map_t kmt[] = {
 };
 
 static key_state_t ks;
+static int tty_now = 0;
 
 #define MAKE_CODE(rc)       !((rc) & 0x80)
 #define KEY_CODE(rc)        ((rc) & 0x7F)
 
 extern tty_t ttys[TTY_DEV_NR];
 
-static void tty_put(int index, char ch)
+static void tty_put(char ch)
 {
-    tty_t *tty = &ttys[index];
+    tty_t *tty = &ttys[tty_now];
     if (sem_count(&tty->isem) >= TTY_IBUF_SIZE) {
         return;
     }
     tty_fifo_put(&tty->ififo, ch);
+    sem_notify(&tty->isem);
+}
+
+static void handle_fx(char key)
+{
+    int index = key - KEY_F1;
+    if (index != tty_now) {
+        tty_select(index);
+        tty_now = index;
+    }
+    tty_t *tty = &ttys[tty_now];
     sem_notify(&tty->isem);
 }
 
@@ -108,6 +120,8 @@ static void handle_normal_key(uint8_t rc)
         case KEY_F6:
         case KEY_F7:
         case KEY_F8:
+            handle_fx(key);
+            break;
         case KEY_F9:
         case KEY_F10:
         case KEY_F11:
@@ -119,19 +133,19 @@ static void handle_normal_key(uint8_t rc)
             break;
         case KEY_ENTER:
             {char enter = '\n';
-            if (is_make) tty_put(0, enter);
+            if (is_make) tty_put(enter);
             break;}
         case KEY_SPACE:
             {char space = ' ';
-            if (is_make) tty_put(0, space);
+            if (is_make) tty_put(space);
             break;}
         case KEY_BACKSPACE:
             {char bs = '\b';
-            if (is_make) tty_put(0, bs);
+            if (is_make) tty_put(bs);
             break;}
         case KEY_TAB:
             {char tb = '\t';
-            if (is_make) tty_put(0, tb);
+            if (is_make) tty_put(tb);
             break;}
         case KEY_CAPS:
             if (is_make) ks.caps_lock = ~ks.caps_lock;
@@ -170,8 +184,7 @@ static void handle_normal_key(uint8_t rc)
                 } else {
                     key = ks.caps_lock ? kmt[key].func : kmt[key].normal;
                 }
-                // logf("Key: %c", key);
-                tty_put(0, key);
+                tty_put(key);
             }
             break;
     }

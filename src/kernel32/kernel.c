@@ -16,8 +16,6 @@ void csos_init(memory_info_t* mem_info, uint32_t gdt_info)
     interrupt_init();
     // 初始化调试输出
     logf_init();
-    // 打开所需设备
-    device_open(DEV_TTY, 0, NULL);
     // 初始化时间
     time_init(OS_TZ);
     // 初始化内存

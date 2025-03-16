@@ -3,11 +3,11 @@
 
 int main(int argc, char *argv[])
 {
-    fopen("/dev/tty0", "w");    // stdin
+    fopen(argv[0], "w");        // stdin
     dup(0);                     // stdout
     dup(0);                     // stderr
 
-    printf("Hello,World!\n");
+    printf("%s\n", argv[0]);
     while(TRUE) {
         char c = getc();
     }
