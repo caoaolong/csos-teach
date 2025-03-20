@@ -75,6 +75,7 @@ typedef struct tty_t {
     sem_t osem, isem;
     int iflags, oflags;
     int terminal_index;
+    int itotal;
 } tty_t;
 
 // fifo functions

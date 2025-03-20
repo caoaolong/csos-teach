@@ -57,8 +57,8 @@ int tty_fifo_put(tty_fifo_t* fifo, char c)
     fifo->buf[fifo->write++] = c;
     if (fifo->write >= fifo->size) fifo->write = 0;
     fifo->count++;
-    return 0;
     protect_exit(ps);
+    return 0;
 }
 
 int tty_fifo_get(tty_fifo_t* fifo, char *c)
@@ -274,7 +274,7 @@ uint32_t tty_write(tty_t *tty)
         sem_notify(&tty->osem);
         switch (c) {
             case ASCII_ESC: com_esc(term, tty); break;
-            case ASCII_BS: com_bs(term); break;
+            case ASCII_BS: if (tty->itotal >= 0) com_bs(term); break;
             case ASCII_HT: com_ht(term); break;
             case ASCII_NUL: break;
             case ASCII_CR: com_cr(term); len++; break;
@@ -336,11 +336,12 @@ int dev_tty_read(device_t *dev, int addr, char *buf, int size)
         char ch;
         int err = tty_fifo_get(&tty->ififo, &ch);
         if (err < 0) break;
-        len++;
-        size--;
+        *pbuf++ = ch;
         if (tty->iflags & TTY_IECHO) {
             dev_tty_write(dev, tty_now, &ch, 1);
         }
+        len++;
+        size--;
     }
     return 0;
 }

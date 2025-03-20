@@ -89,6 +89,13 @@ static void tty_put(char ch)
     if (sem_count(&tty->isem) >= TTY_IBUF_SIZE) {
         return;
     }
+    if (ch == '\b') {
+        tty->itotal--;
+    } else if (ch == '\n') {
+        tty->itotal = 0;
+    } else {
+        tty->itotal++;
+    }
     tty_fifo_put(&tty->ififo, ch);
     sem_notify(&tty->isem);
 }

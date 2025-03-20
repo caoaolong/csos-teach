@@ -5,7 +5,6 @@
  */
 
 #include <csos/stdarg.h>
-#include <csos/string.h>
 #include <kernel.h>
 
 /* we use this so that we can do without the ctype library */
@@ -85,7 +84,7 @@ static char * number(char * str, int num, int base, int size, int precision
     return str;
 }
 
-static uint32_t strlen(const char *str)
+static uint32_t _strlen(const char *str)
 {
     if (!str) return 0;
 
@@ -176,7 +175,7 @@ int vsprintf(char *buf, const char *fmt, va_list args)
 
             case 's':
                 s = va_arg(args, char *);
-                len = strlen(s);
+                len = _strlen(s);
                 if (precision < 0)
                     precision = len;
                 else if (len > precision)
