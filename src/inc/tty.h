@@ -88,6 +88,7 @@ int tty_fifo_put(tty_fifo_t* fifo, char c);
 
 void tty_select(int index);
 
+void sys_clear();
 void tty_clear(dev_terminal_t *term);
 
 uint32_t tty_write(tty_t *tty);

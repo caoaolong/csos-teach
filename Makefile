@@ -73,6 +73,7 @@ $(BUILD)/kernel32.elf: $(BUILD)/kernel32/start.o \
 $(BUILD)/libapp.a: $(BUILD)/libapp/cstart.o \
 	$(BUILD)/libapp/crt0.o \
 	$(BUILD)/libapp/string.o \
+	$(BUILD)/libapp/term.o \
 	$(BUILD)/libapp/fs/dir.o \
 	$(BUILD)/libapp/fs/file.o \
 	$(BUILD)/lib/stdio.o

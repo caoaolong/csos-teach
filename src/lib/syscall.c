@@ -29,7 +29,8 @@ static const syscall_handler_t syscall_handler_table[] = {
     [SYS_NR_REMOVE]     = (syscall_handler_t)fs_remove,
     [SYS_NR_GETC]       = (syscall_handler_t)fs_getc,
     [SYS_NR_PUTC]       = (syscall_handler_t)fs_putc,
-    [SYS_NR_DUP]        = (syscall_handler_t)fs_dup
+    [SYS_NR_DUP]        = (syscall_handler_t)fs_dup,
+    [SYS_NR_CLEAR]      = (syscall_handler_t)sys_clear
 };
 // 远调用实现
 void syscall(syscall_frame_t *frame)

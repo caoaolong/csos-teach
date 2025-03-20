@@ -82,6 +82,15 @@ static tty_t *get_tty(device_t *device)
     return &ttys[tty];
 }
 
+void sys_clear()
+{
+    tty_t *tty = &ttys[tty_now];
+    dev_terminal_t *term = &terminals[tty->terminal_index];
+    tty_clear(term);
+    term->cr = term->cc = 0;
+    set_cursor(term);
+}
+
 void tty_clear(dev_terminal_t *term)
 {
     int size = term->columns * term->rows;

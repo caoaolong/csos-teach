@@ -1,14 +1,22 @@
 #include <csos/syscall.h>
 #include <csos/shell.h>
 #include <csos/string.h>
+#include <csos/term.h>
 #include <fs/file.h>
 
 static int cmd_exec_help(int argc, char **argv);
+static int cmd_exec_clear(int argc, char **argv);
+
 static shell_cmd_t cmd_list[] = {
     {
         .name = "help",
         .usage = "help\tshow all supported commands",
         .cmd_exec = cmd_exec_help
+    },
+    {
+        .name = "clear",
+        .usage = "clear\tclear the current screen",
+        .cmd_exec = cmd_exec_clear
     }
 };
 
@@ -56,4 +64,9 @@ void shell_putc(shell_t *shell, char ch)
 static int cmd_exec_help(int argc, char **argv)
 {
     printf("Hello,World!\n");
+}
+
+static int cmd_exec_clear(int argc, char **argv)
+{
+    clear();
 }

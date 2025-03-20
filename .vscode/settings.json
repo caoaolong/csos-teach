@@ -35,7 +35,8 @@
         "dir.h": "c",
         "chrono": "c",
         "typeinfo": "c",
-        "file.h": "c"
+        "file.h": "c",
+        "shell.h": "c"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }
