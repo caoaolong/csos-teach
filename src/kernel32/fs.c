@@ -57,6 +57,7 @@ static fs_t *mount(fs_type_t type, char *mp, int dev_major, int dev_minor)
     fs = struct_from_field(fnode, fs_t, node);
     kernel_memset(fs, 0, sizeof(fs_t));
     kernel_strcpy(fs->mp, mp);
+    mutex_init(fs->mutex);
     fs->op = get_fs_op(type, dev_major);
     if (fs->op->mount(fs, dev_major, dev_minor) < 0) {
         logf("mount failed");

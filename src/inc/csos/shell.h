@@ -3,13 +3,16 @@
 
 #include <types.h>
 
+#define CMD_MAX_ARGS    8
 #define CMD_MAX_SIZE    128
 #define CMD_PROMPT      "csos >>"
+
+struct shell_t;
 
 typedef struct shell_cmd_t {
     const char *name;
     const char *usage;
-    int (*cmd_exec)(int argc, char **argv);
+    int (*cmd_exec)(struct shell_t *shell);
 } shell_cmd_t;
 
 typedef struct shell_t {
