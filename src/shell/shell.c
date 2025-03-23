@@ -3,10 +3,13 @@
 #include <csos/string.h>
 #include <csos/term.h>
 #include <fs/file.h>
+#include <fs/dir.h>
 
 static int cmd_exec_help(struct shell_t *shell);
 static int cmd_exec_clear(struct shell_t *shell);
 static int cmd_exec_echo(struct shell_t *shell);
+static int cmd_exec_pwd(struct shell_t *shell);
+static int cmd_exec_ls(struct shell_t *shell);
 
 static shell_cmd_t cmd_list[] = {
     {
@@ -24,6 +27,17 @@ static shell_cmd_t cmd_list[] = {
         .usage = "echo\techo the string to screen\n"
                  "    \t[-n <times>] <string>",
         .cmd_exec = cmd_exec_echo
+    },
+    {
+        .name = "pwd",
+        .usage = "pwd\tprint the current workspace directory\n",
+        .cmd_exec = cmd_exec_pwd
+    },
+    {
+        .name = "ls",
+        .usage = "ls\tlist the files of path\n"
+                 "  \t<path>",
+        .cmd_exec = cmd_exec_ls
     }
 };
 
@@ -93,11 +107,13 @@ static int cmd_exec_help(struct shell_t *shell)
 {
     for (shell_cmd_t *pc = shell->cmd_begin; pc != shell->cmd_end; pc++)
         printf("%s\n", pc->usage);
+    return 0;
 }
 
 static int cmd_exec_clear(struct shell_t *shell)
 {
     clear();
+    return 0;
 }
 
 static int cmd_exec_echo(struct shell_t *shell)
@@ -114,4 +130,27 @@ static int cmd_exec_echo(struct shell_t *shell)
     }
     for (int i = 0; i < times; i++)
         printf("\033[32;40m%s\033[0m\n", arg);
+}
+
+static int cmd_exec_pwd(struct shell_t *shell)
+{
+    printf("%s\n", getcwd());
+    return 0;
+}
+
+static int cmd_exec_ls(struct shell_t *shell)
+{
+    char *arg = shell_get_arg(shell);
+    DIR *dir = opendir(arg);
+    if (dir == NULL) return -1;
+
+    struct dirent *dirent;
+    while ((dirent = readdir(dir)) != NULL) {
+        printf("%c %10s %6d\n",
+            dirent->d_type == FT_DIR ? 'd' : 'f',
+            dirent->d_name, 
+            dirent->d_reclen);
+    }
+    closedir(dir);
+    return 0;
 }

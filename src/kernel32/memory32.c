@@ -213,13 +213,13 @@ static int memory32_alloc_task_pages(uint32_t pde, uint32_t index, uint32_t size
     {
         uint32_t paddr = memory32_alloc_page(&memory32_info, 1);   
         if (paddr == 0) {
-            tty_printf("memory allocate failed.");
+            logf("memory allocate failed.");
             return -1;
         }
 
         int error = memory32_create_map((pde_t *)pde, current_index, paddr, 1, perm);
         if (error < 0) {
-            tty_printf("memory create failed.");
+            logf("memory create failed.");
             return -1;
         }
 

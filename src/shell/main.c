@@ -2,6 +2,8 @@
 #include <csos/shell.h>
 #include <fs.h>
 
+static shell_t shell;
+
 int main(int argc, char *argv[])
 {
     // stdio
@@ -17,9 +19,7 @@ int main(int argc, char *argv[])
     printf("\t\t  \033[37;40m CSOS %s (Kernel: %s)\033[0m  %s\n\n", OP_SYS_VERSION, KERNEL_VERSION, argv[0]);
 
     // shell
-    shell_t shell;
     shell_init(&shell);
-
     shell_prompt(&shell);
     while(TRUE) {
         char ch = getc();

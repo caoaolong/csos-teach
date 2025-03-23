@@ -120,8 +120,6 @@ static void scroll_up(dev_terminal_t *term, int lines)
     for (int i = 0; i < size; i++) {
         (ptr + i)->c = ' ';
     }
-    term->cc = 0;
-    term->cr--;
 }
 
 static void com_lf(dev_terminal_t *term)
@@ -409,21 +407,4 @@ void tty_init(int index)
     dev->bg = dev->cbg = COLOR_BLACK;
     tty_clear(dev);
     mutex_init(&mutex);
-}
-
-#define BUFFER_SIZE 1024
-static char buf[BUFFER_SIZE];
-
-int tty_printf(const char *fmt, ...)
-{
-    kernel_memset(buf, 0, BUFFER_SIZE);
-    va_list args;
-    int i;
-    va_start(args, fmt);
-    i = vsprintf(buf, fmt, args);
-    va_end(args);
-    mutex_lock(&mutex);
-    device_write(0, 0, buf, i);
-    mutex_unlock(&mutex);
-    return i;
 }

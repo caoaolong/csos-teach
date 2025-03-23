@@ -216,13 +216,13 @@ void tss_task_exit(int code)
     tss_task_dispatch();
 }
 
-static uint8_t SHELL_TMP[20 * 512];
+static uint8_t SHELL_TMP[80 * 512];
 
 static uint32_t load_elf_file(task_t *task, const char *name, uint32_t pde)
 {
     Elf32_Ehdr elf_hdr;
     Elf32_Phdr elf_phdr;
-    read_disk(1000, 20, (uint16_t *)SHELL_TMP);
+    read_disk(1000, 80, (uint16_t *)SHELL_TMP);
     uint8_t *buffer = SHELL_TMP;
     kernel_memcpy(&elf_hdr, buffer, sizeof(Elf32_Ehdr));
     buffer += sizeof(Elf32_Ehdr);
@@ -276,6 +276,7 @@ static int copy_args(uint32_t pde, char *dst, char *argv[], int argc)
 
 int tss_task_execve(char *name, char *argv[], char *env[])
 {
+    mutex_lock(&task_mutex);
     tss_task_t *task = get_running_task();
     kernel_strncpy(task->name, get_file_name(name), TASK_NAME_SIZE);
     uint32_t old_pde = task->tss.cr3;
@@ -286,6 +287,7 @@ int tss_task_execve(char *name, char *argv[], char *env[])
         task->tss.cr3 = old_pde;
         set_pde(old_pde);
         destroy_page(old_pde);
+        mutex_unlock(&task_mutex);
         return -1;
     }
     uint32_t stack_top = VM_SHELL_STACK - VM_SHELL_ARGS_SIZE;
@@ -293,6 +295,7 @@ int tss_task_execve(char *name, char *argv[], char *env[])
         task->tss.cr3 = old_pde;
         set_pde(old_pde);
         destroy_page(old_pde);
+        mutex_unlock(&task_mutex);
         return -1;
     }
     int argc = strings_count(argv);
@@ -300,6 +303,7 @@ int tss_task_execve(char *name, char *argv[], char *env[])
         task->tss.cr3 = old_pde;
         set_pde(old_pde);
         destroy_page(old_pde);
+        mutex_unlock(&task_mutex);
         return -1;
     }
     syscall_frame_t *frame = (syscall_frame_t *)(task->tss.esp0 - sizeof(syscall_frame_t));
@@ -312,6 +316,7 @@ int tss_task_execve(char *name, char *argv[], char *env[])
     task->tss.cr3 = new_pde;
     set_pde(new_pde);
     destroy_page(old_pde);
+    mutex_unlock(&task_mutex);
     return 0;
 }
 

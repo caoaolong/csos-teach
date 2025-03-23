@@ -6,6 +6,8 @@
 #include <csos/stdio.h>
 #include <csos/mutex.h>
 
+static mutex_t mutex;
+
 void logf_init()
 {
     // 关闭中断
@@ -22,9 +24,9 @@ void logf_init()
     // 启用 FIFO，清除它们，阈值为 14 字节
     outb(COM1_PORT + 2, 0xC7);
     outb(COM1_PORT + 4, 0x0B);
-}
 
-extern mutex_t mutex;
+    mutex_init(&mutex);
+}
 
 void logf(const char * fmt, ...)
 {

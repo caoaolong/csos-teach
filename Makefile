@@ -95,7 +95,7 @@ master: $(BUILD)/boot.bin \
 	${TOOL_PREFIX}readelf -a $(BUILD)/kernel.elf > $(INFO)/kernel.txt
 	dd if=$(BUILD)/kernel32.elf of=master.img bs=512 count=500 seek=65 conv=notrunc
 	${TOOL_PREFIX}readelf -a $(BUILD)/kernel32.elf > $(INFO)/kernel32.txt
-	dd if=$(BUILD)/shell.elf of=master.img bs=512 count=20 seek=1000 conv=notrunc
+	dd if=$(BUILD)/shell.elf of=master.img bs=512 count=80 seek=1000 conv=notrunc
 	${TOOL_PREFIX}readelf -a $(BUILD)/shell.elf > $(INFO)/shell.txt
 
 .PHONY: clean
@@ -108,11 +108,14 @@ bochs: clean master
 	bochsdbg -q -f bochsrc.bxrc
 
 .PHONY: qemu
-qemu: clean master
+qemu: master
 	qemu-system-i386 -s -S -m 32M \
 		-serial stdio -drive file=master.img,index=0,media=disk,format=raw \
 		-drive file=disk.img,index=1,media=disk,format=raw \
 		-audiodev id=sdl,driver=sdl -machine pcspk-audiodev=sdl
+
+.PHONY: all
+all: clean qemu
 
 .PHONY: test_chs
 test_chs: $(BUILD)/test/read_disk_chs.bin

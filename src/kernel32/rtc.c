@@ -1,6 +1,6 @@
 #include <rtc.h>
 #include <pic.h>
-#include <tty.h>
+#include <logf.h>
 #include <kernel.h>
 #include <interrupt.h>
 #include <csos/stdlib.h>
@@ -27,9 +27,9 @@ void handler_rtc(interrupt_frame_t* frame)
     create_alarm(1);
 
     if (vc & CMOS_C_AF)
-        tty_printf("A");
+        logf("A");
     else if (vc & CMOS_C_PF)
-        tty_printf(".");
+        logf(".");
 }
 
 void create_alarm(uint32_t value)

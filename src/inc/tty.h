@@ -93,8 +93,6 @@ void tty_clear(dev_terminal_t *term);
 
 uint32_t tty_write(tty_t *tty);
 
-int tty_printf(const char *fmt, ...);
-
 void tty_init(int index);
 
 #endif
