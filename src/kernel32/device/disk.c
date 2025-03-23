@@ -156,7 +156,7 @@ void disk_init()
             print_disk_part(disk);
         }
     }
-    install_interrupt_handler(IRQ6_HDC, (uint32_t)interrupt_handler_hdc);
+    install_interrupt_handler(IRQ1_HDC, (uint32_t)interrupt_handler_hdc);
 }
 
 // 打开设备
@@ -179,14 +179,14 @@ int dev_disk_open(device_t *dev)
         return -1;
     }
     dev->data = part;
-    irq_enable(IRQ6_HDC);
+    irq_enable(IRQ1_HDC);
     return 0;
 }
 
 void handler_hdc(interrupt_frame_t* frame)
 {
     disk_notify(&sem);
-    send_eoi(IRQ6_HDC);
+    send_eoi(IRQ1_HDC);
 }
 
 // 读取设备
@@ -257,7 +257,7 @@ int dev_disk_command(device_t *dev, int cmd, int arg0, int arg1)
 void dev_disk_close(device_t *dev)
 {
     dev->data = NULL;
-    irq_disable(IRQ6_HDC);
+    irq_disable(IRQ1_HDC);
 }
 
 device_handle_t device_disk = {

@@ -56,6 +56,7 @@ $(BUILD)/kernel32.elf: $(BUILD)/kernel32/start.o \
 	$(BUILD)/kernel32/device.o \
 	$(BUILD)/kernel32/device/tty.o \
 	$(BUILD)/kernel32/device/disk.o \
+	$(BUILD)/kernel32/device/net.o \
 	$(BUILD)/kernel32/fs.o \
 	$(BUILD)/kernel32/fs/dev.o \
 	$(BUILD)/kernel32/fs/fat.o \
@@ -112,7 +113,9 @@ qemu: master
 	qemu-system-i386 -s -S -m 32M \
 		-serial stdio -drive file=master.img,index=0,media=disk,format=raw \
 		-drive file=disk.img,index=1,media=disk,format=raw \
-		-audiodev id=sdl,driver=sdl -machine pcspk-audiodev=sdl
+		-audiodev id=sdl,driver=sdl -machine pcspk-audiodev=sdl \
+		-netdev user,id=n1,ipv6=off \
+		-device e1000,netdev=n1,mac=52:54:98:76:54:32
 
 .PHONY: all
 all: clean qemu

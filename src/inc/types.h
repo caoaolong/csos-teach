@@ -14,6 +14,12 @@ typedef uint32_t Elf32_Word;
 
 typedef uint16_t fat_cluster_t;
 
+#define MAC_LEN     6
+#define IPV4_LEN    4
+
+typedef uint8_t mac_addr[MAC_LEN];
+typedef uint8_t ip_addr[IPV4_LEN];
+
 #define NULL    ((void*)0)
 
 #define BOOL    _Bool

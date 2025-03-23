@@ -2,13 +2,14 @@
 #include <tty.h>
 #include <interrupt.h>
 #include <logf.h>
-#include <csos/time.h>
 #include <task.h>
-#include <csos/sem.h>
-#include <csos/memory.h>
 #include <device.h>
 #include <disk.h>
 #include <fs.h>
+#include <net.h>
+#include <csos/time.h>
+#include <csos/sem.h>
+#include <csos/memory.h>
 
 void csos_init(memory_info_t* mem_info, uint32_t gdt_info)
 {
@@ -26,6 +27,8 @@ void csos_init(memory_info_t* mem_info, uint32_t gdt_info)
     disk_init();
     // 文件系统初始化
     fs_init();
+    // 网卡初始化
+    net_init();
     // 初始化任务队列
     task_queue_init();
     // 初始化任务
