@@ -10,6 +10,7 @@ static int cmd_exec_clear(struct shell_t *shell);
 static int cmd_exec_echo(struct shell_t *shell);
 static int cmd_exec_pwd(struct shell_t *shell);
 static int cmd_exec_ls(struct shell_t *shell);
+static int cmd_exec_cd(struct shell_t *shell);
 
 static shell_cmd_t cmd_list[] = {
     {
@@ -38,6 +39,12 @@ static shell_cmd_t cmd_list[] = {
         .usage = "ls\tlist the files of path\n"
                  "  \t<path>",
         .cmd_exec = cmd_exec_ls
+    },
+    {
+        .name = "cd",
+        .usage = "cd\tchange the current directory\n"
+                 "  \t<path>",
+        .cmd_exec = cmd_exec_cd
     }
 };
 
@@ -66,14 +73,14 @@ void shell_init(shell_t *shell)
 {
     shell->cmd_begin = cmd_list;
     shell->cmd_end = cmd_list + sizeof(cmd_list) / sizeof(shell_cmd_t);
-    shell->prompt = CMD_PROMPT;
     memset(shell->cmd, 0, CMD_MAX_SIZE);
+    strcpy(shell->cwd, getcwd());
     shell->pcread = shell->pcwrite = 0;
 }
 
 void shell_prompt(shell_t *shell)
 {
-    printf("%s", shell->prompt);
+    printf("[%s:%s]$", "root", shell->cwd);
 }
 
 void shell_exec(shell_t *shell)
@@ -141,6 +148,9 @@ static int cmd_exec_pwd(struct shell_t *shell)
 static int cmd_exec_ls(struct shell_t *shell)
 {
     char *arg = shell_get_arg(shell);
+    if (*arg == 0) {
+        arg = shell->cwd;
+    }
     DIR *dir = opendir(arg);
     if (dir == NULL) return -1;
 
@@ -153,4 +163,14 @@ static int cmd_exec_ls(struct shell_t *shell)
     }
     closedir(dir);
     return 0;
+}
+
+static int cmd_exec_cd(struct shell_t *shell)
+{
+    char *path = shell_get_arg(shell);
+    int err = chdir(path);
+    if (err == 0) {
+        strcpy(shell->cwd, getcwd());
+    }
+    return err;
 }

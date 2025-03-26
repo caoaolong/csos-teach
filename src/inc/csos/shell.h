@@ -5,7 +5,6 @@
 
 #define CMD_MAX_ARGS    8
 #define CMD_MAX_SIZE    128
-#define CMD_PROMPT      "csos >>"
 
 struct shell_t;
 
@@ -17,11 +16,10 @@ typedef struct shell_cmd_t {
 
 typedef struct shell_t {
     char cmd[CMD_MAX_SIZE];
+    char cwd[CMD_MAX_SIZE];
     int pcread, pcwrite;
-
     shell_cmd_t *cmd_begin;
     shell_cmd_t *cmd_end;
-    const char *prompt;
 } shell_t;
 
 void shell_init(shell_t *shell);

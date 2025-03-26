@@ -876,7 +876,7 @@ int fat_fs_getcwd(fs_t *fs, char *buf)
     task_t *task = get_running_task();
     int err = 0;
 
-    if (task->wd.sector < 0 || task->wd.offset < 0) {
+    if (task->wd.sector <= 0 || task->wd.offset <= 0) {
         err = fat_fs_init_task_wd(fat, task);
         if (err < 0) return -1;
     }
