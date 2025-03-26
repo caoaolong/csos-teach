@@ -7,6 +7,7 @@
 #include <disk.h>
 #include <fs.h>
 #include <net.h>
+#include <pci.h>
 #include <csos/time.h>
 #include <csos/sem.h>
 #include <csos/memory.h>
@@ -27,6 +28,8 @@ void csos_init(memory_info_t* mem_info, uint32_t gdt_info)
     disk_init();
     // 文件系统初始化
     fs_init();
+    // PCI初始化
+    pci_init();
     // 网卡初始化
     net_init();
     // 初始化任务队列

@@ -3,10 +3,22 @@
 #include <logf.h>
 #include <interrupt.h>
 
+static e1000_t e1000;
+
 void handler_net(interrupt_frame_t* frame)
 {
     logf("%d", frame->code);
     send_eoi(IRQ1_NET);
+}
+
+static void e1000_read_mac()
+{
+    
+}
+
+static void e1000_reset()
+{
+
 }
 
 void net_init()
