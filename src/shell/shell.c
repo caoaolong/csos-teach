@@ -11,6 +11,8 @@ static int cmd_exec_echo(struct shell_t *shell);
 static int cmd_exec_pwd(struct shell_t *shell);
 static int cmd_exec_ls(struct shell_t *shell);
 static int cmd_exec_cd(struct shell_t *shell);
+static int cmd_exec_mkdir(struct shell_t *shell);
+static int cmd_exec_rmdir(struct shell_t *shell);
 
 static shell_cmd_t cmd_list[] = {
     {
@@ -45,6 +47,18 @@ static shell_cmd_t cmd_list[] = {
         .usage = "cd\tchange the current directory\n"
                  "  \t<path>",
         .cmd_exec = cmd_exec_cd
+    },
+    {
+        .name = "mkdir",
+        .usage = "mkdir\tmake directory\n"
+                 "     \t<path>",
+        .cmd_exec = cmd_exec_mkdir
+    },
+    {
+        .name = "rmdir",
+        .usage = "rmdir\tremove directory\n"
+                 "     \t<path>",
+        .cmd_exec = cmd_exec_rmdir
     }
 };
 
@@ -173,4 +187,22 @@ static int cmd_exec_cd(struct shell_t *shell)
         strcpy(shell->cwd, getcwd());
     }
     return err;
+}
+
+static int cmd_exec_mkdir(struct shell_t *shell)
+{
+    char *path = shell_get_arg(shell);
+    if (*path == 0) 
+        return 0;
+    return mkdir(path);
+}
+
+static int cmd_exec_rmdir(struct shell_t *shell)
+{
+    char *path = shell_get_arg(shell);
+    if (*path == 0) 
+        return 0;
+    if (!strcmp(shell->cwd, path))
+        return 0;
+    return rmdir(path);
 }
