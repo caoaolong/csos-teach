@@ -204,9 +204,9 @@ int memory32_copy_page_data(uint32_t to, uint32_t pde, uint32_t from, uint32_t s
     return 0;
 }
 
-static int memory32_alloc_task_pages(uint32_t pde, uint32_t index, uint32_t size, uint32_t perm)
+static int memory32_alloc_pages(uint32_t pde, uint32_t vaddr, uint32_t size, uint32_t perm)
 {
-    uint32_t current_index = index;
+    uint32_t current_vaddr = vaddr;
     int count = ceil_page(size) / PAGE_SIZE;
 
     for (int i = 0; i < count; i++)
@@ -217,13 +217,13 @@ static int memory32_alloc_task_pages(uint32_t pde, uint32_t index, uint32_t size
             return -1;
         }
 
-        int error = memory32_create_map((pde_t *)pde, current_index, paddr, 1, perm);
+        int error = memory32_create_map((pde_t *)pde, current_vaddr, paddr, 1, perm);
         if (error < 0) {
             logf("memory create failed.");
             return -1;
         }
 
-        current_index += PAGE_SIZE;
+        current_vaddr += PAGE_SIZE;
     }
 
     return 0;
@@ -253,9 +253,14 @@ void free_page(uint32_t addr)
     }
 }
 
-int alloc_pages(uint32_t pde, uint32_t index, uint32_t size, uint32_t perm)
+int alloc_pages(uint32_t pde, uint32_t vaddr, uint32_t size, uint32_t perm)
 {
-    return memory32_alloc_task_pages(pde, index, size, perm);
+    return memory32_alloc_pages(pde, vaddr, size, perm);
+}
+
+int alloc_kernel_pages(uint32_t vaddr, uint32_t size)
+{
+    return memory32_alloc_pages((uint32_t)kernel_pde, vaddr, size, PTE_P | PTE_W);
 }
 
 void memory_init(memory_info_t *memory_info)

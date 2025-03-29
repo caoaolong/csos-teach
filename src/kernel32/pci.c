@@ -92,11 +92,12 @@ pci_classname_t pci_classnames[] = {
     {0x000000, NULL}
 };
 
-pci_device_t devices[PCI_DEVICE_SIZE];
+pci_device_t devices[PCI_DEVICE_NR];
+pci_bar_t bars[PCI_BAR_NR];
 
 static pci_device_t *pci_alloc_device()
 {
-    for (int i = 0; i < PCI_DEVICE_SIZE; i++) {
+    for (int i = 0; i < PCI_DEVICE_NR; i++) {
         pci_device_t *dev = &devices[i];
         if (dev) {
             return dev;
@@ -148,7 +149,7 @@ static void pci_check_device(uint8_t bus, uint8_t dev)
         device->func = func;
         device->vendorid = vendorid;
         device->deviceid = value >> 16;
-        value = pci_inl(bus, dev, func, PCI_CONF_COMMAND);
+        value = pci_inl(bus, dev, func, PCI_CONF_REVISION);
         device->classcode = value >> 8;
         device->revision = value & 0xFF;
         logf("PCI %02x:%02x.%x %4x:%4x %s",
@@ -160,17 +161,76 @@ static void pci_check_device(uint8_t bus, uint8_t dev)
 // PCI 总线枚举
 static void pci_enum_device()
 {
-    for (int bus = 0; bus < 256; bus++)
+    for (uint16_t bus = 0; bus < 256; bus++)
     {
-        for (int dev = 0; dev < 32; dev++)
+        for (uint8_t dev = 0; dev < 32; dev++)
         {
             pci_check_device(bus, dev);
         }
     }
 }
 
+static uint32_t pci_size(uint32_t base, uint32_t mask)
+{
+    // 去掉必须设置的低位
+    uint32_t size = mask & base;
+    // 按位取反再加1得到大小
+    size = ~size + 1;
+    return size;
+}
+
 void pci_init()
 {
     kernel_memset(devices, 0, sizeof(devices));
     pci_enum_device();
+}
+
+pci_device_t *pci_find_device(uint16_t vendorid, uint16_t deviceid)
+{
+    for (int i = 0; i < PCI_DEVICE_NR; i++) {
+        pci_device_t *dev = &devices[i];
+        if (dev->vendorid == vendorid && dev->deviceid == deviceid)
+            return dev;
+    }
+    return NULL;
+}
+
+pci_bar_t *pci_find_bar(pci_device_t *device, int type)
+{
+    for (int i = 0; i < PCI_BAR_NR; i++) {
+        pci_bar_t *bar = &bars[i];
+
+        uint8_t addr = PCI_CONF_BASE_ADDR0 + (i << 2);
+        uint32_t value = pci_inl(device->bus, device->dev, device->func, addr);
+        pci_outl(device->bus, device->dev, device->func, addr, -1);
+        uint32_t len = pci_inl(device->bus, device->dev, device->func, addr);
+        pci_outl(device->bus, device->dev, device->func, addr, value);
+
+        if (value == 0)
+            continue;
+        if (len == 0 || len == -1)
+            continue;
+        if (value == -1)
+            value = 0;
+        if ((value & 1) && type == PCI_BAR_TYPE_IO)
+        {
+            bar->iobase = value & PCI_BAR_IO_MASK;
+            bar->size = pci_size(len, PCI_BAR_IO_MASK);
+            return bar;
+        }
+        if (!(value & 1) && type == PCI_BAR_TYPE_MEM)
+        {
+            bar->iobase = value & PCI_BAR_MEM_MASK;
+            bar->size = pci_size(len, PCI_BAR_MEM_MASK);
+            return bar;
+        }
+    }
+    return NULL;
+}
+
+void pci_enable_busmastering(pci_device_t *device)
+{
+    uint32_t data = pci_inl(device->bus, device->dev, device->func, PCI_CONF_COMMAND);
+    data |= PCI_COMMAND_MASTER;
+    pci_outl(device->bus, device->dev, device->func, PCI_CONF_COMMAND, data);
 }

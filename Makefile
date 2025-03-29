@@ -54,6 +54,7 @@ $(BUILD)/kernel32.elf: $(BUILD)/kernel32/start.o \
 	$(BUILD)/kernel32/memory32.o \
 	$(BUILD)/kernel32/kbd.o \
 	$(BUILD)/kernel32/pci.o \
+	$(BUILD)/kernel32/mio.o \
 	$(BUILD)/kernel32/device.o \
 	$(BUILD)/kernel32/device/tty.o \
 	$(BUILD)/kernel32/device/disk.o \
@@ -94,11 +95,11 @@ master: $(BUILD)/boot.bin \
 	$(shell mkdir -p $(INFO))
 	dd if=$(BUILD)/boot.bin of=master.img bs=512 count=1 conv=notrunc
 	dd if=$(BUILD)/kernel.bin of=master.img bs=512 count=64 seek=1 conv=notrunc
-	${TOOL_PREFIX}readelf -a $(BUILD)/kernel.elf > $(INFO)/kernel.txt
+	x86_64-elf-readelf -a $(BUILD)/kernel.elf > $(INFO)/kernel.txt
 	dd if=$(BUILD)/kernel32.elf of=master.img bs=512 count=500 seek=65 conv=notrunc
-	${TOOL_PREFIX}readelf -a $(BUILD)/kernel32.elf > $(INFO)/kernel32.txt
+	x86_64-elf-readelf -a $(BUILD)/kernel32.elf > $(INFO)/kernel32.txt
 	dd if=$(BUILD)/shell.elf of=master.img bs=512 count=80 seek=1000 conv=notrunc
-	${TOOL_PREFIX}readelf -a $(BUILD)/shell.elf > $(INFO)/shell.txt
+	x86_64-elf-readelf -a $(BUILD)/shell.elf > $(INFO)/shell.txt
 
 .PHONY: clean
 clean:
@@ -116,7 +117,7 @@ qemu: master
 		-drive file=disk.img,index=1,media=disk,format=raw \
 		-audiodev id=sdl,driver=sdl -machine pcspk-audiodev=sdl \
 		-netdev user,id=n1,ipv6=off \
-		-device e1000,netdev=n1,mac=52:54:98:76:54:32
+		-device e1000,netdev=n1
 
 .PHONY: all
 all: clean qemu
