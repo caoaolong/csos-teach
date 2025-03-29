@@ -135,6 +135,13 @@ void pci_outl(uint8_t bus, uint8_t dev, uint8_t func, uint8_t addr, uint32_t val
     outl(PCI_CONF_DATA, value);
 }
 
+// 获得中断 IRQ
+uint8_t pci_interrupt(pci_device_t *device)
+{
+    uint32_t data = pci_inl(device->bus, device->dev, device->func, PCI_CONF_INTERRUPT);
+    return data & 0xff;
+}
+
 static void pci_check_device(uint8_t bus, uint8_t dev)
 {
     uint32_t value = 0;
@@ -195,7 +202,7 @@ pci_device_t *pci_find_device(uint16_t vendorid, uint16_t deviceid)
     return NULL;
 }
 
-pci_bar_t *pci_find_bar(pci_device_t *device, int type)
+pci_bar_t *pci_find_bar(pci_device_t *device)
 {
     for (int i = 0; i < PCI_BAR_NR; i++) {
         pci_bar_t *bar = &bars[i];
@@ -212,13 +219,13 @@ pci_bar_t *pci_find_bar(pci_device_t *device, int type)
             continue;
         if (value == -1)
             value = 0;
-        if ((value & 1) && type == PCI_BAR_TYPE_IO)
+        if (value & 1)
         {
             bar->iobase = value & PCI_BAR_IO_MASK;
             bar->size = pci_size(len, PCI_BAR_IO_MASK);
             return bar;
         }
-        if (!(value & 1) && type == PCI_BAR_TYPE_MEM)
+        if (!(value & 1))
         {
             bar->iobase = value & PCI_BAR_MEM_MASK;
             bar->size = pci_size(len, PCI_BAR_MEM_MASK);

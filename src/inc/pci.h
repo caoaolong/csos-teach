@@ -37,6 +37,7 @@ typedef struct pci_classname_t {
 typedef struct pci_bar_t {
     uint32_t iobase;
     uint32_t size;
+    uint8_t type;
 } pci_bar_t;
 
 typedef struct pci_device_t {
@@ -54,8 +55,10 @@ void pci_init();
 
 pci_device_t *pci_find_device(uint16_t vendorid, uint16_t deviceid);
 
-pci_bar_t *pci_find_bar(pci_device_t *device, int type);
+pci_bar_t *pci_find_bar(pci_device_t *device);
 
 void pci_enable_busmastering(pci_device_t *device);
+
+uint8_t pci_interrupt(pci_device_t *device);
 
 #endif

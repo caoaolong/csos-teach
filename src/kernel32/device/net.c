@@ -44,6 +44,109 @@ enum REGISTERS
     E1000_MAT1 = 0x5400, // Multicast Table Array 05200h-053FCh 组播表数组
 };
 
+// 中断类型
+enum IMS
+{
+    // 传输描述符写回，表示有一个数据包发出
+    IM_TXDW = 1 << 0, // Transmit Descriptor Written Back.
+
+    // 传输队列为空
+    IM_TXQE = 1 << 1, // Transmit Queue Empty.
+
+    // 连接状态变化，可以认为是网线拔掉或者插上
+    IM_LSC = 1 << 2, // Link Status Change
+
+    // 接收序列错误
+    IM_RXSEQ = 1 << 3, // Receive Sequence Error.
+
+    // 到达接受描述符最小阈值，表示流量太大，接收描述符太少了，应该再多加一些，不过没有数据包丢失
+    IM_RXDMT0 = 1 << 4, // Receive Descriptor Minimum Threshold hit.
+
+    // 因为没有可用的接收缓冲区或因为PCI接收带宽不足，已经溢出，有数据包丢失
+    IM_RXO = 1 << 6, // Receiver FIFO Overrun.
+
+    // 接收定时器中断
+    IM_RXT0 = 1 << 7, // Receiver Timer Interrupt.
+
+    // 这个位在 MDI/O 访问完成时设置
+    IM_MADC = 1 << 9, // MDI/O Access Complete Interrupt
+
+    IM_RXCFG = 1 << 10,  // Receiving /C/ ordered sets.
+    IM_PHYINT = 1 << 12, // Sets mask for PHY Interrupt
+    IM_GPI0 = 1 << 13,   // General Purpose Interrupts.
+    IM_GPI1 = 1 << 14,   // General Purpose Interrupts.
+
+    // 传输描述符环已达到传输描述符控制寄存器中指定的阈值。
+    IM_TXDLOW = 1 << 15, // Transmit Descriptor Low Threshold hit
+    IM_SRPD = 1 << 16,   // Small Receive Packet Detection
+};
+
+// 接收控制
+enum RCTL
+{
+    RCTL_EN = 1 << 1,               // Receiver Enable
+    RCTL_SBP = 1 << 2,              // Store Bad Packets
+    RCTL_UPE = 1 << 3,              // Unicast Promiscuous Enabled
+    RCTL_MPE = 1 << 4,              // Multicast Promiscuous Enabled
+    RCTL_LPE = 1 << 5,              // Long Packet Reception Enable
+    RCTL_LBM_NONE = 0b00 << 6,      // No Loopback
+    RCTL_LBM_PHY = 0b11 << 6,       // PHY or external SerDesc loopback
+    RTCL_RDMTS_HALF = 0b00 << 8,    // Free Buffer Threshold is 1/2 of RDLEN
+    RTCL_RDMTS_QUARTER = 0b01 << 8, // Free Buffer Threshold is 1/4 of RDLEN
+    RTCL_RDMTS_EIGHTH = 0b10 << 8,  // Free Buffer Threshold is 1/8 of RDLEN
+
+    RCTL_BAM = 1 << 15, // Broadcast Accept Mode
+    RCTL_VFE = 1 << 18, // VLAN Filter Enable
+
+    RCTL_CFIEN = 1 << 19, // Canonical Form Indicator Enable
+    RCTL_CFI = 1 << 20,   // Canonical Form Indicator Bit Value
+    RCTL_DPF = 1 << 22,   // Discard Pause Frames
+    RCTL_PMCF = 1 << 23,  // Pass MAC Control Frames
+    RCTL_SECRC = 1 << 26, // Strip Ethernet CRC
+
+    RCTL_BSIZE_256 = 3 << 16,
+    RCTL_BSIZE_512 = 2 << 16,
+    RCTL_BSIZE_1024 = 1 << 16,
+    RCTL_BSIZE_2048 = 0 << 16,
+    RCTL_BSIZE_4096 = (3 << 16) | (1 << 25),
+    RCTL_BSIZE_8192 = (2 << 16) | (1 << 25),
+    RCTL_BSIZE_16384 = (1 << 16) | (1 << 25),
+};
+
+// 发送状态
+enum TS
+{
+    TS_DD = 1 << 0, // Descriptor Done
+    TS_EC = 1 << 1, // Excess Collisions
+    TS_LC = 1 << 2, // Late Collision
+    TS_TU = 1 << 3, // Transmit Underrun
+};
+
+// 传输控制
+enum TCTL
+{
+    TCTL_EN = 1 << 1,      // Transmit Enable
+    TCTL_PSP = 1 << 3,     // Pad Short Packets
+    TCTL_CT = 4,           // Collision Threshold
+    TCTL_COLD = 12,        // Collision Distance
+    TCTL_SWXOFF = 1 << 22, // Software XOFF Transmission
+    TCTL_RTLC = 1 << 24,   // Re-transmit on Late Collision
+    TCTL_NRTU = 1 << 25,   // No Re-transmit on underrun
+};
+
+// 接收状态
+enum RS
+{
+    RS_DD = 1 << 0,    // Descriptor done
+    RS_EOP = 1 << 1,   // End of packet
+    RS_VP = 1 << 3,    // Packet is 802.1q (matched VET);
+                       // indicates strip VLAN in 802.1q packet
+    RS_UDPCS = 1 << 4, // UDP checksum calculated on packet
+    RS_L4CS = 1 << 5,  // L4 (UDP or TCP) checksum calculated on packet
+    RS_IPCS = 1 << 6,  // Ipv4 checksum calculated on packet
+    RS_PIF = 1 << 7,   // Passed in-exact filter
+};
+
 // 检测只读存储器
 static void e1000_eeprom_detect()
 {
@@ -52,7 +155,6 @@ static void e1000_eeprom_detect()
     for (int i = 0; i < 1000 && !e1000.eeprom; i++)
     {
         uint32_t val = minl(membase + E1000_EERD);
-        logf("%d", val);
         if (val & 0x10)
             e1000.eeprom = TRUE;
         else
@@ -102,9 +204,65 @@ static void e1000_read_mac()
     }
 }
 
+#define RX_DESC_NR 32 // 接收描述符数量
+#define TX_DESC_NR 32 // 传输描述符数量
+
 static void e1000_reset()
 {
     e1000_read_mac();
+    uint32_t membase = e1000.dev->bar->iobase;
+    // 初始化组播表数组
+    for (int i = E1000_MAT0; i < E1000_MAT1; i += 4)
+        moutl(membase + i, 0);
+    // 禁用中断
+    moutl(membase + E1000_IMS, 0);
+    // 接收初始化
+    e1000.rx_desc = (rx_desc_t *)alloc_page();
+    e1000.rx_cur = 0;
+    moutl(membase + E1000_RDBAL, (uint32_t)e1000.rx_desc);
+    moutl(membase + E1000_RDLEN, sizeof(rx_desc_t) * RX_DESC_NR);
+    // 接收描述符头尾指针
+    moutl(membase + E1000_RDH, 0);
+    moutl(membase + E1000_RDT, RX_DESC_NR - 1);
+    // 接收描述符地址
+    for (int i = 0; i < RX_DESC_NR; i++)
+    {
+        e1000.rx_desc[i].addr = alloc_page();
+        e1000.rx_desc[i].status = 0;
+    }
+    // 接收控制寄存器
+    uint32_t value = 0;
+    value |= RCTL_EN | RCTL_SBP | RCTL_UPE;
+    value |= RCTL_MPE | RCTL_LBM_NONE | RTCL_RDMTS_HALF;
+    value |= RCTL_BAM | RCTL_SECRC | RCTL_BSIZE_2048;
+    moutl(membase + E1000_RCTL, value);
+
+    // 传输初始化
+    e1000.tx_desc = (tx_desc_t *)alloc_page();
+    e1000.tx_cur = 0;
+    moutl(membase + E1000_TDBAL, (uint32_t)e1000.tx_desc);
+    moutl(membase + E1000_TDLEN, sizeof(tx_desc_t) * TX_DESC_NR);
+    // 传输描述符头尾指针
+    moutl(membase + E1000_TDH, 0);
+    moutl(membase + E1000_TDT, 0);
+    // 传输描述符基地址
+    for (int i = 0; i < TX_DESC_NR; i++)
+    {
+        e1000.tx_desc[i].addr = alloc_page(1); // TODO: free
+        e1000.tx_desc[i].status = TS_DD;
+    }
+    // 传输控制寄存器
+    value = 0;
+    value |= TCTL_EN | TCTL_PSP | TCTL_RTLC;
+    value |= 0x10 << TCTL_CT;
+    value |= 0x40 << TCTL_COLD;
+    moutl(membase + E1000_TCTL, value);
+
+    // 初始化中断
+    value = 0;
+    value = IM_RXT0 | IM_RXO | IM_RXDMT0 | IM_RXSEQ | IM_LSC;
+    value |= IM_TXQE | IM_TXDW | IM_TXDLOW;
+    moutl(membase + E1000_IMS, value);
 }
 
 // 查找网卡设备
@@ -139,7 +297,7 @@ void net_init()
     // 启用总线主控
     pci_enable_busmastering(e1000.dev);
     // 获取 Base Address Register
-    pci_bar_t *bar = pci_find_bar(e1000.dev, PCI_BAR_TYPE_MEM);
+    pci_bar_t *bar = pci_find_bar(e1000.dev);
     if (!bar) {
         logf("e1000 device cann't find bar");
         return;
@@ -151,6 +309,8 @@ void net_init()
         return;
     }
     e1000_reset();
+    uint32_t intr = pci_interrupt(e1000.dev);
     install_interrupt_handler(IRQ1_NET, (uint32_t)interrupt_handler_net);
     irq_enable(IRQ1_NET);
+    irq_enable(IRQ0_CASCADE);
 }
