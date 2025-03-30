@@ -57,11 +57,12 @@ uint32_t memory32_get_paddr(uint32_t pde, uint32_t vaddr);
 int memory32_copy_page_data(uint32_t to, uint32_t pde, uint32_t from, uint32_t size);
 
 int alloc_pages(uint32_t pde, uint32_t vaddr, uint32_t size, uint32_t perm);
-int alloc_kernel_pages(uint32_t vaddr, uint32_t size);
 uint32_t alloc_page();
 void free_page(uint32_t addr);
 int copy_page(uint32_t index);
 void destroy_page(uint32_t index);
+
+int map_area(uint32_t paddr, uint32_t size);
 
 void memory_init(memory_info_t *memory_info);
 

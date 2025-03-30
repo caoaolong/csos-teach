@@ -263,6 +263,16 @@ int alloc_kernel_pages(uint32_t vaddr, uint32_t size)
     return memory32_alloc_pages((uint32_t)kernel_pde, vaddr, size, PTE_P | PTE_W);
 }
 
+uint32_t round_up_page(uint32_t num, uint32_t size)
+{
+    return (num + size - 1) / size;
+}
+
+int map_area(uint32_t paddr, uint32_t size)
+{
+    return memory32_create_map(kernel_pde, paddr, paddr, round_up_page(size, PAGE_SIZE), PTE_P | PTE_W);
+}
+
 void memory_init(memory_info_t *memory_info)
 {
     uint32_t total_size = 0;

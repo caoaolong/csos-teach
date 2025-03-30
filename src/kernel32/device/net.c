@@ -303,7 +303,7 @@ void net_init()
         return;
     }
     e1000.dev->bar = bar;
-    int err = alloc_kernel_pages(bar->iobase, bar->size);
+    int err = map_area(bar->iobase, bar->size);
     if (err < 0) {
         logf("alloc e1000 bar memory failed");
         return;
