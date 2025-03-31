@@ -97,6 +97,15 @@ void shell_prompt(shell_t *shell)
     printf("[%s:%s]$", "root", shell->cwd);
 }
 
+void shell_result(BOOL r, const char *string)
+{
+    if (r) {
+        printf("[\033[32;40mO K\033[0m] %s\n", string);
+    } else {
+        printf("[\033[34;40mERR\033[0m] %s\n", string);
+    }
+}
+
 void shell_exec(shell_t *shell)
 {
     BOOL found = FALSE;
@@ -194,7 +203,13 @@ static int cmd_exec_mkdir(struct shell_t *shell)
     char *path = shell_get_arg(shell);
     if (*path == 0) 
         return 0;
-    return mkdir(path);
+    int err = rmdir(path);
+    if (err == 0) {
+        shell_result(TRUE, "mkdir ok");
+    } else {
+        shell_result(FALSE, "mkdir failed");
+    }
+    return 0;
 }
 
 static int cmd_exec_rmdir(struct shell_t *shell)
@@ -202,7 +217,15 @@ static int cmd_exec_rmdir(struct shell_t *shell)
     char *path = shell_get_arg(shell);
     if (*path == 0) 
         return 0;
-    if (!strcmp(shell->cwd, path))
+    if (!strcmp(shell->cwd, path)) {
+        shell_result(FALSE, "can't remove the current diectory");
         return 0;
-    return rmdir(path);
+    }
+    int err = rmdir(path);
+    if (err == 0) {
+        shell_result(TRUE, "rmdir ok");
+    } else {
+        shell_result(FALSE, "rmdir failed");
+    }
+    return 0;
 }

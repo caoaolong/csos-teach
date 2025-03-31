@@ -1,4 +1,5 @@
 #include <tty.h>
+#include <kbd.h>
 #include <device.h>
 #include <logf.h>
 #include <interrupt.h>
@@ -153,17 +154,28 @@ static void tty_cursor_forward(dev_terminal_t *term, int n)
     }
 }
 
-static void tty_write_char(dev_terminal_t *term, char c)
+static void tty_write_char(dev_terminal_t *term, tty_t *tty, char c)
 {
     int offset = term->cc + term->cr * term->columns;
     if (offset >= term->columns * term->rows) {
         scroll_up(term, 1);
     }
     tty_char_t *tc = (tty_char_t *)term->base + offset;
-    tc->c = c;
-    tc->fg = term->cfg;
-    tc->bg = term->cbg;
-    tc->blink = term->cb;
+    if (tty->cursor.current == tty->cursor.total) {
+        tc->c = c;
+        tc->fg = term->cfg;
+        tc->bg = term->cbg;
+        tc->blink = term->cb;
+    } else {
+        // 将指针移到尾部
+        tty_char_t *ptc = tc + (tty->cursor.total - tty->cursor.current);
+        while (ptc-- != tc) {
+            (ptc + 1)->c = ptc->c;
+            (ptc + 1)->fg = ptc->fg;
+            (ptc + 1)->bg = ptc->bg;
+            (ptc + 1)->blink = ptc->blink;
+        }
+    }
     tty_cursor_forward(term, 1);
 }
 
@@ -240,12 +252,20 @@ static void com_esc(dev_terminal_t *term, tty_t *tty)
     }
 }
 
-static void com_bs(dev_terminal_t *term)
+static void com_bs(dev_terminal_t *term, tty_t *tty)
 {
+    if (!tty->cursor.can_backspace)
+        return;
+    
     tty_char_t *tc = term->base + term->cc + term->cr * term->columns - 1;
     // 处理换行
     int size = 1;
-    tc->c = ' ';
+    int backcount = tty->cursor.total - tty->cursor.current + 1;
+    tty_char_t *ptc = tc;
+    while (backcount--) {
+        ptc->c = (ptc + 1)->c;
+        ptc++;
+    }
     if (term->cc == 0) {
         size = 0;
         while (tc->c == ' ') {
@@ -254,6 +274,20 @@ static void com_bs(dev_terminal_t *term)
         }
     }
     tty_cursor_backword(term, size);
+}
+
+static void com_left(dev_terminal_t *term, tty_t *tty)
+{
+    if (!tty->cursor.can_left)
+        return;
+    tty_cursor_backword(term, 1);
+}
+
+static void com_right(dev_terminal_t *term, tty_t *tty)
+{
+    if (!tty->cursor.can_right)
+        return;
+    tty_cursor_forward(term, 1);
 }
 
 static void com_ht(dev_terminal_t *term)
@@ -281,12 +315,14 @@ uint32_t tty_write(tty_t *tty)
         sem_notify(&tty->osem);
         switch (c) {
             case ASCII_ESC: com_esc(term, tty); break;
-            case ASCII_BS: if (tty->itotal >= 0) com_bs(term); break;
+            case ASCII_BS: com_bs(term, tty); break;
             case ASCII_HT: com_ht(term); break;
             case ASCII_NUL: break;
+            case KEY_LEFT: com_left(term, tty); break;
+            case KEY_RIGHT: com_right(term, tty); break;
             case ASCII_CR: com_cr(term); len++; break;
             case ASCII_LF: com_lf(term); com_cr(term); len++; break;
-            default: tty_write_char(term, c); len++; break;
+            default: tty_write_char(term, tty, c); len++; break;
         }
     } while(TRUE);
     set_cursor(term);
@@ -325,6 +361,8 @@ int dev_tty_open(device_t *dev)
     
     // 设置回显
     tty->iflags = TTY_IECHO;
+    tty->cursor.can_backspace = tty->cursor.can_left = tty->cursor.can_right = 0;
+    tty->cursor.current = tty->cursor.total = 0;
 
     tty->terminal_index = index;
     tty_init(index);

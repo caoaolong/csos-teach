@@ -27,6 +27,17 @@
 #define COLOR_YELLOW            0b1110
 #define COLOR_WHITE             0b1111
 
+typedef struct cursor_ctrl_t {
+    // 本次输入的字符数
+    uint16_t total;
+    // 光标所在位置
+    uint16_t current;
+    // 功能按键启用位
+    uint8_t can_backspace:1;
+    uint8_t can_left:1;
+    uint8_t can_right:1;
+} cursor_ctrl_t;
+
 typedef union tty_char_t {
     struct {
         char c;
@@ -75,7 +86,7 @@ typedef struct tty_t {
     sem_t osem, isem;
     int iflags, oflags;
     int terminal_index;
-    int itotal;
+    cursor_ctrl_t cursor;
 } tty_t;
 
 // fifo functions

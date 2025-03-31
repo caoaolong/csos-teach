@@ -93,7 +93,7 @@ master: $(BUILD)/boot.bin \
 	dd if=$(BUILD)/boot.bin of=master.img bs=512 count=1 conv=notrunc
 	dd if=$(BUILD)/kernel.bin of=master.img bs=512 count=64 seek=1 conv=notrunc
 	${TOOL_PREFIX}readelf -a $(BUILD)/kernel.elf > $(INFO)/kernel.txt
-	dd if=$(BUILD)/kernel32.elf of=master.img bs=512 count=500 seek=65 conv=notrunc
+	dd if=$(BUILD)/kernel32.elf of=master.img bs=512 count=600 seek=65 conv=notrunc
 	${TOOL_PREFIX}readelf -a $(BUILD)/kernel32.elf > $(INFO)/kernel32.txt
 	dd if=$(BUILD)/shell.elf of=master.img bs=512 count=80 seek=1000 conv=notrunc
 	${TOOL_PREFIX}readelf -a $(BUILD)/shell.elf > $(INFO)/shell.txt

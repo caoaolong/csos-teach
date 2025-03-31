@@ -90,12 +90,33 @@ static void tty_put(char ch)
         return;
     }
     if (ch == '\b') {
-        tty->itotal--;
-    } else if (ch == '\n') {
-        tty->itotal = 0;
+        if (tty->cursor.current > 0) {
+            tty->cursor.current--;
+            tty->cursor.total--;
+            tty->cursor.can_backspace = TRUE;
+        } else {
+            tty->cursor.can_backspace = FALSE;
+        }
+    } else if (ch == KEY_LEFT) {
+        tty->cursor.can_left = tty->cursor.current > 0;
+        if (tty->cursor.current > 0) {
+            tty->cursor.current--;
+            tty->cursor.can_left = TRUE;
+        } else {
+            tty->cursor.can_left = FALSE;
+        }
+    } else if (ch == KEY_RIGHT) {
+        if (tty->cursor.current < tty->cursor.total) {
+            tty->cursor.current++;
+            tty->cursor.can_right = TRUE;
+        } else {
+            tty->cursor.can_right = FALSE;
+        }
     } else {
-        tty->itotal++;
+        tty->cursor.current++;
+        tty->cursor.total++;
     }
+    logf("total: %d, current: %d", tty->cursor.total, tty->cursor.current);
     tty_fifo_put(&tty->ififo, ch);
     sem_notify(&tty->isem);
 }
@@ -134,6 +155,15 @@ static void handle_normal_key(uint8_t rc)
         case KEY_F11:
         case KEY_F12:
             logf("F-Keys: %d", key);
+            break;
+        case KEY_LEFT:
+        case KEY_RIGHT:
+        case KEY_UP:
+        case KEY_DOWN:
+            if (is_make && ks.e0) {
+                tty_put(key);
+                ks.e0 = 0;
+            }
             break;
         case KEY_ESC:
             if (is_make) logf("ESC");
