@@ -27,6 +27,10 @@ int main(int argc, char *argv[])
         if (ch == '\n') {
             shell_exec(&shell);
             shell_prompt(&shell);
+        } else if (ch == KEY_UP) {
+            shell_cmd_up(&shell);
+        } else if (ch == KEY_DOWN) {
+            shell_cmd_down(&shell);
         } else {
             shell_putc(&shell, ch);
         }

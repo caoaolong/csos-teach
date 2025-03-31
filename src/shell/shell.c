@@ -83,6 +83,14 @@ static char *shell_get_arg(shell_t *shell)
     return shell->cmd + pread;
 }
 
+static shell_history_t *shell_new_history(const char *value)
+{
+    shell_history_t *cmd = (shell_history_t*)malloc(sizeof(shell_history_t));
+    strcpy(cmd->cmd, value);
+    list_node_init(&cmd->node);
+    return cmd;
+}
+
 void shell_init(shell_t *shell)
 {
     shell->cmd_begin = cmd_list;
@@ -90,6 +98,13 @@ void shell_init(shell_t *shell)
     memset(shell->cmd, 0, CMD_MAX_SIZE);
     strcpy(shell->cwd, getcwd());
     shell->pcread = shell->pcwrite = 0;
+
+    shell->history = (list_t *)malloc(sizeof(list_t));
+    list_init(shell->history);
+    shell_history_t *ncmd = shell_new_history(shell->cmd);
+    list_insert_back(shell->history, &ncmd->node);
+
+    shell->now = (uint32_t)list_get_last(shell->history);
 }
 
 void shell_prompt(shell_t *shell)
@@ -106,8 +121,15 @@ void shell_result(BOOL r, const char *string)
     }
 }
 
+static void shell_cmd_save(shell_t *shell)
+{
+    shell_history_t *ncmd = shell_new_history(shell->cmd);
+    list_insert_node(shell->history, &ncmd->node, (list_node_t *)shell->now, 1);
+}
+
 void shell_exec(shell_t *shell)
 {
+    shell_cmd_save(shell);
     BOOL found = FALSE;
     char *cmd = shell_get_arg(shell);
     for (shell_cmd_t *pc = shell->cmd_begin; pc != shell->cmd_end; pc++) {
@@ -117,11 +139,11 @@ void shell_exec(shell_t *shell)
             break;
         }
     }
-    memset(shell->cmd, 0, CMD_MAX_SIZE);
-    shell->pcread = shell->pcwrite = 0;
     if (!found) {
         printf("command not found\n");
     }
+    memset(shell->cmd, 0, CMD_MAX_SIZE);
+    shell->pcread = shell->pcwrite = 0;
 }
 
 void shell_putc(shell_t *shell, char ch)
@@ -131,6 +153,35 @@ void shell_putc(shell_t *shell, char ch)
     } else {
         shell->cmd[shell->pcwrite++] = ch;
     }
+}
+
+void shell_cmd_up(shell_t *shell)
+{
+    if (list_is_empty(shell->history))
+        return;
+    list_node_t *pnode = list_get_pre((list_node_t *)shell->now);
+    shell_history_t *cmd = struct_from_field(pnode, shell_history_t, node);
+    if (!cmd) {
+        return;
+    }
+    shell->now = (uint32_t)&cmd->node;
+    // TODO: 替换当前命令
+    printf("%s", cmd->cmd);
+}
+
+void shell_cmd_down(shell_t *shell)
+{
+    if (list_is_empty(shell->history))
+        return;
+    list_node_t *pnode = list_get_next((list_node_t *)shell->now);
+    shell_history_t *cmd = struct_from_field(pnode, shell_history_t, node);
+    if (!cmd) {
+        // TODO: 清空命令
+        return;
+    }
+    shell->now = (uint32_t)&cmd->node;
+    // TODO: 替换当前命令
+    printf("%s", cmd->cmd);
 }
 
 static int cmd_exec_help(struct shell_t *shell)

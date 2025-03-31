@@ -154,8 +154,36 @@ static void tty_cursor_forward(dev_terminal_t *term, int n)
     }
 }
 
+static void com_left(dev_terminal_t *term, tty_t *tty)
+{
+    if (!tty->cursor.can_left)
+        return;
+    tty_cursor_backword(term, 1);
+}
+
+static void com_right(dev_terminal_t *term, tty_t *tty)
+{
+    if (!tty->cursor.can_right)
+        return;
+    tty_cursor_forward(term, 1);
+}
+
 static void tty_write_char(dev_terminal_t *term, tty_t *tty, char c)
 {
+    if (c == KEY_LEFT && !tty->cursor.can_echo) {
+        com_left(term, tty);
+        return;
+    }
+
+    if (c == KEY_RIGHT && !tty->cursor.can_echo) {
+        com_right(term, tty);
+        return;
+    }
+
+    if ((c == KEY_UP || c == KEY_DOWN) && !tty->cursor.can_echo) {
+        return;
+    }
+
     int offset = term->cc + term->cr * term->columns;
     if (offset >= term->columns * term->rows) {
         scroll_up(term, 1);
@@ -276,20 +304,6 @@ static void com_bs(dev_terminal_t *term, tty_t *tty)
     tty_cursor_backword(term, size);
 }
 
-static void com_left(dev_terminal_t *term, tty_t *tty)
-{
-    if (!tty->cursor.can_left)
-        return;
-    tty_cursor_backword(term, 1);
-}
-
-static void com_right(dev_terminal_t *term, tty_t *tty)
-{
-    if (!tty->cursor.can_right)
-        return;
-    tty_cursor_forward(term, 1);
-}
-
 static void com_ht(dev_terminal_t *term)
 {
     int size = 8 - (term->cc % 8);
@@ -318,8 +332,6 @@ uint32_t tty_write(tty_t *tty)
             case ASCII_BS: com_bs(term, tty); break;
             case ASCII_HT: com_ht(term); break;
             case ASCII_NUL: break;
-            case KEY_LEFT: com_left(term, tty); break;
-            case KEY_RIGHT: com_right(term, tty); break;
             case ASCII_CR: com_cr(term); len++; break;
             case ASCII_LF: com_lf(term); com_cr(term); len++; break;
             default: tty_write_char(term, tty, c); len++; break;

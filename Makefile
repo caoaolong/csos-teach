@@ -76,7 +76,8 @@ $(BUILD)/libapp.a: $(BUILD)/libapp/cstart.o \
 	$(BUILD)/libapp/term.o \
 	$(BUILD)/libapp/fs/dir.o \
 	$(BUILD)/libapp/fs/file.o \
-	$(BUILD)/lib/stdio.o
+	$(BUILD)/lib/stdio.o \
+	$(BUILD)/lib/list.o
 	x86_64-elf-ar -crv $@ $^
 
 $(BUILD)/shell.elf: $(BUILD)/libapp.a \

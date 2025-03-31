@@ -97,7 +97,8 @@ static void tty_put(char ch)
         } else {
             tty->cursor.can_backspace = FALSE;
         }
-    } else if (ch == KEY_LEFT) {
+        tty->cursor.can_echo = TRUE;
+    } else if (ch == KEY_LEFT && ks.e0) {
         tty->cursor.can_left = tty->cursor.current > 0;
         if (tty->cursor.current > 0) {
             tty->cursor.current--;
@@ -105,18 +106,23 @@ static void tty_put(char ch)
         } else {
             tty->cursor.can_left = FALSE;
         }
-    } else if (ch == KEY_RIGHT) {
+        tty->cursor.can_echo = FALSE;
+    } else if (ch == KEY_RIGHT && ks.e0) {
         if (tty->cursor.current < tty->cursor.total) {
             tty->cursor.current++;
             tty->cursor.can_right = TRUE;
         } else {
             tty->cursor.can_right = FALSE;
         }
-    } else {
+        tty->cursor.can_echo = FALSE;
+    } else if (ks.e0 && (ch == KEY_UP || ch == KEY_DOWN)) {
+        tty->cursor.can_echo = FALSE;
+    }
+     else {
         tty->cursor.current++;
         tty->cursor.total++;
+        tty->cursor.can_echo = TRUE;
     }
-    logf("total: %d, current: %d", tty->cursor.total, tty->cursor.current);
     tty_fifo_put(&tty->ififo, ch);
     sem_notify(&tty->isem);
 }

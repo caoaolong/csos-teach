@@ -36,6 +36,7 @@ typedef struct cursor_ctrl_t {
     uint8_t can_backspace:1;
     uint8_t can_left:1;
     uint8_t can_right:1;
+    uint8_t can_echo:1;
 } cursor_ctrl_t;
 
 typedef union tty_char_t {

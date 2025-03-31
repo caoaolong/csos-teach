@@ -6,6 +6,40 @@ void list_init(list_t *list)
     list->size = 0;
 }
 
+// type=0: 往后插入; type=1: 往前插入
+void list_insert_node(list_t *list, list_node_t *nnode, list_node_t *onode, int type)
+{
+    // 参数检查
+    if (!list || !nnode || !onode) {
+        return;
+    }
+
+    if (type == 0) {  // 向后插入
+        if (!onode->next) {
+            list->tail = nnode;
+        } else {
+            onode->next->pre = nnode;  // 更新tmp的pre指针
+        }
+        list_node_t *tmp = onode->next;
+        onode->next = nnode;
+        nnode->next = tmp;
+        nnode->pre = onode;
+    } else if (type == 1) {  // 向前插入
+        if (!onode->pre) {
+            list->head = nnode;
+        } else {
+            onode->pre->next = nnode;  // 更新tmp的next指针
+        }
+        list_node_t *tmp = onode->pre;
+        onode->pre = nnode;
+        nnode->pre = tmp;
+        nnode->next = onode;
+    } else {
+        return;  // 非法的type值
+    }
+    list->size++;
+}
+
 void list_insert_front(list_t *list, list_node_t *node)
 {
     node->next = list->head;
@@ -75,6 +109,16 @@ list_node_t *list_remove_front(list_t *list)
 list_node_t *list_get_first(list_t *list)
 {
     return list->head;
+}
+
+list_node_t *list_get_last(list_t *list)
+{
+    return list->tail;
+}
+
+list_node_t *list_get_pre(list_node_t *node)
+{
+    return node->pre;
 }
 
 list_node_t *list_get_next(list_node_t *node)

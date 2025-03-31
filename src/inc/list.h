@@ -28,6 +28,8 @@ static inline BOOL list_is_empty(list_t *list)
     return list->size == 0;
 }
 
+void list_insert_node(list_t *list, list_node_t *nnode, list_node_t *onode, int type);
+
 void list_insert_front(list_t *list, list_node_t *node);
 
 void list_insert_back(list_t *list, list_node_t *node);
@@ -37,6 +39,10 @@ list_node_t *list_remove(list_t *list, list_node_t *node);
 list_node_t *list_remove_front(list_t *list);
 
 list_node_t *list_get_first(list_t *list);
+
+list_node_t *list_get_last(list_t *list);
+
+list_node_t *list_get_pre(list_node_t *node);
 
 list_node_t *list_get_next(list_node_t *node);
 
