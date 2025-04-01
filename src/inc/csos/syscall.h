@@ -32,6 +32,8 @@
 #define SYS_NR_PUTC         24
 #define SYS_NR_DUP          25
 #define SYS_NR_CLEAR        26
+#define SYS_NR_TCGETATTR    27
+#define SYS_NR_TCSETATTR    28
 
 #define SYSCALL_LCALL
 

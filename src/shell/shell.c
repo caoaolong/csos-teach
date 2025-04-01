@@ -110,6 +110,7 @@ void shell_init(shell_t *shell)
 void shell_prompt(shell_t *shell)
 {
     printf("[%s:%s]$", "root", shell->cwd);
+    tcgetattr(stdin, &shell->term);
 }
 
 void shell_result(BOOL r, const char *string)
@@ -161,12 +162,12 @@ void shell_cmd_up(shell_t *shell)
         return;
     list_node_t *pnode = list_get_pre((list_node_t *)shell->now);
     shell_history_t *cmd = struct_from_field(pnode, shell_history_t, node);
-    if (!cmd) {
+    if (!cmd) 
         return;
-    }
     shell->now = (uint32_t)&cmd->node;
-    // TODO: 替换当前命令
-    printf("%s", cmd->cmd);
+    // 替换当前命令
+    tcsetattr(stdin, &shell->term);
+    printf("\033[%d;%df%s\033[0f", shell->term.cr, shell->term.cc, cmd->cmd);
 }
 
 void shell_cmd_down(shell_t *shell)
@@ -176,12 +177,13 @@ void shell_cmd_down(shell_t *shell)
     list_node_t *pnode = list_get_next((list_node_t *)shell->now);
     shell_history_t *cmd = struct_from_field(pnode, shell_history_t, node);
     if (!cmd) {
-        // TODO: 清空命令
+        tcsetattr(stdin, &shell->term);
         return;
     }
     shell->now = (uint32_t)&cmd->node;
-    // TODO: 替换当前命令
-    printf("%s", cmd->cmd);
+    // 替换当前命令
+    tcsetattr(stdin, &shell->term);
+    printf("\033[%d;%df%s\033[0f", shell->term.cr, shell->term.cc, cmd->cmd);
 }
 
 static int cmd_exec_help(struct shell_t *shell)

@@ -458,3 +458,35 @@ void tty_init(int index)
     tty_clear(dev);
     mutex_init(&mutex);
 }
+
+int tty_tcgetattr(int fd, term_t *term)
+{
+    tty_t *tty = &ttys[tty_now];
+    dev_terminal_t *terminal = &terminals[tty->terminal_index];
+    if (fd == stdin) {
+        term->cc = terminal->cc;
+        term->cr = terminal->cr;
+    }
+    return 0;
+}
+
+int tty_tcsetattr(int fd, term_t *term)
+{
+    tty_t *tty = &ttys[tty_now];
+    dev_terminal_t *terminal = &terminals[tty->terminal_index];
+    if (fd == stdin) {
+        terminal->cc = term->cc;
+        terminal->cr = term->cr;
+        set_cursor(terminal);
+    }
+    int count = terminal->columns * terminal->rows - (terminal->columns * terminal->cr + terminal->cc);
+    tty_char_t *start = terminal->base + (terminal->columns * terminal->cr + terminal->cc);
+    for (int i = 0; i < count; i++) {
+        start->c = ' ';
+        start->fg = terminal->fg;
+        start->bg = terminal->bg;
+        start->blink = terminal->cb;
+        start++;
+    }
+    return 0;
+}

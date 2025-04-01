@@ -1,8 +1,8 @@
 #ifndef CSOS_SHELL_H
 #define CSOS_SHELL_H
 
-#include <types.h>
 #include <list.h>
+#include <csos/term.h>
 
 #define CMD_MAX_ARGS    8
 #define CMD_MAX_SIZE    64
@@ -29,6 +29,8 @@ typedef struct shell_t {
     // 历史命令
     uint32_t now;
     list_t *history;
+    // 控制台属性
+    term_t term;
 } shell_t;
 
 void shell_init(shell_t *shell);

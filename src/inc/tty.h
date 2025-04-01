@@ -107,4 +107,11 @@ uint32_t tty_write(tty_t *tty);
 
 void tty_init(int index);
 
+typedef struct term_t {
+    uint8_t cc, cr;
+} term_t;
+
+int tty_tcgetattr(int fd, term_t *term);
+int tty_tcsetattr(int fd, term_t *term);
+
 #endif

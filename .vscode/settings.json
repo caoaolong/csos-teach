@@ -36,7 +36,8 @@
         "chrono": "c",
         "typeinfo": "c",
         "file.h": "c",
-        "shell.h": "c"
+        "shell.h": "c",
+        "term.h": "c"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }
