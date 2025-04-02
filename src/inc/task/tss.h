@@ -104,7 +104,7 @@ int tss_task_execve(char *name, char *argv[], char *env[]);
 
 uint8_t *tss_task_sbrk(uint32_t size);
 
-uint8_t *tss_task_free(void *ptr);
+void tss_task_free(void *ptr);
 
 void tss_task_destroy(tss_task_t *task);
 

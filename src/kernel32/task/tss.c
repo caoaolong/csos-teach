@@ -366,7 +366,7 @@ uint8_t *tss_task_sbrk(uint32_t size)
     return peheap;
 }
 
-uint8_t *tss_task_free(void *ptr)
+void tss_task_free(void *ptr)
 {
     block_t *pb = ptr - sizeof(block_t);
     if (pb->p) {
@@ -383,9 +383,9 @@ uint8_t *tss_task_free(void *ptr)
         uint32_t pend = pbegin + size + sizeof(block_t);
         if ((pbegin & 0xFFFFF000) < (pend & 0xFFFFF000)) {
             free_page(pend & 0xFFFFF000);
-            task->eheap = pbegin;
         }
     }
+    task->eheap = (uint32_t)pb;
 }
 
 void tss_task_destroy(tss_task_t *task)

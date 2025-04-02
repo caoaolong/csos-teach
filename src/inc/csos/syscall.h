@@ -133,10 +133,10 @@ static inline void *malloc(uint32_t size)
     return (void *)_syscall(&sbrk_arg);
 }
 
-static inline int free(void *ptr)
+static inline void free(void *ptr)
 {
     syscall_arg_t free_arg = { SYS_NR_FREE, (int)ptr, 0, 0, 0 };
-    return _syscall(&free_arg);
+    _syscall(&free_arg);
 }
 
 #endif
