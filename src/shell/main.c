@@ -1,5 +1,6 @@
 #include <csos/syscall.h>
 #include <csos/shell.h>
+#include <csos/string.h>
 #include <fs.h>
 
 static shell_t shell;
@@ -17,6 +18,13 @@ int main(int argc, char *argv[])
     printf("\t\t  \033[35;40m | (__    \\__ \\  | (_) |  \\__ \\  \033[0m\n");
     printf("\t\t  \033[36;40m  \\___|   |___/   \\___/   |___/  \033[0m\n\n");
     printf("\t\t  \033[37;40m CSOS %s (Kernel: %s)\033[0m  %s\n\n", OP_SYS_VERSION, KERNEL_VERSION, argv[0]);
+
+    char *ptr1 = (char *)malloc(1000);
+    char *ptr2 = (char *)malloc(4000);
+    strcpy(ptr1, "Hello, Free block 1");
+    strcpy(ptr2, "Hello, Free block 2");
+    free(ptr2);
+    free(ptr1);
 
     // shell
     shell_init(&shell);

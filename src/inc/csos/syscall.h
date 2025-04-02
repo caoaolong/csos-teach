@@ -34,6 +34,7 @@
 #define SYS_NR_CLEAR        26
 #define SYS_NR_TCGETATTR    27
 #define SYS_NR_TCSETATTR    28
+#define SYS_NR_FREE         29
 
 #define SYSCALL_LCALL
 
@@ -126,10 +127,16 @@ static inline int execve(const char *name, char *const *argv, const char *env)
     return _syscall(&execve_arg);
 }
 
-static inline int malloc(uint32_t size)
+static inline void *malloc(uint32_t size)
 {
     syscall_arg_t sbrk_arg = { SYS_NR_SBRK, size, 0, 0, 0 };
-    return _syscall(&sbrk_arg);
+    return (void *)_syscall(&sbrk_arg);
+}
+
+static inline int free(void *ptr)
+{
+    syscall_arg_t free_arg = { SYS_NR_FREE, (int)ptr, 0, 0, 0 };
+    return _syscall(&free_arg);
 }
 
 #endif

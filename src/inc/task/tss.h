@@ -16,6 +16,14 @@ typedef struct tss_t
     uint32_t iomap;
 } tss_t;
 
+typedef struct block_t {
+    uint32_t size;
+    uint8_t p:1;
+    uint8_t unused:3;
+    uint8_t magic:4;
+    list_node_t node;
+} block_t;
+
 typedef struct tss_task_t {
     task_state_t state;
     char name[TASK_NAME_SIZE];
@@ -48,6 +56,8 @@ typedef struct tss_task_t {
     } wd;
     // 进程打开的文件表
     FILE *ftb[TASK_FT_SIZE];
+    // 堆内存链表
+    list_t *heap;
 } tss_task_t;
 
 typedef struct tss_task_queue_t
@@ -93,6 +103,8 @@ void tss_task_exit(int code);
 int tss_task_execve(char *name, char *argv[], char *env[]);
 
 uint8_t *tss_task_sbrk(uint32_t size);
+
+uint8_t *tss_task_free(void *ptr);
 
 void tss_task_destroy(tss_task_t *task);
 

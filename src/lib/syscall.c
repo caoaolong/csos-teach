@@ -33,6 +33,7 @@ static const syscall_handler_t syscall_handler_table[] = {
     [SYS_NR_CLEAR]      = (syscall_handler_t)sys_clear,
     [SYS_NR_TCGETATTR]  = (syscall_handler_t)tty_tcgetattr,
     [SYS_NR_TCSETATTR]  = (syscall_handler_t)tty_tcsetattr,
+    [SYS_NR_FREE]       = (syscall_handler_t)task_free,
 };
 // 远调用实现
 void syscall(syscall_frame_t *frame)

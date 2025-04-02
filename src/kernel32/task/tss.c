@@ -316,6 +316,12 @@ int tss_task_execve(char *name, char *argv[], char *env[])
     task->tss.cr3 = new_pde;
     set_pde(new_pde);
     destroy_page(old_pde);
+
+    // 初始化堆内存链表
+    task->heap = (list_t *)task->bheap;
+    list_init(task->heap);
+    task->eheap += sizeof(list_t);
+
     mutex_unlock(&task_mutex);
     return 0;
 }
@@ -325,8 +331,17 @@ uint8_t *tss_task_sbrk(uint32_t size)
     tss_task_t *task = get_running_task();
     uint8_t *peheap = (uint8_t*)task->eheap;
     if (size == 0) return peheap;
-
+    // 内存开始位置
     uint32_t start = task->eheap;
+    // 创建内存块
+    block_t *pb = (block_t *)start;
+    pb->p = TRUE;
+    pb->magic = 0xE;
+    pb->size = size;
+    list_insert_back(task->heap, &pb->node);
+    size += sizeof(block_t);
+    peheap = (uint8_t *)(start + sizeof(block_t));
+    // 内存结束位置
     uint32_t stop = start + size;
     int start_offset = start % PAGE_SIZE;
     if (start_offset) {
@@ -349,6 +364,28 @@ uint8_t *tss_task_sbrk(uint32_t size)
 
     task->eheap = stop;
     return peheap;
+}
+
+uint8_t *tss_task_free(void *ptr)
+{
+    block_t *pb = ptr - sizeof(block_t);
+    if (pb->p) {
+        pb->p = FALSE;
+    }
+    uint32_t size = pb->size;
+    // 整理内存
+    task_t *task = get_running_task();
+    list_node_t *pnode = list_get_last(task->heap);
+    if (&pb->node == pnode) {
+        list_remove(task->heap, pnode);
+        // 检查是否有可释放的内存页
+        uint32_t pbegin = (uint32_t)pb;
+        uint32_t pend = pbegin + size + sizeof(block_t);
+        if ((pbegin & 0xFFFFF000) < (pend & 0xFFFFF000)) {
+            free_page(pend & 0xFFFFF000);
+            task->eheap = pbegin;
+        }
+    }
 }
 
 void tss_task_destroy(tss_task_t *task)
