@@ -13,6 +13,7 @@
 #define PCI_CONF_DEVICE         0x2   // 设备
 #define PCI_CONF_COMMAND        0x4   // 命令
 #define PCI_CONF_STATUS         0x6   // 状态
+#define PCI_CONF_REVISION       0x8
 
 typedef struct pci_classname_t {
     uint32_t classcode;

@@ -148,7 +148,7 @@ static void pci_check_device(uint8_t bus, uint8_t dev)
         device->func = func;
         device->vendorid = vendorid;
         device->deviceid = value >> 16;
-        value = pci_inl(bus, dev, func, PCI_CONF_COMMAND);
+        value = pci_inl(bus, dev, func, PCI_CONF_REVISION);
         device->classcode = value >> 8;
         device->revision = value & 0xFF;
         logf("PCI %02x:%02x.%x %4x:%4x %s",
