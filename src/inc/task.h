@@ -49,6 +49,7 @@ typedef struct task_args_t
 #define task_sleep          tss_task_sleep
 #define task_getpid         tss_task_getpid
 #define task_fork           tss_task_fork
+#define task_wait           tss_task_wait
 #define task_exit           tss_task_exit
 #define task_execve         tss_task_execve
 #define task_sbrk           tss_task_sbrk

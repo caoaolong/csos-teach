@@ -127,14 +127,14 @@ int copy_page(uint32_t index)
             }
             uint32_t page = memory32_alloc_page(&memory32_info, 1);
             if (page == 0) {
-                destroy_page(to_pde);
+                destroy_pde(to_pde);
                 return -1;
             }
 
             uint32_t vaddr = (i << 22) | (k << 12);
             int ret = memory32_create_map((pde_t *)to_pde, vaddr, page, 1, PTE_PERM(pte));
             if (ret < 0) {
-                destroy_page(to_pde);
+                destroy_pde(to_pde);
                 return -1;
             }
             kernel_memcpy((void *)page, (void *)vaddr, PAGE_SIZE);
@@ -143,7 +143,7 @@ int copy_page(uint32_t index)
     return to_pde;
 }
 
-void destroy_page(uint32_t index)
+void destroy_pde(uint32_t index)
 {
     uint32_t pde_start = PDE_INDEX(VM_TASK_BASE);
     pde_t *pde = (pde_t *)index + pde_start;

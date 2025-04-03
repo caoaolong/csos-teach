@@ -5,6 +5,7 @@
 #include <csos/stdlib.h>
 #include <paging.h>
 #include <interrupt.h>
+#include <fs.h>
 
 static mutex_t task_mutex;
 static tss_task_t task_table[OS_TASK_MAX_SIZE];
@@ -203,10 +204,23 @@ int tss_task_fork()
     return child->pid;
 }
 
+int tss_task_wait(int *code)
+{
+    task_t *task = get_running_task();
+    // 关闭文件描述符
+    for (int i = 0; i < TASK_FT_SIZE; i++) {
+        FILE *pf = task->ftb[i];
+        if (pf) fs_fclose(i);
+    }
+    task->state = TASK_DYING;
+    *code = task->exit_code;
+    return 0;
+}
+
 void tss_task_exit(int code)
 {
     task_t *task = get_running_task();
-    if (task->state == TASK_RUNNING) {
+    if (task->state == TASK_DYING) {
         task->state = TASK_DIED;
         task->exit_code = code;
     }
@@ -286,7 +300,7 @@ int tss_task_execve(char *name, char *argv[], char *env[])
     if (entry == 0) {
         task->tss.cr3 = old_pde;
         set_pde(old_pde);
-        destroy_page(old_pde);
+        destroy_pde(old_pde);
         mutex_unlock(&task_mutex);
         return -1;
     }
@@ -294,7 +308,7 @@ int tss_task_execve(char *name, char *argv[], char *env[])
     if (alloc_pages(new_pde, VM_SHELL_STACK - VM_SHELL_STACK_SIZE, VM_SHELL_STACK_SIZE, PTE_U | PTE_W | PTE_P) < 0) {
         task->tss.cr3 = old_pde;
         set_pde(old_pde);
-        destroy_page(old_pde);
+        destroy_pde(old_pde);
         mutex_unlock(&task_mutex);
         return -1;
     }
@@ -302,7 +316,7 @@ int tss_task_execve(char *name, char *argv[], char *env[])
     if (copy_args(new_pde, (char *)stack_top, argv, argc) < 0) {
         task->tss.cr3 = old_pde;
         set_pde(old_pde);
-        destroy_page(old_pde);
+        destroy_pde(old_pde);
         mutex_unlock(&task_mutex);
         return -1;
     }
@@ -315,7 +329,7 @@ int tss_task_execve(char *name, char *argv[], char *env[])
 
     task->tss.cr3 = new_pde;
     set_pde(new_pde);
-    destroy_page(old_pde);
+    destroy_pde(old_pde);
 
     // 初始化堆内存链表
     task->heap = (list_t *)task->bheap;
@@ -390,7 +404,7 @@ void tss_task_free(void *ptr)
 
 void tss_task_destroy(tss_task_t *task)
 {
-if (task->selector) {
+    if (task->selector) {
         free_gdt_table_entry(task->selector);
     }
 
@@ -399,7 +413,7 @@ if (task->selector) {
     }
 
     if (task->tss.cr3) {
-        destroy_page(task->tss.cr3);
+        destroy_pde(task->tss.cr3);
     }
     kernel_memset(task, 0, sizeof(task_t));
 }

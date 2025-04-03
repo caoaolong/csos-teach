@@ -35,6 +35,7 @@
 #define SYS_NR_TCGETATTR    27
 #define SYS_NR_TCSETATTR    28
 #define SYS_NR_FREE         29
+#define SYS_NR_WAIT         30
 
 #define SYSCALL_LCALL
 
@@ -115,10 +116,16 @@ static inline int yield()
     return _syscall(&yield_arg);
 }
 
-static inline int exit(int code)
+static inline int wait(int *stats)
+{
+    syscall_arg_t wait_arg = { SYS_NR_WAIT, (int)stats, 0, 0, 0 };
+    return _syscall(&wait_arg);
+}
+
+static inline void exit(int code)
 {
     syscall_arg_t exit_arg = { SYS_NR_EXIT, code, 0, 0, 0 };
-    return _syscall(&exit_arg);
+    _syscall(&exit_arg);
 }
 
 static inline int execve(const char *name, char *const *argv, const char *env)

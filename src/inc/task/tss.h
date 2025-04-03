@@ -98,6 +98,8 @@ void tss_task_yield();
 
 int tss_task_fork();
 
+int tss_task_wait(int *code);
+
 void tss_task_exit(int code);
 
 int tss_task_execve(char *name, char *argv[], char *env[]);

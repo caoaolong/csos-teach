@@ -13,6 +13,7 @@ static int cmd_exec_ls(struct shell_t *shell);
 static int cmd_exec_cd(struct shell_t *shell);
 static int cmd_exec_mkdir(struct shell_t *shell);
 static int cmd_exec_rmdir(struct shell_t *shell);
+static int cmd_exec_exit(struct shell_t *shell);
 
 static shell_cmd_t cmd_list[] = {
     {
@@ -59,6 +60,11 @@ static shell_cmd_t cmd_list[] = {
         .usage = "rmdir\tremove directory\n"
                  "     \t<path>",
         .cmd_exec = cmd_exec_rmdir
+    },
+    {
+        .name = "exit",
+        .usage = "exit\texit the current task\n",
+        .cmd_exec = cmd_exec_exit
     }
 };
 
@@ -151,6 +157,8 @@ void shell_putc(shell_t *shell, char ch)
 {
     if (ch == '\b') {
         shell->cmd[shell->pcwrite] = 0;
+    } else if (ch == 0) {
+        return;
     } else {
         shell->cmd[shell->pcwrite++] = ch;
     }
@@ -279,6 +287,19 @@ static int cmd_exec_rmdir(struct shell_t *shell)
         shell_result(TRUE, "rmdir ok");
     } else {
         shell_result(FALSE, "rmdir failed");
+    }
+    return 0;
+}
+
+static int cmd_exec_exit(struct shell_t *shell)
+{
+    int stats;
+    if (wait(&stats) < 0) {
+        shell_result(FALSE, "wait failed");
+    } else {
+        clear();
+        shell_result(TRUE, "task exited");
+        exit(stats);
     }
     return 0;
 }
