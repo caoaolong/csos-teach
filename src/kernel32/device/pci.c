@@ -92,11 +92,11 @@ pci_classname_t pci_classnames[] = {
     {0x000000, NULL}
 };
 
-pci_device_t devices[PCI_DEVICE_SIZE];
+pci_device_t devices[PCI_DEVICE_NR];
 
 static pci_device_t *pci_alloc_device()
 {
-    for (int i = 0; i < PCI_DEVICE_SIZE; i++) {
+    for (int i = 0; i < PCI_DEVICE_NR; i++) {
         pci_device_t *dev = &devices[i];
         if (dev) {
             return dev;
@@ -165,6 +165,64 @@ static void pci_enum_device()
         for (int dev = 0; dev < 32; dev++)
         {
             pci_check_device(bus, dev);
+        }
+    }
+}
+
+static uint32_t pci_size(uint32_t base, uint32_t mask)
+{
+    // 去掉必须设置的低位
+    uint32_t size = mask & base;
+    // 按位取反再加1得到大小
+    size = ~size + 1;
+    return size;
+}
+
+pci_device_t *pci_find_device(uint16_t vendorid, uint16_t deviceid)
+{
+    for (int i = 0; i < PCI_DEVICE_NR; i++) {
+        pci_device_t *dev = &devices[i];
+        if (dev->vendorid == vendorid && dev->deviceid == deviceid)
+            return dev;
+    }
+    return NULL;
+}
+
+void pci_enable_busmastering(pci_device_t *device)
+{
+    uint32_t data = pci_inl(device->bus, device->dev, device->func, PCI_CONF_COMMAND);
+    data |= PCI_COMMAND_MASTER;
+    pci_outl(device->bus, device->dev, device->func, PCI_CONF_COMMAND, data);
+}
+
+void pci_set_bars(pci_device_t *device)
+{
+    for (int i = 0; i < PCI_BAR_NR; i++) {
+        pci_bar_t *bar = &device->bar[i];
+        bar->index = -1;
+        uint8_t addr = PCI_CONF_BASE_ADDR0 + (i << 2);
+        uint32_t value = pci_inl(device->bus, device->dev, device->func, addr);
+        pci_outl(device->bus, device->dev, device->func, addr, -1);
+        uint32_t len = pci_inl(device->bus, device->dev, device->func, addr);
+        pci_outl(device->bus, device->dev, device->func, addr, value);
+
+        if (value == 0)
+            continue;
+        if (len == 0 || len == -1)
+            continue;
+        if (value == -1)
+            value = 0;
+        if (value & 1)
+        {
+            bar->iobase = value & PCI_BAR_IO_MASK;
+            bar->size = pci_size(len, PCI_BAR_IO_MASK);
+            bar->index = i;
+            bar->type = PCI_BAR_TYPE_IO;
+        } else {
+            bar->iobase = value & PCI_BAR_MEM_MASK;
+            bar->size = pci_size(len, PCI_BAR_MEM_MASK);
+            bar->index = i;
+            bar->type = PCI_BAR_TYPE_MEM;
         }
     }
 }
