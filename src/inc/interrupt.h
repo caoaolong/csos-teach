@@ -101,6 +101,11 @@ void handler_syscall(interrupt_frame_t* frame);
 
 #define IRQ0_CASCADE        0x22
 
+// PCI设备中断
+#define IRQ1_NIC            0x2B
+extern void interrupt_handler_e1000();
+void handler_e1000(interrupt_frame_t* frame);
+
 // 缺页异常标志
 #define ERROR_PAGE_P    (1 << 0)
 #define ERROR_PAGE_WR   (1 << 1)

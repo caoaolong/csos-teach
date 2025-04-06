@@ -39,7 +39,8 @@
         "shell.h": "c",
         "term.h": "c",
         "e1000.h": "c",
-        "pci.h": "c"
+        "pci.h": "c",
+        "type_traits": "c"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }

@@ -58,6 +58,8 @@ void pci_enable_busmastering(pci_device_t *device);
 
 void pci_set_bars(pci_device_t *device);
 
+uint8_t pci_interrupt(pci_device_t *device);
+
 void pci_init();
 
 #endif

@@ -1,12 +1,17 @@
 #include <pci/e1000.h>
 #include <logf.h>
 #include <mio.h>
+#include <interrupt.h>
+#include <pic.h>
 #include <csos/string.h>
 #include <csos/memory.h>
 
 #define VENDORID        0x8086 // 供应商英特尔
 #define DEVICEID_LOW    0x1000
 #define DEVICEID_HIGH   0x1028
+
+#define RX_DESC_NR      32 // 接收描述符数量
+#define TX_DESC_NR      32 // 传输描述符数量
 
 // 寄存器偏移
 enum REGISTERS
@@ -39,7 +44,105 @@ enum REGISTERS
     E1000_MAT1 = 0x5400, // Multicast Table Array 05200h-053FCh 组播表数组
 };
 
-e1000_t e1000;
+enum IMSBITS {
+    IMS_TXDW    = 1 << 0,
+    IMS_TXQE    = 1 << 1,
+    IMS_LSC     = 1 << 2,
+    IMS_RXSEQ   = 1 << 3,
+    IMS_RXDMT0  = 1 << 4,
+    IMS_RXO     = 1 << 6,
+    IMS_RXT0    = 1 << 7,
+    IMS_MDAC    = 1 << 9,
+    IMS_RXCFG   = 1 << 10,
+    IMS_PHYINT  = 1 << 12,
+    IMS_GPI0    = 1 << 13,
+    IMS_GPI1    = 1 << 14,
+    IMS_TXD_LOW = 1 << 15,
+    IMS_SRPD    = 1 << 16
+};
+
+enum CTRLBITS {
+    CTRL_FD     = 1 << 0,
+    CTRL_ASDE   = 1 << 5,
+    CTRL_SLU    = 1 << 6
+};
+
+enum RCTLBITS {
+    RCTL_EN = 1 << 1,               // Receiver Enable
+    RCTL_SBP = 1 << 2,              // Store Bad Packets
+    RCTL_UPE = 1 << 3,              // Unicast Promiscuous Enabled
+    RCTL_MPE = 1 << 4,              // Multicast Promiscuous Enabled
+    RCTL_LPE = 1 << 5,              // Long Packet Reception Enable
+    RCTL_LBM_NONE = 0b00 << 6,      // No Loopback
+    RCTL_LBM_PHY = 0b11 << 6,       // PHY or external SerDesc loopback
+    RTCL_RDMTS_HALF = 0b00 << 8,    // Free Buffer Threshold is 1/2 of RDLEN
+    RTCL_RDMTS_QUARTER = 0b01 << 8, // Free Buffer Threshold is 1/4 of RDLEN
+    RTCL_RDMTS_EIGHTH = 0b10 << 8,  // Free Buffer Threshold is 1/8 of RDLEN
+
+    RCTL_BAM = 1 << 15, // Broadcast Accept Mode
+    RCTL_VFE = 1 << 18, // VLAN Filter Enable
+
+    RCTL_CFIEN = 1 << 19, // Canonical Form Indicator Enable
+    RCTL_CFI = 1 << 20,   // Canonical Form Indicator Bit Value
+    RCTL_DPF = 1 << 22,   // Discard Pause Frames
+    RCTL_PMCF = 1 << 23,  // Pass MAC Control Frames
+    RCTL_SECRC = 1 << 26, // Strip Ethernet CRC
+
+    RCTL_BSIZE_256 = 3 << 16,
+    RCTL_BSIZE_512 = 2 << 16,
+    RCTL_BSIZE_1024 = 1 << 16,
+    RCTL_BSIZE_2048 = 0 << 16,
+    RCTL_BSIZE_4096 = (3 << 16) | (1 << 25),
+    RCTL_BSIZE_8192 = (2 << 16) | (1 << 25),
+    RCTL_BSIZE_16384 = (1 << 16) | (1 << 25)
+};
+
+enum TCTLBITS {
+    TCTL_EN = 1 << 1,      // Transmit Enable
+    TCTL_PSP = 1 << 3,     // Pad Short Packets
+    TCTL_CT = 4,           // Collision Threshold
+    TCTL_COLD = 12,        // Collision Distance
+    TCTL_SWXOFF = 1 << 22, // Software XOFF Transmission
+    TCTL_RTLC = 1 << 24,   // Re-transmit on Late Collision
+    TCTL_NRTU = 1 << 25,   // No Re-transmit on underrun
+};
+
+// 接收状态
+enum RS
+{
+    RS_DD = 1 << 0,    // Descriptor done
+    RS_EOP = 1 << 1,   // End of packet
+    RS_VP = 1 << 3,    // Packet is 802.1q (matched VET);
+                       // indicates strip VLAN in 802.1q packet
+    RS_UDPCS = 1 << 4, // UDP checksum calculated on packet
+    RS_L4CS = 1 << 5,  // L4 (UDP or TCP) checksum calculated on packet
+    RS_IPCS = 1 << 6,  // Ipv4 checksum calculated on packet
+    RS_PIF = 1 << 7,   // Passed in-exact filter
+};
+
+// 传输命令
+enum TCMD
+{
+    TCMD_EOP = 1 << 0,  // End of Packet
+    TCMD_IFCS = 1 << 1, // Insert FCS
+    TCMD_IC = 1 << 2,   // Insert Checksum
+    TCMD_RS = 1 << 3,   // Report Status
+    TCMD_RPS = 1 << 4,  // Report Packet Sent
+    TCMD_VLE = 1 << 6,  // VLAN Packet Enable
+    TCMD_IDE = 1 << 7,  // Interrupt Delay Enable
+};
+
+// 发送状态
+enum TS
+{
+    TS_DD = 1 << 0, // Descriptor Done
+    TS_EC = 1 << 1, // Excess Collisions
+    TS_LC = 1 << 2, // Late Collision
+    TS_TU = 1 << 3, // Transmit Underrun
+};
+
+static e1000_t e1000;
+static uint32_t IRQ_E1000;
 
 // 查找网卡设备
 static pci_device_t *find_e1000_device()
@@ -113,11 +216,90 @@ static void e1000_read_mac()
     }
 }
 
+static int e1000_rx_init()
+{
+    rx_desc_t *rx = (rx_desc_t *)alloc_page();
+    e1000.rx_now = 0;
+    e1000.rx = rx;
+
+    uint32_t membase = e1000.dev->bar[0].iobase;
+    moutl(membase + E1000_RDBAL, (uint32_t)e1000.rx);
+    moutl(membase + E1000_RDLEN, sizeof(rx_desc_t) * RX_DESC_NR);
+
+    moutl(membase + E1000_RDH, 0);
+    moutl(membase + E1000_RDT, RX_DESC_NR - 1);
+
+    for (int i = 0; i < RX_DESC_NR; i++)
+    {
+        e1000.rx[i].address = alloc_page();
+        e1000.rx[i].status = 0;
+    }
+
+    uint32_t value = 0;
+    value |= RCTL_EN | RCTL_SBP | RCTL_UPE;
+    value |= RCTL_MPE | RCTL_LBM_NONE | RTCL_RDMTS_HALF;
+    value |= RCTL_BAM | RCTL_SECRC | RCTL_BSIZE_2048;
+    moutl(membase + E1000_RCTL, value);
+}
+
+static int e1000_tx_init()
+{
+    tx_desc_t *tx = (tx_desc_t *)alloc_page();
+    e1000.tx_now = 0;
+    e1000.tx = tx;
+
+    uint32_t membase = e1000.dev->bar[0].iobase;
+    moutl(membase + E1000_TDBAL, (uint32_t)e1000.tx);
+    moutl(membase + E1000_TDLEN, sizeof(tx_desc_t) * TX_DESC_NR);
+
+    moutl(membase + E1000_TDH, 0);
+    moutl(membase + E1000_TDT, 0);
+
+    for (int i = 0; i < TX_DESC_NR; i++)
+    {
+        e1000.tx[i].address = alloc_page();
+        e1000.tx[i].sta = TS_DD;
+    }
+
+    uint32_t value = 0;
+    value |= TCTL_EN | TCTL_PSP | TCTL_RTLC;
+    value |= 0x10 << TCTL_CT;
+    value |= 0x40 << TCTL_COLD;
+    moutl(membase + E1000_TCTL, value);
+}
+
 static void e1000_reset()
 {
+    uint32_t membase = e1000.dev->bar[0].iobase;
+    // 禁用中断
+    moutl(membase + E1000_IMS, 0);
+    // 读取MAC地址
     e1000_read_mac();
     logf("MAC address: %2X-%2X-%2X-%2X-%2X-%2X",
         e1000.mac[0], e1000.mac[1], e1000.mac[2], e1000.mac[3], e1000.mac[4], e1000.mac[5]);
+    // 开启链路
+    moutl(membase + E1000_CTRL, minl(E1000_CTRL) | CTRL_SLU);
+    // 初始化组播表数组
+    for (int i = E1000_MAT0; i < E1000_MAT1; i += 4)
+        moutl(membase + i, 0);
+    // 初始化中断
+    int value = IMS_RXT0 | IMS_RXO | IMS_RXDMT0 | IMS_RXSEQ | IMS_LSC | IMS_TXQE | IMS_TXDW | IMS_TXD_LOW;
+    moutl(membase + E1000_IMS, value);
+    // 安装IRQ
+    IRQ_E1000 = pci_interrupt(e1000.dev) + 0x20;
+    if (IRQ_E1000 != IRQ1_NIC) {
+        logf("pci interrupt get failed");
+        return;
+    }
+    install_interrupt_handler(IRQ_E1000, (uint32_t)interrupt_handler_e1000);
+    irq_enable(IRQ_E1000);
+    irq_enable(IRQ0_CASCADE);
+}
+
+void handler_e1000(interrupt_frame_t* frame)
+{
+    logf("e1000 handler");
+    send_eoi(IRQ_E1000);
 }
 
 void e1000_init()
@@ -146,4 +328,8 @@ void e1000_init()
     }
     // 重置网卡
     e1000_reset();
+    // 接收初始化
+    e1000_rx_init();
+    // 传输初始化
+    e1000_tx_init();
 }

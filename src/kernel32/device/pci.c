@@ -227,6 +227,13 @@ void pci_set_bars(pci_device_t *device)
     }
 }
 
+// 获得中断 IRQ
+uint8_t pci_interrupt(pci_device_t *device)
+{
+    uint32_t data = pci_inl(device->bus, device->dev, device->func, PCI_CONF_INTERRUPT);
+    return data & 0xff;
+}
+
 void pci_init()
 {
     kernel_memset(devices, 0, sizeof(devices));
