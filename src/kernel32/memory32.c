@@ -268,6 +268,12 @@ int map_area(uint32_t paddr, uint32_t size)
     return memory32_create_map(kernel_pde, paddr, paddr, round_up_page(size, PAGE_SIZE), PTE_P | PTE_W);
 }
 
+void reset_pde()
+{
+    // 设置内核页
+    set_pde((uint32_t)kernel_pde);
+}
+
 void memory_init(memory_info_t *memory_info)
 {
     uint32_t total_size = 0;

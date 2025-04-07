@@ -63,6 +63,7 @@ int copy_page(uint32_t index);
 void destroy_pde(uint32_t index);
 
 int map_area(uint32_t paddr, uint32_t size);
+void reset_pde();
 
 void memory_init(memory_info_t *memory_info);
 

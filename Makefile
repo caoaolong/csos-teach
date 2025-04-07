@@ -117,7 +117,7 @@ qemu: master
 		-serial stdio -drive file=master.img,index=0,media=disk,format=raw \
 		-drive file=disk.img,index=1,media=disk,format=raw \
 		-audiodev id=sdl,driver=sdl -machine pcspk-audiodev=sdl \
-		-netdev user,id=n1,ipv6=off \
+		-netdev tap,id=n1,ifname=tap,script=no,downscript=no \
 		-device e1000,netdev=n1,mac=52:54:98:76:54:32
 
 .PHONY: all
