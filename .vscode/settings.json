@@ -40,7 +40,9 @@
         "term.h": "c",
         "e1000.h": "c",
         "pci.h": "c",
-        "type_traits": "c"
+        "type_traits": "c",
+        "netx.h": "c",
+        "eth.h": "c"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }

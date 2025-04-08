@@ -118,7 +118,7 @@ qemu: master
 		-drive file=disk.img,index=1,media=disk,format=raw \
 		-audiodev id=sdl,driver=sdl -machine pcspk-audiodev=sdl \
 		-netdev tap,id=n1,ifname=tap,script=no,downscript=no \
-		-device e1000,netdev=n1,mac=52:54:98:76:54:32
+		-device e1000,netdev=n1,mac=00:FF:26:E4:55:94
 
 .PHONY: all
 all: clean qemu

@@ -1,7 +1,11 @@
-#ifndef CSOS_NETX_H
-#define CSOS_NETX_H
+#ifndef CSOS_NETX_ETH_H
+#define CSOS_NETX_ETH_H
 
 #include <types.h>
+
+#define ETH_TYPE_IPv4   0x0800
+#define ETH_TYPE_ARP    0x0806
+#define ETH_TYPE_IPv6   0x86DD
 
 // 以太网帧
 typedef struct eth_t

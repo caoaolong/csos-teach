@@ -3,7 +3,7 @@
 #include <mio.h>
 #include <interrupt.h>
 #include <pic.h>
-#include <netx/eth.h>
+#include <netx.h>
 #include <csos/string.h>
 #include <csos/memory.h>
 
@@ -346,6 +346,20 @@ static void receive_packet()
             logf("error %#X happened...\n", rx->errors);
         }
         eth_t *eth = (eth_t *)(uint32_t)(rx->address & 0xFFFFFFFF);
+        switch (ntohs(eth->type)) {
+            case ETH_TYPE_ARP:
+                logf("ARP:");
+                break;
+            case ETH_TYPE_IPv4:
+                logf("IPv4:");
+                break;
+            case ETH_TYPE_IPv6:
+                logf("IPv6:");
+                break;
+            default:
+                logf("Unknown:");
+                break;
+        }
         logf("%02X:%02X:%02X:%02X:%02X:%02X -> %02X:%02X:%02X:%02X:%02X:%02X : (%d)",
             eth->src[0], eth->src[1], eth->src[2], eth->src[3], eth->src[4], eth->src[5],
             eth->dst[0], eth->dst[1], eth->dst[2], eth->dst[3], eth->dst[4], eth->dst[5],
