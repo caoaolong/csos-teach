@@ -6,6 +6,7 @@
 #define ETH_TYPE_IPv4   0x0800
 #define ETH_TYPE_ARP    0x0806
 #define ETH_TYPE_IPv6   0x86DD
+#define ETH_TYPE_TEST   0x9000
 
 // 以太网帧
 typedef struct eth_t

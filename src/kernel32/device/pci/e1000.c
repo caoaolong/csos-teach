@@ -11,8 +11,8 @@
 #define DEVICEID_LOW    0x1000
 #define DEVICEID_HIGH   0x1028
 
-#define RX_DESC_NR      32 // 接收描述符数量
-#define TX_DESC_NR      32 // 传输描述符数量
+#define RX_DESC_NR      256 // 接收描述符数量
+#define TX_DESC_NR      256 // 传输描述符数量
 
 // 寄存器偏移
 enum REGISTERS
@@ -275,9 +275,10 @@ static int e1000_rx_init()
 
     uint32_t value = 0;
     value |= RCTL_EN | RCTL_SBP | RCTL_UPE;
-    value |= RCTL_MPE | RCTL_LBM_NONE | RTCL_RDMTS_HALF;
-    value |= RCTL_BAM | RCTL_SECRC | RCTL_BSIZE_2048;
+    value |= RCTL_MPE | RCTL_LBM_NONE;
+    value |= RCTL_BAM | RCTL_SECRC;
     moutl(membase + E1000_RCTL, value);
+    logf("--->>>: E1000_RCTL: %#x", minl(membase + E1000_RCTL));
 }
 
 static int e1000_tx_init()
@@ -304,34 +305,28 @@ static int e1000_tx_init()
     value |= 0x10 << TCTL_CT;
     value |= 0x40 << TCTL_COLD;
     moutl(membase + E1000_TCTL, value);
+    logf("TCTL = %08X", minl(membase + E1000_TCTL));
 }
 
 static void e1000_reset()
 {
     uint32_t membase = e1000.dev->bar[0].iobase;
-    // 禁用中断
-    moutl(membase + E1000_IMS, 0);
     // 读取MAC地址
     e1000_read_mac();
     logf("MAC address: %2X-%2X-%2X-%2X-%2X-%2X",
         e1000.mac[0], e1000.mac[1], e1000.mac[2], e1000.mac[3], e1000.mac[4], e1000.mac[5]);
-    // 开启链路
-    moutl(membase + E1000_CTRL, minl(E1000_CTRL) | CTRL_SLU);
     // 初始化组播表数组
     for (int i = E1000_MAT0; i < E1000_MAT1; i += 4)
         moutl(membase + i, 0);
+    // 禁用中断
+    moutl(membase + E1000_IMS, 0);
+    // 接收初始化
+    e1000_rx_init();
+    // 传输初始化
+    e1000_tx_init();
     // 初始化中断
     int value = IMS_RXT0 | IMS_RXO | IMS_RXDMT0 | IMS_RXSEQ | IMS_LSC | IMS_TXQE | IMS_TXDW | IMS_TXD_LOW;
     moutl(membase + E1000_IMS, value);
-    // 安装IRQ
-    IRQ_E1000 = pci_interrupt(e1000.dev) + 0x20;
-    if (IRQ_E1000 != IRQ1_NIC) {
-        logf("pci interrupt get failed");
-        return;
-    }
-    install_interrupt_handler(IRQ_E1000, (uint32_t)interrupt_handler_e1000);
-    irq_enable(IRQ_E1000);
-    irq_enable(IRQ0_CASCADE);
 }
 
 static void receive_packet()
@@ -340,7 +335,6 @@ static void receive_packet()
     while (TRUE) {
         rx_desc_t *rx = &e1000.rx[e1000.rx_now];
         if (!(rx->status & RS_DD)) return;
-        if (rx->length >= 1600) continue;
         if (rx->errors)
         {
             logf("error %#X happened...\n", rx->errors);
@@ -356,11 +350,14 @@ static void receive_packet()
             case ETH_TYPE_IPv6:
                 logf("IPv6:");
                 break;
+            case ETH_TYPE_TEST:
+                logf("Ethernet Configuration Testing:");
+                break;
             default:
                 logf("Unknown:");
                 break;
         }
-        logf("%02X:%02X:%02X:%02X:%02X:%02X -> %02X:%02X:%02X:%02X:%02X:%02X : (%d)",
+        logf("RECV: %02X:%02X:%02X:%02X:%02X:%02X -> %02X:%02X:%02X:%02X:%02X:%02X : (%d)",
             eth->src[0], eth->src[1], eth->src[2], eth->src[3], eth->src[4], eth->src[5],
             eth->dst[0], eth->dst[1], eth->dst[2], eth->dst[3], eth->dst[4], eth->dst[5],
             rx->length);
@@ -370,6 +367,46 @@ static void receive_packet()
     }
 }
 
+static void send_packet(eth_t *eth, uint16_t length)
+{
+    uint32_t membase = e1000.dev->bar[0].iobase;
+    tx_desc_t *tx = &e1000.tx[e1000.tx_now];
+    while (tx->sta == 0) {
+        e1000.tx_waiter = get_running_task();
+        task_set_block(e1000.tx_waiter);
+    }
+    tx->address = (uint64_t)(void *)eth;
+    tx->length = length;
+    tx->cmd = TCMD_EOP | TCMD_RS | TCMD_IFCS | TCMD_IC;
+    tx->sta = 0;
+    uint8_t tx_old = e1000.tx_now;
+    e1000.tx_now = (e1000.tx_now + 1) % TX_DESC_NR;
+    outl(membase + E1000_TDT, e1000.tx_now);
+    uint32_t tdh = minl(membase + E1000_TDH);
+    logf("TDH=%d, TDT=%d", tdh, e1000.tx_now);
+    switch (ntohs(eth->type)) {
+        case ETH_TYPE_ARP:
+            logf("ARP:");
+            break;
+        case ETH_TYPE_IPv4:
+            logf("IPv4:");
+            break;
+        case ETH_TYPE_IPv6:
+            logf("IPv6:");
+            break;
+        case ETH_TYPE_TEST:
+            logf("Ethernet Configuration Testing:");
+            break;
+        default:
+            logf("Unknown:");
+            break;
+    }
+    logf("SEND: %02X:%02X:%02X:%02X:%02X:%02X -> %02X:%02X:%02X:%02X:%02X:%02X : (%d)",
+            eth->src[0], eth->src[1], eth->src[2], eth->src[3], eth->src[4], eth->src[5],
+            eth->dst[0], eth->dst[1], eth->dst[2], eth->dst[3], eth->dst[4], eth->dst[5],
+            length);
+}
+
 void handler_e1000(interrupt_frame_t* frame)
 {
     uint32_t pde = read_cr3();
@@ -377,12 +414,16 @@ void handler_e1000(interrupt_frame_t* frame)
     uint32_t membase = e1000.dev->bar[0].iobase;
     uint32_t status = minl(membase + E1000_ICR);
     // 传输描述符写回，表示有一个数据包发送完毕
-    if ((status & IM_TXDW))
+    if (status & IM_TXDW)
     {
-        logf("send successful");
+        if (e1000.tx_waiter)
+        {
+            task_set_ready(e1000.tx_waiter);
+            e1000.tx_waiter = NULL;
+        }
     }
     // 传输队列为空，并且传输进程阻塞
-    if ((status & IM_TXQE))
+    if (status & IM_TXQE)
     {
         logf("transmit queue is empty");
     }
@@ -419,8 +460,6 @@ void e1000_init()
     }
     e1000.dev = dev;
     kernel_strcpy(e1000.name, "e1000");
-    // 启用总线主控
-    pci_enable_busmastering(e1000.dev);
     // 获取 Base Address Register
     pci_set_bars(e1000.dev);
     pci_bar_t *bar = &e1000.dev->bar[0];
@@ -433,10 +472,33 @@ void e1000_init()
         logf("mapping eeprom failed");
         return;
     }
+    // 启用总线主控
+    pci_enable_busmastering(e1000.dev);
     // 重置网卡
     e1000_reset();
-    // 接收初始化
-    e1000_rx_init();
-    // 传输初始化
-    e1000_tx_init();
+    // 安装IRQ
+    IRQ_E1000 = pci_interrupt(e1000.dev) + 0x20;
+    if (IRQ_E1000 != IRQ1_NIC) {
+        logf("pci interrupt get failed");
+        return;
+    }
+    install_interrupt_handler(IRQ_E1000, (uint32_t)interrupt_handler_e1000);
+    irq_enable(IRQ_E1000);
+    irq_enable(IRQ0_CASCADE);
+}
+
+void test_send_packet()
+{
+    uint32_t pde = read_cr3();
+    reset_pde();
+    eth_t *eth = (eth_t *)alloc_page();
+    kernel_memcpy(eth->src, e1000.mac, 6);
+    kernel_memcpy(eth->dst, "\xff\xff\xff\xff\xff\xff", 6);
+    eth->type = 0x0090; // LOOP 0x9000
+    
+    int len = 1500;
+    kernel_memset(eth->payload, '0', len);
+    send_packet(eth, len + sizeof(eth_t));
+    free_page((uint32_t)eth);
+    write_cr3(pde);
 }

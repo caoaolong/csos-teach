@@ -36,6 +36,7 @@
 #define SYS_NR_TCSETATTR    28
 #define SYS_NR_FREE         29
 #define SYS_NR_WAIT         30
+#define SYS_NR_TEST         31
 
 #define SYSCALL_LCALL
 
@@ -144,6 +145,12 @@ static inline void free(void *ptr)
 {
     syscall_arg_t free_arg = { SYS_NR_FREE, (int)ptr, 0, 0, 0 };
     _syscall(&free_arg);
+}
+
+static inline void test()
+{
+    syscall_arg_t test_arg = { SYS_NR_TEST, 0, 0, 0, 0 };
+    _syscall(&test_arg);
 }
 
 #endif

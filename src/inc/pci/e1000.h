@@ -2,6 +2,7 @@
 #define CSOS_E1000_H
 
 #include <kernel.h>
+#include <task.h>
 #include <pci.h>
 
 #define NET_DEV_NAME_LEN    16
@@ -36,10 +37,14 @@ typedef struct e1000_t {
     pci_device_t *dev;
     uint8_t eeprom;
     rx_desc_t *rx;
-    int rx_now;
+    uint16_t rx_now;
     tx_desc_t *tx;
-    int tx_now;
+    uint16_t tx_now;
+
+	task_t *tx_waiter;
 } e1000_t;
+
+void test_send_packet();
 
 void e1000_init();
 

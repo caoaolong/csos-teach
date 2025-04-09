@@ -14,6 +14,7 @@ static int cmd_exec_cd(struct shell_t *shell);
 static int cmd_exec_mkdir(struct shell_t *shell);
 static int cmd_exec_rmdir(struct shell_t *shell);
 static int cmd_exec_exit(struct shell_t *shell);
+static int cmd_exec_test(struct shell_t *shell);
 
 static shell_cmd_t cmd_list[] = {
     {
@@ -65,6 +66,11 @@ static shell_cmd_t cmd_list[] = {
         .name = "exit",
         .usage = "exit\texit the current task\n",
         .cmd_exec = cmd_exec_exit
+    },
+    {
+        .name = "test",
+        .usage = "test\ttest the kernel function\n",
+        .cmd_exec = cmd_exec_test
     }
 };
 
@@ -301,5 +307,11 @@ static int cmd_exec_exit(struct shell_t *shell)
         shell_result(TRUE, "task exited");
         exit(stats);
     }
+    return 0;
+}
+
+static int cmd_exec_test(struct shell_t *shell)
+{
+    test();
     return 0;
 }

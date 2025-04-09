@@ -3,7 +3,7 @@ SRC = ./src
 TEST = ./test
 INFO = ./info
 INC = $(SRC)/inc
-CFLAGS = -gdwarf-2 -O0 -c -m32 -I$(INC) -fno-pie -fpack-struct -fno-stack-protector -nostdlib -nostdinc -Wno-builtin-declaration-mismatch -Wno-int-to-pointer-cast -Wno-implicit-function-declaration -Wno-address-of-packed-member
+CFLAGS = -gdwarf-2 -O0 -c -m32 -I$(INC) -fno-pie -fpack-struct -fno-stack-protector -nostdlib -nostdinc -Wno-builtin-declaration-mismatch -Wno-int-to-pointer-cast -Wno-implicit-function-declaration -Wno-address-of-packed-member -Wno-pointer-to-int-cast
 
 $(BUILD)/test/%.bin: $(TEST)/%.asm
 	$(shell mkdir -p $(dir $@))
@@ -69,7 +69,8 @@ $(BUILD)/kernel32.elf: $(BUILD)/kernel32/start.o \
 	$(BUILD)/lib/bitmap.o \
 	$(BUILD)/lib/syscall.o \
 	$(BUILD)/lib/string.o \
-	$(BUILD)/lib/mio.o
+	$(BUILD)/lib/mio.o \
+	$(BUILD)/kernel32/test.o
 	$(shell mkdir -p $(dir $@))
 	x86_64-elf-ld -m elf_i386 -T $(SRC)/kernel32.lds $^ -o $@
 
@@ -97,9 +98,9 @@ master: $(BUILD)/boot.bin \
 	dd if=$(BUILD)/boot.bin of=master.img bs=512 count=1 conv=notrunc
 	dd if=$(BUILD)/kernel.bin of=master.img bs=512 count=64 seek=1 conv=notrunc
 	x86_64-elf-readelf -a $(BUILD)/kernel.elf > $(INFO)/kernel.txt
-	dd if=$(BUILD)/kernel32.elf of=master.img bs=512 count=600 seek=65 conv=notrunc
+	dd if=$(BUILD)/kernel32.elf of=master.img bs=512 count=800 seek=65 conv=notrunc
 	x86_64-elf-readelf -a $(BUILD)/kernel32.elf > $(INFO)/kernel32.txt
-	dd if=$(BUILD)/shell.elf of=master.img bs=512 count=80 seek=1000 conv=notrunc
+	dd if=$(BUILD)/shell.elf of=master.img bs=512 count=200 seek=1000 conv=notrunc
 	x86_64-elf-readelf -a $(BUILD)/shell.elf > $(INFO)/shell.txt
 
 .PHONY: clean
@@ -118,7 +119,8 @@ qemu: master
 		-drive file=disk.img,index=1,media=disk,format=raw \
 		-audiodev id=sdl,driver=sdl -machine pcspk-audiodev=sdl \
 		-netdev tap,id=n1,ifname=tap,script=no,downscript=no \
-		-device e1000,netdev=n1,mac=00:FF:26:E4:55:94
+		-device e1000,netdev=n1,mac=00:FF:26:E4:55:94 \
+		-d trace:e1000*
 
 .PHONY: all
 all: clean qemu

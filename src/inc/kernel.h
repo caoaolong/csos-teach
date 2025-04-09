@@ -275,4 +275,6 @@ static inline void far_jump(uint32_t selector, uint32_t offset) {
 
 void protect_mode();
 
+void sys_test();
+
 #endif

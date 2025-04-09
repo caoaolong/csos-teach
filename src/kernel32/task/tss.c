@@ -230,13 +230,13 @@ void tss_task_exit(int code)
     tss_task_dispatch();
 }
 
-static uint8_t SHELL_TMP[80 * 512];
+static uint8_t SHELL_TMP[200 * 512];
 
 static uint32_t load_elf_file(task_t *task, const char *name, uint32_t pde)
 {
     Elf32_Ehdr elf_hdr;
     Elf32_Phdr elf_phdr;
-    read_disk(1000, 80, (uint16_t *)SHELL_TMP);
+    read_disk(1000, 200, (uint16_t *)SHELL_TMP);
     uint8_t *buffer = SHELL_TMP;
     kernel_memcpy(&elf_hdr, buffer, sizeof(Elf32_Ehdr));
     buffer += sizeof(Elf32_Ehdr);
