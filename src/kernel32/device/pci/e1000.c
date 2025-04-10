@@ -270,6 +270,7 @@ static int e1000_rx_init()
     for (int i = 0; i < RX_DESC_NR; i++)
     {
         e1000.rx[i].address = alloc_page();
+        logf("rx_desc_t[%d] = %#x", i, e1000.rx[i].address);
         e1000.rx[i].status = 0;
     }
 
@@ -381,7 +382,7 @@ static void send_packet(eth_t *eth, uint16_t length)
     tx->sta = 0;
     uint8_t tx_old = e1000.tx_now;
     e1000.tx_now = (e1000.tx_now + 1) % TX_DESC_NR;
-    outl(membase + E1000_TDT, e1000.tx_now);
+    moutl(membase + E1000_TDT, e1000.tx_now);
     uint32_t tdh = minl(membase + E1000_TDH);
     logf("TDH=%d, TDT=%d", tdh, e1000.tx_now);
     switch (ntohs(eth->type)) {
