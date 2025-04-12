@@ -4,8 +4,21 @@
 #include <kernel.h>
 #include <task.h>
 #include <pci.h>
+#include <list.h>
+#include <netx.h>
 
 #define NET_DEV_NAME_LEN    16
+
+typedef struct desc_buff_t
+{
+	list_node_t node;
+	uint16_t length;
+	uint16_t refc;
+	union {
+		eth_t *eth[0];
+		uint8_t payload[0];
+	};
+} desc_buff_t;
 
 // RX descriptor structure
 typedef struct rx_desc_t
@@ -42,7 +55,11 @@ typedef struct e1000_t {
     uint16_t tx_now;
 
 	task_t *tx_waiter;
+	list_t desc_list;
 } e1000_t;
+
+void free_desc_buff(e1000_t *dev, desc_buff_t *buff);
+desc_buff_t *alloc_desc_buff(e1000_t *dev);
 
 void test_send_packet();
 

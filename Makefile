@@ -70,6 +70,7 @@ $(BUILD)/kernel32.elf: $(BUILD)/kernel32/start.o \
 	$(BUILD)/lib/syscall.o \
 	$(BUILD)/lib/string.o \
 	$(BUILD)/lib/mio.o \
+	$(BUILD)/lib/buff.o \
 	$(BUILD)/kernel32/test.o
 	$(shell mkdir -p $(dir $@))
 	x86_64-elf-ld -m elf_i386 -T $(SRC)/kernel32.lds $^ -o $@
@@ -119,8 +120,7 @@ qemu: master
 		-drive file=disk.img,index=1,media=disk,format=raw \
 		-audiodev id=sdl,driver=sdl -machine pcspk-audiodev=sdl \
 		-netdev tap,id=n1,ifname=tap,script=no,downscript=no \
-		-device e1000,netdev=n1,mac=00:FF:26:E4:55:94 \
-		-d trace:e1000*
+		-device e1000,netdev=n1,mac=00:FF:26:E4:55:94
 
 .PHONY: all
 all: clean qemu

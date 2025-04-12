@@ -3,7 +3,6 @@
 #include <mio.h>
 #include <interrupt.h>
 #include <pic.h>
-#include <netx.h>
 #include <csos/string.h>
 #include <csos/memory.h>
 
@@ -269,7 +268,7 @@ static int e1000_rx_init()
 
     for (int i = 0; i < RX_DESC_NR; i++)
     {
-        e1000.rx[i].address = alloc_page();
+        e1000.rx[i].address = alloc_desc_buff(&e1000)->payload;
         logf("rx_desc_t[%d] = %#x", i, e1000.rx[i].address);
         e1000.rx[i].status = 0;
     }
@@ -279,7 +278,6 @@ static int e1000_rx_init()
     value |= RCTL_MPE | RCTL_LBM_NONE;
     value |= RCTL_BAM | RCTL_SECRC;
     moutl(membase + E1000_RCTL, value);
-    logf("--->>>: E1000_RCTL: %#x", minl(membase + E1000_RCTL));
 }
 
 static int e1000_tx_init()
@@ -297,7 +295,7 @@ static int e1000_tx_init()
 
     for (int i = 0; i < TX_DESC_NR; i++)
     {
-        e1000.tx[i].address = alloc_page();
+        e1000.tx[i].address = alloc_desc_buff(&e1000)->payload;
         e1000.tx[i].sta = TS_DD;
     }
 
@@ -306,7 +304,6 @@ static int e1000_tx_init()
     value |= 0x10 << TCTL_CT;
     value |= 0x40 << TCTL_COLD;
     moutl(membase + E1000_TCTL, value);
-    logf("TCTL = %08X", minl(membase + E1000_TCTL));
 }
 
 static void e1000_reset()
@@ -321,6 +318,8 @@ static void e1000_reset()
         moutl(membase + i, 0);
     // 禁用中断
     moutl(membase + E1000_IMS, 0);
+    // 初始化缓冲区
+    list_init(&e1000.desc_list);
     // 接收初始化
     e1000_rx_init();
     // 传输初始化
@@ -492,7 +491,8 @@ void test_send_packet()
 {
     uint32_t pde = read_cr3();
     reset_pde();
-    eth_t *eth = (eth_t *)alloc_page();
+    desc_buff_t *buf = alloc_desc_buff(&e1000);
+    eth_t *eth = buf->eth;
     kernel_memcpy(eth->src, e1000.mac, 6);
     kernel_memcpy(eth->dst, "\xff\xff\xff\xff\xff\xff", 6);
     eth->type = 0x0090; // LOOP 0x9000
@@ -500,6 +500,6 @@ void test_send_packet()
     int len = 1500;
     kernel_memset(eth->payload, '0', len);
     send_packet(eth, len + sizeof(eth_t));
-    free_page((uint32_t)eth);
+    free_desc_buff(&e1000, buf);
     write_cr3(pde);
 }
