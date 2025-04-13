@@ -4,6 +4,7 @@
 #include <csos/term.h>
 #include <fs/file.h>
 #include <fs/dir.h>
+#include <netx/arp.h>
 
 static int cmd_exec_help(struct shell_t *shell);
 static int cmd_exec_clear(struct shell_t *shell);
@@ -15,6 +16,7 @@ static int cmd_exec_mkdir(struct shell_t *shell);
 static int cmd_exec_rmdir(struct shell_t *shell);
 static int cmd_exec_exit(struct shell_t *shell);
 static int cmd_exec_test(struct shell_t *shell);
+static int cmd_exec_arp(struct shell_t *shell);
 
 static shell_cmd_t cmd_list[] = {
     {
@@ -66,6 +68,11 @@ static shell_cmd_t cmd_list[] = {
         .name = "exit",
         .usage = "exit\texit the current task\n",
         .cmd_exec = cmd_exec_exit
+    },
+    {
+        .name = "arp",
+        .usage = "arp\tlist the arp map\n",
+        .cmd_exec = cmd_exec_arp
     },
     {
         .name = "test",
@@ -314,4 +321,20 @@ static int cmd_exec_test(struct shell_t *shell)
 {
     test();
     return 0;
+}
+
+static int cmd_exec_arp(struct shell_t *shell)
+{
+    arp_map_data_t arp_map;
+    arpl(&arp_map);
+    printf("%15s     %17s\n", "IP", "MAC");
+    printf("---------------     -----------------\n");
+    for (int i = 0; i < arp_map.idx; i++) {
+        printf("%3d.%3d.%3d.%3d     %02x:%02x:%02x:%02x:%02x:%02x\n",
+            arp_map.items[i].ip[0], arp_map.items[i].ip[1],
+            arp_map.items[i].ip[2], arp_map.items[i].ip[3],
+            arp_map.items[i].mac[0], arp_map.items[i].mac[1],
+            arp_map.items[i].mac[2], arp_map.items[i].mac[3],
+            arp_map.items[i].mac[4], arp_map.items[i].mac[5]);
+    }
 }

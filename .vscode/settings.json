@@ -42,7 +42,8 @@
         "pci.h": "c",
         "type_traits": "c",
         "netx.h": "c",
-        "eth.h": "c"
+        "eth.h": "c",
+        "arp.h": "c"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }

@@ -14,10 +14,7 @@ typedef struct desc_buff_t
 	list_node_t node;
 	uint16_t length;
 	uint16_t refc;
-	union {
-		eth_t *eth[0];
-		uint8_t payload[0];
-	};
+	uint8_t payload[0];
 } desc_buff_t;
 
 // RX descriptor structure

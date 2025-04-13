@@ -4,6 +4,7 @@
 #include <tty.h>
 #include <logf.h>
 #include <fs.h>
+#include <netx.h>
 
 static const syscall_handler_t syscall_handler_table[] = {
     [SYS_NR_SLEEP]      = (syscall_handler_t)task_sleep,
@@ -36,6 +37,7 @@ static const syscall_handler_t syscall_handler_table[] = {
     [SYS_NR_FREE]       = (syscall_handler_t)task_free,
     [SYS_NR_WAIT]       = (syscall_handler_t)task_wait,
     [SYS_NR_TEST]       = (syscall_handler_t)sys_test,
+    [SYS_NR_ARPL]      = (syscall_handler_t)sys_arpl,
 };
 // 远调用实现
 

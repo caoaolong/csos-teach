@@ -218,7 +218,7 @@ void interrupt_init()
 
     pic_init();
     timer_init();
-    // rtc_init();
+    rtc_init();
     kbd_init();
 }
 

@@ -61,6 +61,8 @@ $(BUILD)/kernel32.elf: $(BUILD)/kernel32/start.o \
 	$(BUILD)/kernel32/fs.o \
 	$(BUILD)/kernel32/fs/dev.o \
 	$(BUILD)/kernel32/fs/fat.o \
+	$(BUILD)/kernel32/netx.o \
+	$(BUILD)/kernel32/netx/eth.o \
 	$(BUILD)/lib/string.o \
 	$(BUILD)/lib/stdio.o \
 	$(BUILD)/lib/stdlib.o \
@@ -79,6 +81,7 @@ $(BUILD)/libapp.a: $(BUILD)/libapp/cstart.o \
 	$(BUILD)/libapp/crt0.o \
 	$(BUILD)/libapp/string.o \
 	$(BUILD)/libapp/term.o \
+	$(BUILD)/libapp/net.o \
 	$(BUILD)/libapp/fs/dir.o \
 	$(BUILD)/libapp/fs/file.o \
 	$(BUILD)/lib/stdio.o \

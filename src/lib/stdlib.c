@@ -1,7 +1,5 @@
 #include <csos/stdlib.h>
 
-#define SECTOR_SIZE 512
-
 uint8_t bcd_to_bin(uint8_t value)
 {
     return (value & 0xF) + (value >> 4) * 10;
@@ -34,6 +32,36 @@ void read_disk(uint32_t sector, uint32_t count, uint16_t* buffer)
             *ptr++ = inw(0x1F0);
         }
     }
+}
+
+void write_disk(uint32_t sector, uint32_t count, uint16_t* buffer)
+{
+    outb(0x1F6, 0xE0);  // 主盘 + LBA模式 + 高4位LBA地址（为0）
+
+    outb(0x1F2, (uint8_t)(count >> 8));      // 高字节扇区数（一般为0）
+    outb(0x1F3, (uint8_t)(count >> 24));     // 高字节LBA地址
+    outb(0x1F4, 0);                          // 预留
+    outb(0x1F5, 0);                          // 预留
+
+    outb(0x1F2, (uint8_t)count);             // 低字节扇区数
+    outb(0x1F3, (uint8_t)sector);            // LBA地址低8位
+    outb(0x1F4, (uint8_t)(sector >> 8));     // LBA地址中间8位
+    outb(0x1F5, (uint8_t)(sector >> 16));    // LBA地址高8位
+
+    outb(0x1F7, 0x34);  // 写命令（0x34 = WRITE SECTORS EXT）
+
+    const uint16_t *ptr = buffer;
+    while(count--) {
+        while((inb(0x1F7) & 0x88) != 0x8);  // 等待设备准备好（DRQ = 1, BSY = 0）
+
+        for (int i = 0; i < SECTOR_SIZE / 2; i++) {
+            outw(0x1F0, *ptr++);
+        }
+    }
+
+    // 可选：发缓存刷新命令，确保写入完成
+    outb(0x1F7, 0xE7); // FLUSH CACHE
+    while(inb(0x1F7) & 0x80); // 等待 BSY 清除
 }
 
 uint32_t read_elf_header(uint8_t *buffer)

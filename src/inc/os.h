@@ -13,5 +13,8 @@
 #define OS_TZ                   (+8)
 
 #define OS_TASK_MAX_SIZE        128
+#define SECTOR_SIZE             512
+
+#define ARP_MAP_SECTOR          4000
 
 #endif

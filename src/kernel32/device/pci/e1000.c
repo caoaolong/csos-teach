@@ -268,8 +268,8 @@ static int e1000_rx_init()
 
     for (int i = 0; i < RX_DESC_NR; i++)
     {
-        e1000.rx[i].address = alloc_desc_buff(&e1000)->payload;
-        logf("rx_desc_t[%d] = %#x", i, e1000.rx[i].address);
+        desc_buff_t *buff = (desc_buff_t *)alloc_desc_buff(&e1000);
+        e1000.rx[i].address = (uint64_t)&buff->payload;
         e1000.rx[i].status = 0;
     }
 
@@ -295,7 +295,8 @@ static int e1000_tx_init()
 
     for (int i = 0; i < TX_DESC_NR; i++)
     {
-        e1000.tx[i].address = alloc_desc_buff(&e1000)->payload;
+        desc_buff_t *buff = (desc_buff_t *)alloc_desc_buff(&e1000);
+        e1000.tx[i].address = (uint64_t)&buff->payload;
         e1000.tx[i].sta = TS_DD;
     }
 
@@ -342,7 +343,7 @@ static void receive_packet()
         eth_t *eth = (eth_t *)(uint32_t)(rx->address & 0xFFFFFFFF);
         switch (ntohs(eth->type)) {
             case ETH_TYPE_ARP:
-                logf("ARP:");
+                eth_proc_arp((arp_t *)eth->payload, rx->length - sizeof(eth_t));
                 break;
             case ETH_TYPE_IPv4:
                 logf("IPv4:");
@@ -476,6 +477,8 @@ void e1000_init()
     pci_enable_busmastering(e1000.dev);
     // 重置网卡
     e1000_reset();
+    // 初始化ARP缓存
+    arp_map_init();
     // 安装IRQ
     IRQ_E1000 = pci_interrupt(e1000.dev) + 0x20;
     if (IRQ_E1000 != IRQ1_NIC) {
@@ -492,7 +495,7 @@ void test_send_packet()
     uint32_t pde = read_cr3();
     reset_pde();
     desc_buff_t *buf = alloc_desc_buff(&e1000);
-    eth_t *eth = buf->eth;
+    eth_t *eth = (eth_t *)&buf->payload;
     kernel_memcpy(eth->src, e1000.mac, 6);
     kernel_memcpy(eth->dst, "\xff\xff\xff\xff\xff\xff", 6);
     eth->type = 0x0090; // LOOP 0x9000

@@ -1,6 +1,7 @@
 #include <rtc.h>
 #include <pic.h>
 #include <logf.h>
+#include <netx.h>
 #include <kernel.h>
 #include <interrupt.h>
 #include <csos/stdlib.h>
@@ -22,14 +23,14 @@ static uint32_t volatile counter = 0;
 
 void handler_rtc(interrupt_frame_t* frame)
 {
+    arp_map_t *arp_map = get_arp_map();
+    arp_map->timer++;
+    if (arp_map->timer == arp_map->period) {
+        flush_arp_map();
+        arp_map->timer = 0;
+    }
     send_eoi(IRQ1_RTC);
-    uint8_t vc = cmos_read(CMOS_C);
-    create_alarm(1);
-
-    if (vc & CMOS_C_AF)
-        logf("A");
-    else if (vc & CMOS_C_PF)
-        logf(".");
+    cmos_read(CMOS_C);
 }
 
 void create_alarm(uint32_t value)
@@ -67,15 +68,11 @@ void create_alarm(uint32_t value)
 
 void rtc_init()
 {
-    // 周期、闹钟中断
-    uint8_t prev = cmos_read(CMOS_B);
-    cmos_write(CMOS_B, prev | CMOS_B_24HOUR | CMOS_B_AIE | CMOS_B_PIE);
+    // 周期中断
+    cmos_write(CMOS_B, CMOS_B_24HOUR | CMOS_B_PIE);
     cmos_read(CMOS_C);
-    // 设置闹钟
-    create_alarm(1);
-    // 设置中断频率
-    prev = cmos_read(CMOS_A);
-    cmos_write(CMOS_A, (prev &0xF0) | 0b1111);
+    // 设置中断频率(500ms)
+    cmos_write(CMOS_A, (inb(CMOS_A) & 0xF) | 0b1111);
 
     install_interrupt_handler(IRQ1_RTC, (uint32_t)interrupt_handler_rtc);
     irq_enable(IRQ1_RTC);

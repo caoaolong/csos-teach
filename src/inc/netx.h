@@ -3,6 +3,7 @@
 
 #include <kernel.h>
 #include <netx/eth.h>
+#include <netx/arp.h>
 
 // 将32位网络字节序转换为主机字节序
 static inline uint32_t ntohl(uint32_t netlong) {
@@ -17,5 +18,7 @@ static inline uint16_t ntohs(uint16_t netshort) {
     return ((netshort & 0xFF00) >> 8) | // 移动到最低位
            ((netshort & 0x00FF) << 8);   // 移动到最高位
 }
+
+void sys_arpl(arp_map_data_t *arp_data);
 
 #endif
