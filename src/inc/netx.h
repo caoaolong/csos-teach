@@ -4,6 +4,7 @@
 #include <kernel.h>
 #include <netx/eth.h>
 #include <netx/arp.h>
+#include <netx/arp_map.h>
 
 // 将32位网络字节序转换为主机字节序
 static inline uint32_t ntohl(uint32_t netlong) {

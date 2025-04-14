@@ -43,7 +43,8 @@
         "type_traits": "c",
         "netx.h": "c",
         "eth.h": "c",
-        "arp.h": "c"
+        "arp.h": "c",
+        "arp_map.h": "c"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }

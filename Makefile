@@ -63,6 +63,8 @@ $(BUILD)/kernel32.elf: $(BUILD)/kernel32/start.o \
 	$(BUILD)/kernel32/fs/fat.o \
 	$(BUILD)/kernel32/netx.o \
 	$(BUILD)/kernel32/netx/eth.o \
+	$(BUILD)/kernel32/netx/arp.o \
+	$(BUILD)/kernel32/netx/arp_map.o \
 	$(BUILD)/lib/string.o \
 	$(BUILD)/lib/stdio.o \
 	$(BUILD)/lib/stdlib.o \

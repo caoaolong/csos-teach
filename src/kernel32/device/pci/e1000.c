@@ -1,4 +1,5 @@
 #include <pci/e1000.h>
+#include <netx.h>
 #include <logf.h>
 #include <mio.h>
 #include <interrupt.h>
@@ -178,8 +179,8 @@ enum TS
     TS_TU = 1 << 3, // Transmit Underrun
 };
 
-static e1000_t e1000;
-static uint32_t IRQ_E1000;
+e1000_t e1000;
+uint32_t IRQ_E1000;
 
 // 查找网卡设备
 static pci_device_t *find_e1000_device()
@@ -314,6 +315,9 @@ static void e1000_reset()
     e1000_read_mac();
     logf("MAC address: %2X-%2X-%2X-%2X-%2X-%2X",
         e1000.mac[0], e1000.mac[1], e1000.mac[2], e1000.mac[3], e1000.mac[4], e1000.mac[5]);
+    // 设置IP地址
+    kernel_memcpy(e1000.ipv4, OS_IPv4, IPV4_LEN);
+    logf("%d.%d.%d.%d", e1000.ipv4[0], e1000.ipv4[1], e1000.ipv4[2], e1000.ipv4[3]);
     // 初始化组播表数组
     for (int i = E1000_MAT0; i < E1000_MAT1; i += 4)
         moutl(membase + i, 0);
@@ -490,19 +494,15 @@ void e1000_init()
     irq_enable(IRQ0_CASCADE);
 }
 
-void test_send_packet()
+e1000_t *get_e1000dev()
+{
+    return &e1000;
+}
+
+void e1000_send_packet(desc_buff_t *buff)
 {
     uint32_t pde = read_cr3();
     reset_pde();
-    desc_buff_t *buf = alloc_desc_buff(&e1000);
-    eth_t *eth = (eth_t *)&buf->payload;
-    kernel_memcpy(eth->src, e1000.mac, 6);
-    kernel_memcpy(eth->dst, "\xff\xff\xff\xff\xff\xff", 6);
-    eth->type = 0x0090; // LOOP 0x9000
-    
-    int len = 1500;
-    kernel_memset(eth->payload, '0', len);
-    send_packet(eth, len + sizeof(eth_t));
-    free_desc_buff(&e1000, buf);
+    send_packet((eth_t *)buff->payload, buff->length);
     write_cr3(pde);
 }

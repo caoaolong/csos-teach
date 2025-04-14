@@ -5,7 +5,6 @@
 #include <task.h>
 #include <pci.h>
 #include <list.h>
-#include <netx.h>
 
 #define NET_DEV_NAME_LEN    16
 
@@ -44,6 +43,7 @@ typedef struct e1000_t {
     char name[NET_DEV_NAME_LEN];
     uint32_t base;
     mac_addr mac;
+	ip_addr ipv4;
     pci_device_t *dev;
     uint8_t eeprom;
     rx_desc_t *rx;
@@ -58,8 +58,8 @@ typedef struct e1000_t {
 void free_desc_buff(e1000_t *dev, desc_buff_t *buff);
 desc_buff_t *alloc_desc_buff(e1000_t *dev);
 
-void test_send_packet();
-
+void e1000_send_packet(desc_buff_t *buff);
+e1000_t *get_e1000dev();
 void e1000_init();
 
 #endif
