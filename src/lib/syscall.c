@@ -38,6 +38,7 @@ static const syscall_handler_t syscall_handler_table[] = {
     [SYS_NR_WAIT]       = (syscall_handler_t)task_wait,
     [SYS_NR_TEST]       = (syscall_handler_t)sys_test,
     [SYS_NR_ARPL]      = (syscall_handler_t)sys_arpl,
+    [SYS_NR_ARPC]      = (syscall_handler_t)sys_arpc,
 };
 // 远调用实现
 

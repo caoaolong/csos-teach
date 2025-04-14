@@ -11,8 +11,24 @@ arp_map_t *get_arp_map()
     return &arp_map;
 }
 
+void clear_arp_map()
+{
+    kernel_memset(&arp_map.data, 0, sizeof(arp_map.data));
+    arp_map.dirty = TRUE;
+}
+
 void put_arp_map(ip_addr ip, mac_addr mac)
 {
+    if (arp_map.data.idx >= ARP_MAP_NR)
+        return;
+    int length = arp_map.data.idx;
+    for (int i = 0; i < length; i++) {
+        arp_map_item_t *item = &arp_map.data.items[i];
+        if (!kernel_memcmp(item->mac, mac, MAC_LEN)) {
+            kernel_memcpy(item->ip, ip, IPV4_LEN);
+            return;
+        }
+    }
     arp_map_item_t *item = &arp_map.data.items[arp_map.data.idx];
     kernel_memcpy(item->ip, ip, IPV4_LEN);
     kernel_memcpy(item->mac, mac, MAC_LEN);

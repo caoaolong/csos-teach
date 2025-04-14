@@ -38,6 +38,7 @@
 #define SYS_NR_WAIT         30
 #define SYS_NR_TEST         31
 #define SYS_NR_ARPL         32
+#define SYS_NR_ARPC         33
 
 #define SYSCALL_LCALL
 

@@ -71,7 +71,9 @@ static shell_cmd_t cmd_list[] = {
     },
     {
         .name = "arp",
-        .usage = "arp\tlist the arp map\n",
+        .usage = "arp\tmanage the arp map\n"
+                 "   \t-a\tshow all arp map\n"
+                 "   \t-c\tclean the arp map\n",
         .cmd_exec = cmd_exec_arp
     },
     {
@@ -325,6 +327,12 @@ static int cmd_exec_test(struct shell_t *shell)
 
 static int cmd_exec_arp(struct shell_t *shell)
 {
+    char *arg = shell_get_arg(shell);
+    if (!strcmp(arg, "-c")) {
+        arpc();
+        shell_result(TRUE, "arp map cleaned");
+        return 0;
+    } else if (!strcmp(arg, "-a")) {
     arp_map_data_t arp_map;
     arpl(&arp_map);
     printf("%15s     %17s\n", "IP", "MAC");
@@ -336,5 +344,10 @@ static int cmd_exec_arp(struct shell_t *shell)
             arp_map.items[i].mac[0], arp_map.items[i].mac[1],
             arp_map.items[i].mac[2], arp_map.items[i].mac[3],
             arp_map.items[i].mac[4], arp_map.items[i].mac[5]);
+    }
+        return 0;
+    } else {
+        shell_result(FALSE, "invalid option");
+        return -1;
     }
 }
