@@ -342,12 +342,12 @@ static void receive_packet()
         if (!(rx->status & RS_DD)) return;
         if (rx->errors)
         {
-            logf("error %#X happened...\n", rx->errors);
+            // logf("error %#X happened...\n", rx->errors);
         }
         eth_t *eth = (eth_t *)(uint32_t)(rx->address & 0xFFFFFFFF);
         switch (ntohs(eth->type)) {
             case ETH_TYPE_ARP:
-                eth_proc_arp((arp_t *)eth->payload, rx->length - sizeof(eth_t));
+                eth_proc_arp(eth, rx->length);
                 break;
             case ETH_TYPE_IPv4:
                 logf("IPv4:");
@@ -362,10 +362,10 @@ static void receive_packet()
                 logf("Unknown:");
                 break;
         }
-        logf("RECV: %02X:%02X:%02X:%02X:%02X:%02X -> %02X:%02X:%02X:%02X:%02X:%02X : (%d)",
-            eth->src[0], eth->src[1], eth->src[2], eth->src[3], eth->src[4], eth->src[5],
-            eth->dst[0], eth->dst[1], eth->dst[2], eth->dst[3], eth->dst[4], eth->dst[5],
-            rx->length);
+        // logf("RECV: %02X:%02X:%02X:%02X:%02X:%02X -> %02X:%02X:%02X:%02X:%02X:%02X : (%d)",
+        //     eth->src[0], eth->src[1], eth->src[2], eth->src[3], eth->src[4], eth->src[5],
+        //     eth->dst[0], eth->dst[1], eth->dst[2], eth->dst[3], eth->dst[4], eth->dst[5],
+        //     rx->length);
         rx->status = 0;
         moutl(membase + E1000_RDT, e1000.rx_now);
         e1000.rx_now = (e1000.rx_now + 1) % RX_DESC_NR;
@@ -388,7 +388,6 @@ static void send_packet(eth_t *eth, uint16_t length)
     e1000.tx_now = (e1000.tx_now + 1) % TX_DESC_NR;
     moutl(membase + E1000_TDT, e1000.tx_now);
     uint32_t tdh = minl(membase + E1000_TDH);
-    logf("TDH=%d, TDT=%d", tdh, e1000.tx_now);
     switch (ntohs(eth->type)) {
         case ETH_TYPE_ARP:
             logf("ARP:");
@@ -406,10 +405,10 @@ static void send_packet(eth_t *eth, uint16_t length)
             logf("Unknown:");
             break;
     }
-    logf("SEND: %02X:%02X:%02X:%02X:%02X:%02X -> %02X:%02X:%02X:%02X:%02X:%02X : (%d)",
-            eth->src[0], eth->src[1], eth->src[2], eth->src[3], eth->src[4], eth->src[5],
-            eth->dst[0], eth->dst[1], eth->dst[2], eth->dst[3], eth->dst[4], eth->dst[5],
-            length);
+    // logf("SEND: %02X:%02X:%02X:%02X:%02X:%02X -> %02X:%02X:%02X:%02X:%02X:%02X : (%d)",
+    //         eth->src[0], eth->src[1], eth->src[2], eth->src[3], eth->src[4], eth->src[5],
+    //         eth->dst[0], eth->dst[1], eth->dst[2], eth->dst[3], eth->dst[4], eth->dst[5],
+    //         length);
 }
 
 void handler_e1000(interrupt_frame_t* frame)

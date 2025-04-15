@@ -22,6 +22,8 @@ desc_buff_t *alloc_desc_buff(e1000_t *dev)
         uint8_t *pbuf = (uint8_t *)struct_from_field(last, desc_buff_t, node);
         buf = (desc_buff_t *)pbuf + (PAGE_SIZE / 2);
     }
+    buf->length = 0;
+    buf->refc = 0;
     list_node_init(&buf->node);
     list_insert_back(list, &buf->node);
     return buf;

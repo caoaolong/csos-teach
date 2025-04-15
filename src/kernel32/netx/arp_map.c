@@ -1,6 +1,7 @@
 #include <os.h>
 #include <netx/arp_map.h>
 #include <interrupt.h>
+#include <csos/string.h>
 
 arp_map_t arp_map; // ARP映射表
 

@@ -18,5 +18,7 @@ typedef struct eth_t
     uint8_t payload[0];  // 载荷
 } eth_t;
 
-void eth_frame(e1000_t *e1000, desc_buff_t *buff, mac_addr target, uint16_t type);
+void eth_request(e1000_t *e1000, desc_buff_t *buff, mac_addr target, uint16_t type);
+
+void eth_reply(e1000_t *e1000, desc_buff_t *buff, eth_t *eth);
 #endif
