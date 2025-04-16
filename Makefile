@@ -64,6 +64,7 @@ $(BUILD)/kernel32.elf: $(BUILD)/kernel32/start.o \
 	$(BUILD)/kernel32/netx.o \
 	$(BUILD)/kernel32/netx/eth.o \
 	$(BUILD)/kernel32/netx/arp.o \
+	$(BUILD)/kernel32/netx/ipv4.o \
 	$(BUILD)/kernel32/netx/arp_map.o \
 	$(BUILD)/lib/string.o \
 	$(BUILD)/lib/stdio.o \
@@ -121,6 +122,7 @@ bochs: clean master
 .PHONY: qemu
 qemu: master
 	qemu-system-i386 -s -S -m 32M \
+		--cpu Broadwell -smp 1 \
 		-serial stdio -drive file=master.img,index=0,media=disk,format=raw \
 		-drive file=disk.img,index=1,media=disk,format=raw \
 		-audiodev id=sdl,driver=sdl -machine pcspk-audiodev=sdl \

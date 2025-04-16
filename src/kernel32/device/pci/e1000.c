@@ -350,7 +350,7 @@ static void receive_packet()
                 eth_proc_arp(eth, rx->length);
                 break;
             case ETH_TYPE_IPv4:
-                logf("IPv4:");
+                eth_proc_ipv4(eth, rx->length);
                 break;
             case ETH_TYPE_IPv6:
                 logf("IPv6:");

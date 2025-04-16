@@ -18,6 +18,10 @@ void csos_init(memory_info_t* mem_info, uint32_t gdt_info)
     interrupt_init();
     // 初始化调试输出
     logf_init();
+    // 初始化随机数
+    if (!(get_rdseed_support() & 0x1)) {
+        logf("not support real random");
+    }
     // 初始化时间
     time_init(OS_TZ);
     // 初始化内存

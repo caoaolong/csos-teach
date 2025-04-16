@@ -269,6 +269,43 @@ static inline void write_eflags(uint32_t eflags) {
 		"popf\n"::"a"(eflags));
 }
 
+static inline uint32_t get_rdseed_support() {
+    uint32_t ebx;
+    __asm__ (
+        "movl $7, %%eax\n"   // 设置 EAX 为 7
+        "movl $0, %%ecx\n"   // 设置 ECX 为 0
+        "cpuid\n"            // 执行 CPUID 指令
+        "shrl $18, %%ebx\n"  // 右移 EBX 18 位
+        "andl $1, %%ebx\n"   // 取 EBX 的最低位
+        : "=b" (ebx)         // 输出 EBX 的值
+        :                    // 无输入
+        : "%eax", "%ecx"    // 修改的寄存器
+    );
+    return ebx; // 返回 EBX 的值
+}
+
+static inline uint32_t xrandom() {
+	uint32_t result = 0;
+    uint32_t retries = 100;
+    __asm__ (
+        "movl %[retries], %%ecx\n"  // 设置重试次数
+    	".retry:\n"
+        "rdseed %%eax\n"            // 尝试获取随机数
+        "jc .done\n"                // 如果 CF 设置，表示成功
+        "loop .retry\n"             // 否则继续重试
+    	".fail:\n"
+        "xor %%eax, %%eax\n"        // 返回 0 表示失败
+        "jmp .end\n"
+    	".done:\n"
+        "movl %%eax, %[result]\n"   // 成功时，将随机数存入 result
+    	".end:\n"
+        : [result] "=r" (result)    // 输出参数
+        : [retries] "r" (retries)     // 输入参数
+        : "%eax", "%ecx"             // 修改的寄存器
+    );
+    return result;
+}
+
 static inline void far_jump(uint32_t selector, uint32_t offset) {
 	uint32_t addr[] = { offset, selector };
 	__asm__ volatile("ljmpl *(%[a])"::[a]"r"(addr));
