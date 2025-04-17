@@ -3,7 +3,21 @@
 
 void eth_proc_ipv4(eth_t *eth, uint16_t length)
 {
-
+    ipv4_t *ipv4 = (ipv4_t *)eth->payload;
+    switch (ipv4->proto)
+    {
+    case IP_TYPE_ICMP:
+        eth_proc_icmp(eth, length);
+        break;
+    case IP_TYPE_TCP:
+        /* code */
+        break;
+    case IP_TYPE_UDP:
+        /* code */
+        break;
+    default:
+        break;
+    }
 }
 
 void ipv4_request(
@@ -26,7 +40,8 @@ void ipv4_request(
     // TODO: 处理Options和Paddings
     ipv4->checksum = 0;
     ipv4->checksum = calc_checksum((uint8_t *)ipv4, sizeof(ipv4_t));
-    kernel_memcpy(ipv4->payload, data, dlen);
+    if(data) 
+        kernel_memcpy(ipv4->payload, data, dlen);
 }
 
 void ipv4_replay(
@@ -36,13 +51,11 @@ void ipv4_replay(
 {
     ipv4_t *ipv4 = (ipv4_t *)eth->payload;
     // 保存发送地址
-    mac_addr target_mac;
     ip_addr target_ip;
-    kernel_memcpy(target_mac, eth->src, MAC_LEN);
     kernel_memcpy(target_ip, ipv4->src_ip, IPV4_LEN);
     // 构建数据包
     ipv4->id = (uint16_t)xrandom();
-    ipv4->total_len = htons(sizeof(ipv4_t) + oplen + dlen); // 总长度
+    // ipv4->total_len = htons(sizeof(ipv4_t) + oplen + dlen); // 总长度
     // TODO: 根据数据长度设置
     ipv4->flags = 0;
     kernel_memcpy(ipv4->src_ip, e1000->ipv4, IPV4_LEN);
@@ -50,5 +63,6 @@ void ipv4_replay(
     // TODO: 处理Options和Paddings
     ipv4->checksum = 0;
     ipv4->checksum = calc_checksum((uint8_t *)ipv4, sizeof(ipv4_t));
-    kernel_memcpy(ipv4->payload, data, dlen);
+    if(data) 
+        kernel_memcpy(ipv4->payload, data, dlen);
 }

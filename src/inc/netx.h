@@ -5,6 +5,7 @@
 #include <netx/eth.h>
 #include <netx/arp.h>
 #include <netx/ipv4.h>
+#include <netx/icmp.h>
 #include <netx/arp_map.h>
 
 // 将32位网络字节序转换为主机字节序
@@ -35,27 +36,7 @@ static inline uint16_t htons(uint16_t hostshort) {
            ((hostshort & 0x00FF) << 8);
 }
 
-uint16_t calc_checksum(uint8_t *data, uint32_t length) {
-    uint32_t checksum = 0;
-
-    // 确保数据长度是偶数
-    length += length % 2;
-    // 将数据分成 16 位的块
-    for (uint32_t i = 0; i < length; i += 2) {
-        uint16_t word = 0;
-        if (i + 1 < length) {
-            word = (data[i] << 8) + data[i + 1];
-        } else {
-            word = (data[i] << 8); // 如果是奇数长度，补零
-        }
-        checksum += word;
-    }
-    // 将高位和低位相加
-    checksum = (checksum >> 16) + (checksum & 0xFFFF);
-    // 取反
-    return (uint16_t)~checksum;
-}
-
+uint16_t calc_checksum(uint8_t *data, uint32_t length);
 uint32_t inet_pton(const char *ipstr);
 
 void sys_arpl(arp_map_data_t *arp_data);

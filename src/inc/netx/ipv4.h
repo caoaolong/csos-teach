@@ -6,7 +6,7 @@
 
 #define IP_TYPE_ICMP    1
 #define IP_TYPE_TCP     6
-#define TP_TYPE_UDP     17
+#define IP_TYPE_UDP     17
 
 typedef struct ipv4_t {
     uint8_t  ver:4; // 版本
