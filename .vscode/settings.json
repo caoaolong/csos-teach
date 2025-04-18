@@ -44,7 +44,9 @@
         "netx.h": "c",
         "eth.h": "c",
         "arp.h": "c",
-        "arp_map.h": "c"
+        "arp_map.h": "c",
+        "ipv4.h": "c",
+        "inet.h": "c"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }

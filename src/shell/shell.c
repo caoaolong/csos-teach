@@ -4,7 +4,7 @@
 #include <csos/term.h>
 #include <fs/file.h>
 #include <fs/dir.h>
-#include <netx/arp.h>
+#include <netx/inet.h>
 
 static int cmd_exec_help(struct shell_t *shell);
 static int cmd_exec_clear(struct shell_t *shell);
@@ -17,6 +17,7 @@ static int cmd_exec_rmdir(struct shell_t *shell);
 static int cmd_exec_exit(struct shell_t *shell);
 static int cmd_exec_test(struct shell_t *shell);
 static int cmd_exec_arp(struct shell_t *shell);
+static int cmd_exec_ping(struct shell_t *shell);
 
 static shell_cmd_t cmd_list[] = {
     {
@@ -73,8 +74,13 @@ static shell_cmd_t cmd_list[] = {
         .name = "arp",
         .usage = "arp\tmanage the arp map\n"
                  "   \t-a\tshow all arp map\n"
-                 "   \t-c\tclean the arp map\n",
+                 "   \t-c\tclean the arp map",
         .cmd_exec = cmd_exec_arp
+    },
+    {
+        .name = "ping",
+        .usage = "ping\tsend the ICMPv4 packet to target <ip>\n",
+        .cmd_exec = cmd_exec_ping
     },
     {
         .name = "test",
@@ -349,5 +355,14 @@ static int cmd_exec_arp(struct shell_t *shell)
     } else {
         shell_result(FALSE, "invalid option");
         return -1;
+    }
+}
+
+static int cmd_exec_ping(struct shell_t *shell)
+{
+    char *ip = shell_get_arg(shell);
+    for (int i = 0; i < 4; i++) {
+        ping(ip);
+        sleep(1500); // 等待1.5秒
     }
 }

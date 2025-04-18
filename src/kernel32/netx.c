@@ -1,4 +1,5 @@
 #include <netx.h>
+#include <task.h>
 #include <csos/string.h>
 
 void sys_arpl(arp_map_data_t *arp_data)
@@ -13,21 +14,46 @@ void sys_arpc()
     flush_arp_map();
 }
 
-uint32_t inet_pton(const char *ipstr)
+void sys_ping(const char *ip)
 {
-    uint32_t ip = 0;
+    ip_addr dst_ip;
+    mac_addr dst_mac;
+    inet_pton(ip, dst_ip);
+    // 1. 首先查询本地ARP缓存中是否有这个IP地址所对应的MAC地址
+    BOOL found = FALSE;
+    arp_map_t *arp_map;
+    while (!found) {
+        arp_map = get_arp_map();
+        for (int i = 0; i < arp_map->data.idx; i++) {
+            if (!kernel_memcmp(arp_map->data.items[i].ip, dst_ip, IPV4_LEN)) {
+                kernel_memcpy(dst_mac, arp_map->data.items[i].mac, MAC_LEN);
+                found = TRUE;
+                break;
+            }
+        }
+        // 如果没有找到，则发送ARP请求
+        if (!found) {
+            arp_send(dst_ip);
+            task_sleep(100); // 等待100ms
+        }
+    }
+    // 2. 如果找到了MAC地址，则发送ICMP请求
+    icmp_send(dst_mac, dst_ip);
+}
+
+void inet_pton(const char *ipstr, ip_addr ipv)
+{
     char *p = (char *)ipstr;
-    while (*p != '\0') {
+    int idx = 0;
+    kernel_memset(ipv, 0, IPV4_LEN);
+    while (*p) {
         if (*p == '.') {
-            ip = (ip << 8) | (uint32_t)(*p - '0');
-        } else if (*p >= '0' && *p <= '9') {
-            ip = (ip << 8) | (uint32_t)(*p - '0');
+            idx++;
         } else {
-            return 0; // 无效的IP地址格式
+            ipv[idx] = ipv[idx] * 10 + (*p - '0');
         }
         p++;
     }
-    return ip;
 }
 
 uint16_t calc_checksum(uint8_t *data, uint32_t length) {

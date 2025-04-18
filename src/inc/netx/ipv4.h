@@ -9,9 +9,9 @@
 #define IP_TYPE_UDP     17
 
 typedef struct ipv4_t {
-    uint8_t  ver:4; // 版本
     uint8_t ihl:4;  // 首部长度
-    uint8_t  tos;   // 服务类型
+    uint8_t ver:4; // 版本
+    uint8_t tos;   // 服务类型
     uint16_t total_len; // 总长度
     uint16_t id;   // 标识
     union {

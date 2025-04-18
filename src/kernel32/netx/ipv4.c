@@ -55,7 +55,6 @@ void ipv4_replay(
     kernel_memcpy(target_ip, ipv4->src_ip, IPV4_LEN);
     // 构建数据包
     ipv4->id = (uint16_t)xrandom();
-    // ipv4->total_len = htons(sizeof(ipv4_t) + oplen + dlen); // 总长度
     // TODO: 根据数据长度设置
     ipv4->flags = 0;
     kernel_memcpy(ipv4->src_ip, e1000->ipv4, IPV4_LEN);

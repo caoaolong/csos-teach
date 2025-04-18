@@ -9,7 +9,7 @@ void eth_proc_arp(eth_t *eth, uint16_t length)
 
     uint16_t op = ntohs(arp->op);
     if (op == ARP_OP_REPLY) {
-        put_arp_map(arp->dst_ip, arp->src_mac); // 保存ARP映射
+        put_arp_map(arp->dst_ip, arp->dst_mac); // 保存ARP映射
         return;
     }
 
@@ -59,4 +59,21 @@ void arp_replay(e1000_t *e1000, eth_t *eth)
     kernel_memcpy(arp->dst_ip, target_ip, IPV4_LEN);
     kernel_memcpy(arp->src_mac, e1000->mac, MAC_LEN);
     kernel_memcpy(arp->src_ip, e1000->ipv4, IPV4_LEN);
+}
+
+void arp_send(ip_addr ip)
+{
+    // 申请缓冲区
+    e1000_t *e1000 = get_e1000dev();
+    desc_buff_t *buff = alloc_desc_buff(e1000);
+    // 构建数据包
+    eth_request(e1000, buff, "\xFF\xFF\xFF\xFF\xFF\xFF", ETH_TYPE_ARP);
+    buff->length += sizeof(eth_t);
+    eth_t *eth = (eth_t *)buff->payload;
+    arp_request(e1000, eth, ip);
+    buff->length += sizeof(arp_t);
+    // 发送数据包
+    e1000_send_packet(buff);
+    // 释放缓冲区
+    free_desc_buff(e1000, buff);
 }

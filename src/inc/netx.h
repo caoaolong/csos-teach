@@ -7,6 +7,7 @@
 #include <netx/ipv4.h>
 #include <netx/icmp.h>
 #include <netx/arp_map.h>
+#include <netx/inet.h>
 
 // 将32位网络字节序转换为主机字节序
 static inline uint32_t ntohl(uint32_t netlong) {
@@ -37,9 +38,10 @@ static inline uint16_t htons(uint16_t hostshort) {
 }
 
 uint16_t calc_checksum(uint8_t *data, uint32_t length);
-uint32_t inet_pton(const char *ipstr);
+void inet_pton(const char *ipstr, ip_addr ipv);
 
 void sys_arpl(arp_map_data_t *arp_data);
 void sys_arpc();
+void sys_ping(const char *ip);
 
 #endif

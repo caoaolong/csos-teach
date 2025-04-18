@@ -20,7 +20,7 @@ typedef struct icmp_t {
 void eth_proc_icmp(eth_t *eth, uint16_t length);
 
 void icmp_request(e1000_t *e1000, eth_t *eth, uint8_t *data, uint16_t dlen);
-
 void icmp_reply(e1000_t *e1000, eth_t *eth, uint8_t *data, uint16_t dlen);
+void icmp_send(mac_addr dst_mac, ip_addr dst_ip);
 
 #endif
