@@ -74,5 +74,5 @@ uint16_t calc_checksum(uint8_t *data, uint32_t length) {
     // 将高位和低位相加
     checksum = (checksum >> 16) + (checksum & 0xFFFF);
     // 取反
-    return (uint16_t)~checksum;
+    return (uint16_t)htons(~checksum);
 }

@@ -9,7 +9,7 @@ void eth_proc_arp(eth_t *eth, uint16_t length)
 
     uint16_t op = ntohs(arp->op);
     if (op == ARP_OP_REPLY) {
-        put_arp_map(arp->dst_ip, arp->dst_mac); // 保存ARP映射
+        put_arp_map(arp->src_ip, arp->src_mac); // 保存ARP映射
         return;
     }
 

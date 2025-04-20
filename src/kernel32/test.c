@@ -13,7 +13,9 @@ void sys_test()
     eth_request(e1000, buff, "\xFF\xFF\xFF\xFF\xFF\xFF", ETH_TYPE_ARP);
     buff->length += sizeof(eth_t);
     eth_t *eth = (eth_t *)buff->payload;
-    arp_request(e1000, eth, "\xC0\xA8\x0A\x16");
+    ip_addr dst_ip;
+    inet_pton("192.168.10.21", dst_ip);
+    arp_request(e1000, eth, dst_ip);
     buff->length += sizeof(arp_t);
     // 发送数据包
     e1000_send_packet(buff);

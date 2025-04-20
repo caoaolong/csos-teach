@@ -14,7 +14,8 @@ void eth_proc_icmp(eth_t *eth, uint16_t length)
         // 构建应答包
         eth_reply(e1000, buff, eth);
         ipv4_replay(e1000, (eth_t *)buff->payload, NULL, 0, NULL, 0);
-        icmp_reply(e1000, (eth_t *)buff->payload, NULL, 0);
+        icmp_reply(e1000, (eth_t *)buff->payload, (uint8_t *)icmp->payload, 
+            length - (sizeof(icmp_t) + sizeof(ipv4_t) + sizeof(eth_t)));
         // 发送ICMP应答
         e1000_send_packet(buff);
         // 释放缓冲区
@@ -61,11 +62,20 @@ void icmp_send(mac_addr dst_mac, ip_addr dst_ip)
     buff->length += sizeof(eth_t);
     ipv4_request(e1000, eth, dst_ip, IP_TYPE_ICMP, NULL, 0, NULL, 0);
     buff->length += sizeof(ipv4_t);
-    icmp_request(e1000, eth, NULL, 0);
-    buff->length += sizeof(icmp_t);
+    // 设置载荷数据
+    uint8_t payload[36];
+    for (int i = 0; i < sizeof(payload); i+=4) {
+        uint32_t rand = xrandom();
+        payload[i] = (rand & 0xFF000000) >> 24; // 取高8位
+        payload[i+1] = (rand & 0x00FF0000) >> 16; // 取次高8位
+        payload[i+2] = (rand & 0x0000FF00) >> 8; // 取次低8位
+        payload[i+3] = (rand & 0x000000FF); // 取低8位
+    }
+    icmp_request(e1000, eth, payload, sizeof(payload));
+    buff->length += (sizeof(icmp_t) + sizeof(payload));
     // 更新IPv4总长度
     ipv4_t *ipv4 = (ipv4_t *)eth->payload;
-    ipv4->total_len = htons(28);
+    ipv4->total_len = htons(sizeof(ipv4_t) + sizeof(icmp_t) + sizeof(payload));
     // 发送数据包
     e1000_send_packet(buff);
     // 释放缓冲区
