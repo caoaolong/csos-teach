@@ -7,8 +7,12 @@
 #include <netx/ipv4.h>
 #include <netx/icmp.h>
 #include <netx/udp.h>
+#include <netx/dhcp.h>
 #include <netx/arp_map.h>
 #include <netx/inet.h>
+
+#define PORT_DHCP_SERVER    67 // DHCP服务器端口
+#define PORT_DHCP_CLIENT    68 // DHCP客户端端口
 
 // 将32位网络字节序转换为主机字节序
 static inline uint32_t ntohl(uint32_t netlong) {

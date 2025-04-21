@@ -1,4 +1,5 @@
 #include <os.h>
+#include <task.h>
 #include <netx/arp_map.h>
 #include <interrupt.h>
 #include <csos/string.h>
@@ -44,6 +45,35 @@ void flush_arp_map()
     write_disk(ARP_MAP_SECTOR, amsize / SECTOR_SIZE, (uint16_t *)&arp_map.data);
     arp_map.dirty = FALSE;
     protect_exit(ps);
+}
+
+void get_mac(ip_addr ip, mac_addr mac)
+{
+    mac_addr gateway;
+    // 1. 首先查询本地ARP缓存中是否有这个IP地址所对应的MAC地址
+    BOOL found = FALSE;
+    uint8_t try_count = 3;
+    while ((!found) && try_count > 0) {
+        for (int i = 0; i < arp_map->data.idx; i++) {
+            if (!kernel_memcmp(arp_map->data.items[i].ip, ip, IPV4_LEN)) {
+                kernel_memcpy(mac, arp_map->data.items[i].mac, MAC_LEN);
+                found = TRUE;
+                break;
+            }
+        }
+        // 如果没有找到，则发送ARP请求
+        if (!found) {
+            arp_send(ip);
+            try_count--;
+            task_sleep(1000); // 等待1s
+        } else {
+            return;
+        }
+    }
+    // 没有找到则返回网关的MAC地址
+    if (try_count == 0 && !found) {
+        // TODO: 获取网关的MAC地址
+    }
 }
 
 void arp_map_init()
