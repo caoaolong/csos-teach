@@ -9,8 +9,6 @@
 
 #define KERNEL_VERSION          "1.0.0"
 #define OP_SYS_VERSION          "1.0.0"
-// 192.168.100.100
-#define OS_IPv4                 "\xC0\xA8\x64\x64"
 #define OS_TZ                   (+8)
 
 #define OS_TASK_MAX_SIZE        128

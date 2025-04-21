@@ -315,9 +315,9 @@ static void e1000_reset()
     e1000_read_mac();
     logf("MAC address: %2X-%2X-%2X-%2X-%2X-%2X",
         e1000.mac[0], e1000.mac[1], e1000.mac[2], e1000.mac[3], e1000.mac[4], e1000.mac[5]);
-    // 设置IP地址
-    kernel_memcpy(e1000.ipv4, OS_IPv4, IPV4_LEN);
-    logf("%d.%d.%d.%d", e1000.ipv4[0], e1000.ipv4[1], e1000.ipv4[2], e1000.ipv4[3]);
+    // 使用DHCP获取IP地址
+    
+    logf("IP address: %d.%d.%d.%d", e1000.ipv4[0], e1000.ipv4[1], e1000.ipv4[2], e1000.ipv4[3]);
     // 初始化组播表数组
     for (int i = E1000_MAT0; i < E1000_MAT1; i += 4)
         moutl(membase + i, 0);
