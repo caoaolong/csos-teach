@@ -21,7 +21,7 @@ void eth_proc_ipv4(eth_t *eth, uint16_t length)
 }
 
 void ipv4_request(
-    e1000_t *e1000, eth_t *eth, ip_addr dst, uint8_t proto, 
+    e1000_t *e1000, eth_t *eth, ip_addr src, ip_addr dst, uint8_t proto, 
     uint8_t *options, uint16_t oplen, 
     uint8_t *data, uint16_t dlen)
 {
@@ -35,13 +35,21 @@ void ipv4_request(
     ipv4->flags = 0;
     ipv4->ttl = 64;
     ipv4->proto = proto;
-    kernel_memcpy(ipv4->src_ip, e1000->ipv4, IPV4_LEN);
+    kernel_memcpy(ipv4->src_ip, src, IPV4_LEN);
     kernel_memcpy(ipv4->dst_ip, dst, IPV4_LEN);
     // TODO: 处理Options和Paddings
     ipv4->checksum = 0;
     ipv4->checksum = calc_checksum((uint8_t *)ipv4, sizeof(ipv4_t));
     if(data) 
         kernel_memcpy(ipv4->payload, data, dlen);
+}
+
+void ipv4_request(
+    e1000_t *e1000, eth_t *eth, ip_addr dst, uint8_t proto, 
+    uint8_t *options, uint16_t oplen, 
+    uint8_t *data, uint16_t dlen)
+{
+    ipv4_request(e1000, eth, e1000->ipv4, dst, proto, options, oplen, data, dlen);
 }
 
 void ipv4_replay(
