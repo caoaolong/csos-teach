@@ -236,8 +236,7 @@ uint32_t alloc_page()
 
 void free_page(uint32_t addr)
 {
-    extern uint8_t b_init_task[];
-    if (addr < (uint32_t)b_init_task) {
+    if (addr < (uint32_t)VM_SHELL_BASE) {
         memory32_free_page(&memory32_info, addr, 1);
     } else {
         pte_t *pte = NULL;

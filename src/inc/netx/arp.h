@@ -25,4 +25,6 @@ void eth_proc_arp(eth_t *eth, uint16_t length);
 void arp_request(e1000_t *e1000, eth_t *eth, ip_addr ip);
 void arp_replay(e1000_t *e1000, eth_t *eth);
 void arp_send(ip_addr ip);
+void arp_gratuitous();
+
 #endif

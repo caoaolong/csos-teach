@@ -59,6 +59,7 @@ void free_desc_buff(e1000_t *dev, desc_buff_t *buff);
 desc_buff_t *alloc_desc_buff(e1000_t *dev);
 
 void e1000_send_packet(desc_buff_t *buff);
+void e1000_kernel_send_packet(desc_buff_t *buff);
 e1000_t *get_e1000dev();
 void e1000_init();
 

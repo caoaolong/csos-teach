@@ -44,4 +44,5 @@ void sys_arpl(arp_map_data_t *arp_data);
 void sys_arpc();
 void sys_ping(const char *ip);
 
+void net_init();
 #endif

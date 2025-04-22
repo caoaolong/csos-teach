@@ -505,3 +505,8 @@ void e1000_send_packet(desc_buff_t *buff)
     send_packet((eth_t *)buff->payload, buff->length);
     write_cr3(pde);
 }
+
+void e1000_kernel_send_packet(desc_buff_t *buff)
+{
+    send_packet((eth_t *)buff->payload, buff->length);
+}

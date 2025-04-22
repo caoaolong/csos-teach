@@ -76,3 +76,9 @@ uint16_t calc_checksum(uint8_t *data, uint32_t length) {
     // 取反
     return (uint16_t)htons(~checksum);
 }
+
+void net_init()
+{
+    // 广播自身MAC地址
+    arp_gratuitous();
+}
