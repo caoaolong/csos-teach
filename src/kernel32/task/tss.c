@@ -257,7 +257,7 @@ static uint32_t load_elf_file(task_t *task, const char *name, uint32_t pde)
         while (size > 0)
         {
             int cs = (size > PAGE_SIZE) ? PAGE_SIZE : size;
-            uint32_t paddr = memory32_get_paddr(pde, vaddr);
+            uint32_t paddr = get_paddr(pde, vaddr);
             kernel_memcpy((void *)paddr, buffer, cs);
             buffer += cs;
             size -= cs;
@@ -275,7 +275,7 @@ static int copy_args(uint32_t pde, char *dst, char *argv[], int argc)
     task_args.argv = (char **)(dst + sizeof(task_args_t));
 
     char *dst_arg = dst + sizeof(task_args_t) + sizeof(char *) * argc;
-    char **dst_arg_tb = (char **)memory32_get_paddr(pde, (uint32_t)(dst + sizeof(task_args_t)));
+    char **dst_arg_tb = (char **)get_paddr(pde, (uint32_t)(dst + sizeof(task_args_t)));
     for (int i = 0; i < argc; i++)
     {
         char *from = argv[i];

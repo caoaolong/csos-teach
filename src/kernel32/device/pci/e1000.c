@@ -11,8 +11,8 @@
 #define DEVICEID_LOW    0x1000
 #define DEVICEID_HIGH   0x1028
 
-#define RX_DESC_NR      256 // 接收描述符数量
-#define TX_DESC_NR      256 // 传输描述符数量
+#define RX_DESC_NR      32 // 接收描述符数量
+#define TX_DESC_NR      32 // 传输描述符数量
 
 // 寄存器偏移
 enum REGISTERS
@@ -256,11 +256,12 @@ static void e1000_read_mac()
 
 static int e1000_rx_init()
 {
-    rx_desc_t *rx = (rx_desc_t *)alloc_page();
-    e1000.rx_now = 0;
-    e1000.rx = rx;
-
     uint32_t membase = e1000.dev->bar[0].iobase;
+
+    e1000.rx = (rx_desc_t *)alloc_page();
+    e1000.rx_now = 0;
+    e1000.rx_buff = (desc_buff_t **)&e1000.rx[RX_DESC_NR];
+
     moutl(membase + E1000_RDBAL, (uint32_t)e1000.rx);
     moutl(membase + E1000_RDBAH, 0);
     moutl(membase + E1000_RDLEN, sizeof(rx_desc_t) * RX_DESC_NR);
@@ -270,8 +271,9 @@ static int e1000_rx_init()
 
     for (int i = 0; i < RX_DESC_NR; i++)
     {
-        desc_buff_t *buff = (desc_buff_t *)alloc_desc_buff(&e1000);
-        e1000.rx[i].address = (uint64_t)&buff->payload;
+        desc_buff_t *buff = (desc_buff_t *)alloc_desc_buff();
+        e1000.rx_buff[i] = buff;
+        e1000.rx[i].address = (uint32_t)get_paddr(0, (uint32_t)&buff->payload);
         e1000.rx[i].status = 0;
     }
 
@@ -281,11 +283,12 @@ static int e1000_rx_init()
 
 static int e1000_tx_init()
 {
-    tx_desc_t *tx = (tx_desc_t *)alloc_page();
-    e1000.tx_now = 0;
-    e1000.tx = tx;
-
     uint32_t membase = e1000.dev->bar[0].iobase;
+
+    e1000.tx = (tx_desc_t *)alloc_page();
+    e1000.tx_now = 0;
+    e1000.tx_buff = (desc_buff_t **)&e1000.tx[RX_DESC_NR];
+
     moutl(membase + E1000_TDBAL, (uint32_t)e1000.tx);
     moutl(membase + E1000_TDBAH, 0);
     moutl(membase + E1000_TDLEN, sizeof(tx_desc_t) * TX_DESC_NR);
@@ -321,7 +324,7 @@ static void e1000_reset()
     // 禁用中断
     moutl(membase + E1000_IMS, 0);
     // 初始化缓冲区
-    list_init(&e1000.desc_list);
+    desc_buff_init();
     // 接收初始化
     e1000_rx_init();
     // 传输初始化
@@ -341,13 +344,16 @@ static void receive_packet()
         {
             logf("error %#X happened...\n", rx->errors);
         }
-        eth_t *eth = (eth_t *)(uint32_t)(rx->address & 0xFFFFFFFF);
+        desc_buff_t *buff = e1000.rx_buff[e1000.rx_now];
+        buff->length = rx->length;
+
+        eth_t *eth = (eth_t *)buff->payload;
         switch (ntohs(eth->type)) {
             case ETH_TYPE_ARP:
                 eth_proc_arp(eth, rx->length);
                 break;
             case ETH_TYPE_IPv4:
-                eth_proc_ipv4(eth, rx->length);
+                // eth_proc_ipv4(eth, rx->length);
                 break;
             case ETH_TYPE_IPv6:
                 break;
@@ -357,11 +363,16 @@ static void receive_packet()
             default:
                 break;
         }
-        // logf("RECV: %02X:%02X:%02X:%02X:%02X:%02X -> %02X:%02X:%02X:%02X:%02X:%02X : (%d)",
-        //     eth->src[0], eth->src[1], eth->src[2], eth->src[3], eth->src[4], eth->src[5],
-        //     eth->dst[0], eth->dst[1], eth->dst[2], eth->dst[3], eth->dst[4], eth->dst[5],
-        //     rx->length);
+        logf("RECV: %02X:%02X:%02X:%02X:%02X:%02X -> %02X:%02X:%02X:%02X:%02X:%02X : (%d)",
+            eth->src[0], eth->src[1], eth->src[2], eth->src[3], eth->src[4], eth->src[5],
+            eth->dst[0], eth->dst[1], eth->dst[2], eth->dst[3], eth->dst[4], eth->dst[5],
+            rx->length);
+        
+        buff = alloc_desc_buff();
+        e1000.rx_buff[e1000.rx_now] = buff;
+        rx->address = (uint32_t)get_paddr(0, (uint32_t)&buff->payload);
         rx->status = 0;
+
         moutl(membase + E1000_RDT, e1000.rx_now);
         e1000.rx_now = (e1000.rx_now + 1) % RX_DESC_NR;
     }

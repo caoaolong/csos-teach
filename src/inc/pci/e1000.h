@@ -46,17 +46,21 @@ typedef struct e1000_t {
 	ip_addr ipv4;
     pci_device_t *dev;
     uint8_t eeprom;
+
     rx_desc_t *rx;
     uint16_t rx_now;
-    tx_desc_t *tx;
+	desc_buff_t **rx_buff;
+
+	tx_desc_t *tx;
     uint16_t tx_now;
+	desc_buff_t **tx_buff;
 
 	task_t *tx_waiter;
-	list_t desc_list;
 } e1000_t;
 
-void free_desc_buff(e1000_t *dev, desc_buff_t *buff);
-desc_buff_t *alloc_desc_buff(e1000_t *dev);
+void free_desc_buff(desc_buff_t *buff);
+desc_buff_t *alloc_desc_buff();
+void desc_buff_init();
 
 void e1000_send_packet(desc_buff_t *buff);
 void e1000_kernel_send_packet(desc_buff_t *buff);

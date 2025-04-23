@@ -58,5 +58,5 @@ void udp_send(ip_addr dst_ip, uint16_t src_port, uint16_t dst_port, uint8_t *dat
     // 发送数据包
     e1000_send_packet(buff);
     // 释放缓冲区
-    free_desc_buff(e1000, buff);
+    free_desc_buff(buff);
 }

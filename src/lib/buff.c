@@ -2,18 +2,20 @@
 #include <pci/e1000.h>
 #include <csos/memory.h>
 
-void free_desc_buff(e1000_t *dev, desc_buff_t *buff)
+static list_t buff_list;
+
+void free_desc_buff(desc_buff_t *buff)
 {
-    list_t *list = &dev->desc_list;
+    list_t *list = &buff_list;
     list_node_t *node = list_remove(list, &buff->node);
     if (list->size % 2 == 0) {
         free_page((uint32_t)node & ~0xFFF);
     }
 }
 
-desc_buff_t *alloc_desc_buff(e1000_t *dev)
+desc_buff_t *alloc_desc_buff()
 {
-    list_t *list = &dev->desc_list;
+    list_t *list = &buff_list;
     desc_buff_t *buf = NULL;
     if (list->size % 2 == 0) {
         buf = (desc_buff_t *)alloc_page();
@@ -27,4 +29,9 @@ desc_buff_t *alloc_desc_buff(e1000_t *dev)
     list_node_init(&buf->node);
     list_insert_back(list, &buf->node);
     return buf;
+}
+
+void desc_buff_init()
+{
+    list_init(&buff_list);
 }

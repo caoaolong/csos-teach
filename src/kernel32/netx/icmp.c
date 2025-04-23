@@ -19,7 +19,7 @@ void eth_proc_icmp(eth_t *eth, uint16_t length)
         // 发送ICMP应答
         e1000_send_packet(buff);
         // 释放缓冲区
-        free_desc_buff(e1000, buff);
+        free_desc_buff(buff);
     } else if (icmp->type == ICMP_TYPE_ECHO_REPLY) {
         logf("ICMPv4 Reply: from: %d.%d.%d.%d, length: %d, ttl: %d",
             ipv4->src_ip[0], ipv4->src_ip[1], ipv4->src_ip[2], ipv4->src_ip[3],
@@ -79,5 +79,5 @@ void icmp_send(mac_addr dst_mac, ip_addr dst_ip)
     // 发送数据包
     e1000_send_packet(buff);
     // 释放缓冲区
-    free_desc_buff(e1000, buff);
+    free_desc_buff(buff);
 }

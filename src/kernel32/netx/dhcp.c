@@ -87,7 +87,7 @@ void dhcp_discover()
     // 发送数据包
     e1000_send_packet(buff);
     // 释放缓冲区
-    free_desc_buff(e1000, buff);
+    free_desc_buff(buff);
 }
 
 void dhcp_request()

@@ -176,8 +176,9 @@ uint32_t memory32_create_pde()
     return (uint32_t)pde;
 }
 
-uint32_t memory32_get_paddr(uint32_t pde, uint32_t vaddr)
+uint32_t get_paddr(uint32_t pde, uint32_t vaddr)
 {
+    if (pde == 0) pde = (uint32_t)kernel_pde;
     pte_t *pte = find_pte((pde_t *)pde, vaddr, FALSE);
     if (!pte) return 0;
     return PTE_ADDRESS(pte) + (vaddr & (PAGE_SIZE - 1));
@@ -187,7 +188,7 @@ int memory32_copy_page_data(uint32_t to, uint32_t pde, uint32_t from, uint32_t s
 {
     while (size > 0)
     {
-        uint32_t to_paddr = memory32_get_paddr(pde, to);
+        uint32_t to_paddr = get_paddr(pde, to);
         if (to_paddr == 0) {
             return -1;
         }

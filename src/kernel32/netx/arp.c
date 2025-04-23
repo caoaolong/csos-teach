@@ -26,7 +26,7 @@ void eth_proc_arp(eth_t *eth, uint16_t length)
             // 发送ARP应答
             e1000_send_packet(buff);
              // 释放缓冲区
-            free_desc_buff(e1000, buff);
+            free_desc_buff(buff);
         }
         put_arp_map(arp->src_ip, arp->src_mac); // 保存ARP映射
     }
@@ -81,7 +81,7 @@ void arp_send(ip_addr ip)
     // 发送数据包
     e1000_send_packet(buff);
     // 释放缓冲区
-    free_desc_buff(e1000, buff);
+    free_desc_buff(buff);
 }
 
 void arp_gratuitous()
