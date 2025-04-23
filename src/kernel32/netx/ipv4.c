@@ -1,8 +1,10 @@
 #include <netx.h>
+#include <logf.h>
 #include <csos/string.h>
 
 void eth_proc_ipv4(eth_t *eth, uint16_t length)
 {
+    logf("IPv4: %d", length);
     ipv4_t *ipv4 = (ipv4_t *)eth->payload;
     switch (ipv4->proto)
     {
@@ -20,7 +22,7 @@ void eth_proc_ipv4(eth_t *eth, uint16_t length)
     }
 }
 
-void ipv4_request(
+void ipv4_request_with_ip(
     e1000_t *e1000, eth_t *eth, ip_addr src, ip_addr dst, uint8_t proto, 
     uint8_t *options, uint16_t oplen, 
     uint8_t *data, uint16_t dlen)
@@ -49,10 +51,10 @@ void ipv4_request(
     uint8_t *options, uint16_t oplen, 
     uint8_t *data, uint16_t dlen)
 {
-    ipv4_request(e1000, eth, e1000->ipv4, dst, proto, options, oplen, data, dlen);
+    ipv4_request_with_ip(e1000, eth, e1000->ipv4, dst, proto, options, oplen, data, dlen);
 }
 
-void ipv4_replay(
+void ipv4_reply(
     e1000_t *e1000, eth_t *eth, 
     uint8_t *options, uint16_t oplen,
     uint8_t *data, uint16_t dlen)

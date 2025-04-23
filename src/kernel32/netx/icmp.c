@@ -13,7 +13,7 @@ void eth_proc_icmp(eth_t *eth, uint16_t length)
         kernel_memcpy(buff->payload, eth, length);
         // 构建应答包
         eth_reply(e1000, buff, eth);
-        ipv4_replay(e1000, (eth_t *)buff->payload, NULL, 0, NULL, 0);
+        ipv4_reply(e1000, (eth_t *)buff->payload, NULL, 0, NULL, 0);
         icmp_reply(e1000, (eth_t *)buff->payload, (uint8_t *)icmp->payload, 
             length - (sizeof(icmp_t) + sizeof(ipv4_t) + sizeof(eth_t)));
         // 发送ICMP应答

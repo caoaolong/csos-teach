@@ -4,8 +4,16 @@
 #include <types.h>
 #include <netx/eth.h>
 
-#define DNCP_OPTION_END                 255
-#define DNCP_OPTION_CLIENT_IDENTIFIER   61
+#define DHCP_TYPE_DISCOVER              1
+#define DHCP_TYPE_OFFER                 2
+#define DHCP_TYPE_REQUEST               3
+#define DHCP_TYPE_ACK                   5
+
+#define DHCP_MAGIC_COOKIE               "\x63\x82\x53\x63"
+#define DHCP_PARAM_REQUEST_LIST         "\x01\x03\x06\x0c\x0f\x1a\x21\x2a\x77\x78\x79"
+
+#define DHCP_OPTION_END                 255
+#define DHCP_OPTION_CLIENT_IDENTIFIER   61
 #define DHCP_OPTION_MAX_MESSAGE_SIZE    57
 #define DHCP_OPTION_PARAM_REQUEST_LIST  55
 #define DHCP_OPTION_MESSAGE_TYPE        53
@@ -29,9 +37,10 @@ typedef struct dhcp_t {
     ip_addr yiaddr;     // Your IP address (client IP address assigned by server)
     ip_addr siaddr;     // Server IP address (optional)
     ip_addr giaddr;     // Gateway IP address (optional)
-    mac_addr chaddr;    // Client hardware address (MAC address)
+    char chaddr[16];// Client hardware address (MAC address)
     char sname[64];     // Server host name (optional)
     char file[128];     // Boot file name (optional)
+    uint8_t magic[4];   // Magic cookie (0x63, 0x82, 0x53, 0x63)
     uint8_t options[0]; // Options field (variable length)
 } dhcp_t;
 
@@ -45,7 +54,7 @@ void eth_proc_dhcp(eth_t *eth, udp_t *udp, uint16_t length);
 
 void dhcp_discover();
 void dhcp_offer(dhcp_t *dhcp);
-void dhcp_request(dhcp_t *dhcp);
+void dhcp_request();
 void dhcp_ack(dhcp_t *dhcp);
 
 #endif

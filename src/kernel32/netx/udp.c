@@ -20,7 +20,7 @@ void udp_request(eth_t *eth, uint16_t sp, uint16_t tp, uint8_t *data, uint16_t d
     udp->length = htons(sizeof(udp_t) + dlen);
     if (data) 
         kernel_memcpy(udp->payload, data, dlen);
-    udp->checksum = calc_checksum((uint8_t *)udp, udp->length);
+    udp->checksum = calc_checksum((uint8_t *)udp, sizeof(udp_t) + dlen);
 }
 
 void udp_reply(eth_t *eth, uint8_t *data, uint16_t dlen)
@@ -32,7 +32,8 @@ void udp_reply(eth_t *eth, uint8_t *data, uint16_t dlen)
     udp->src_port = sp;
     udp->dst_port = tp;
     udp->length = htons(sizeof(udp_t) + dlen);
-    kernel_memcpy(udp->payload, data, dlen);
+    if(data) 
+        kernel_memcpy(udp->payload, data, dlen);
     udp->checksum = calc_checksum((uint8_t *)udp, udp->length);
 }
 

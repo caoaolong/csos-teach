@@ -66,6 +66,8 @@ $(BUILD)/kernel32.elf: $(BUILD)/kernel32/start.o \
 	$(BUILD)/kernel32/netx/arp.o \
 	$(BUILD)/kernel32/netx/ipv4.o \
 	$(BUILD)/kernel32/netx/icmp.o \
+	$(BUILD)/kernel32/netx/udp.o \
+	$(BUILD)/kernel32/netx/dhcp.o \
 	$(BUILD)/kernel32/netx/arp_map.o \
 	$(BUILD)/lib/string.o \
 	$(BUILD)/lib/stdio.o \
@@ -128,7 +130,8 @@ qemu: master
 		-drive file=disk.img,index=1,media=disk,format=raw \
 		-audiodev id=sdl,driver=sdl -machine pcspk-audiodev=sdl \
 		-netdev tap,id=n1,ifname=tap,script=no,downscript=no \
-		-device e1000,netdev=n1,mac=00:FF:26:E4:55:94
+		-device e1000,netdev=n1,mac=00:FF:26:E4:55:94 \
+		-d trace:*e1000*
 
 .PHONY: all
 all: clean qemu

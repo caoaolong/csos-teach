@@ -19,22 +19,27 @@ void sys_ping(const char *ip)
     ip_addr dst_ip;
     mac_addr dst_mac;
     inet_pton(ip, dst_ip);
-    // 1. 首先查询本地ARP缓存中是否有这个IP地址所对应的MAC地址
-    BOOL found = FALSE;
-    arp_map_t *arp_map;
-    while (!found) {
-        arp_map = get_arp_map();
-        for (int i = 0; i < arp_map->data.idx; i++) {
-            if (!kernel_memcmp(arp_map->data.items[i].ip, dst_ip, IPV4_LEN)) {
-                kernel_memcpy(dst_mac, arp_map->data.items[i].mac, MAC_LEN);
-                found = TRUE;
-                break;
+    e1000_t *e1000 = get_e1000dev();
+    if (!kernel_memcmp(dst_ip, e1000->ipv4, IPV4_LEN)) {
+        kernel_memcpy(dst_mac, e1000->mac, MAC_LEN);
+    } else {
+        // 1. 首先查询本地ARP缓存中是否有这个IP地址所对应的MAC地址
+        BOOL found = FALSE;
+        arp_map_t *arp_map;
+        while (!found) {
+            arp_map = get_arp_map();
+            for (int i = 0; i < arp_map->data.idx; i++) {
+                if (!kernel_memcmp(arp_map->data.items[i].ip, dst_ip, IPV4_LEN)) {
+                    kernel_memcpy(dst_mac, arp_map->data.items[i].mac, MAC_LEN);
+                    found = TRUE;
+                    break;
+                }
             }
-        }
-        // 如果没有找到，则发送ARP请求
-        if (!found) {
-            arp_send(dst_ip);
-            task_sleep(100); // 等待100ms
+            // 如果没有找到，则发送ARP请求
+            if (!found) {
+                arp_send(dst_ip);
+                task_sleep(100); // 等待100ms
+            }
         }
     }
     // 2. 如果找到了MAC地址，则发送ICMP请求
@@ -79,6 +84,12 @@ uint16_t calc_checksum(uint8_t *data, uint32_t length) {
 
 void net_init()
 {
+    // 申请缓冲区
+    e1000_t *e1000 = get_e1000dev();
+    // 设置自己的临时IP(192.168.137.100)
+    kernel_memcpy(e1000->ipv4, "\xC0\xA8\x89\x64", IPV4_LEN);
     // 广播自身MAC地址
-    arp_gratuitous();
+    // arp_gratuitous();
+    // 完成DHCP流程
+    dhcp_discover();   
 }

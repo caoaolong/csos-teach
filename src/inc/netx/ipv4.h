@@ -31,12 +31,15 @@ typedef struct ipv4_t {
 
 void eth_proc_ipv4(eth_t *eth, uint16_t length);
 
+void ipv4_request_with_ip(
+    e1000_t *e1000, eth_t *eth, ip_addr src, ip_addr dst, uint8_t proto, 
+    uint8_t *options, uint16_t oplen, 
+    uint8_t *data, uint16_t dlen);
 void ipv4_request(
     e1000_t *e1000, eth_t *eth, ip_addr dst, uint8_t proto, 
     uint8_t *options, uint16_t oplen, 
     uint8_t *data, uint16_t dlen);
-
-void ipv4_replay(
+void ipv4_reply(
     e1000_t *e1000, eth_t *eth, 
     uint8_t *options, uint16_t oplen,
     uint8_t *data, uint16_t dlen);

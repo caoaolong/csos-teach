@@ -54,9 +54,9 @@ void get_mac(ip_addr ip, mac_addr mac)
     BOOL found = FALSE;
     uint8_t try_count = 3;
     while ((!found) && try_count > 0) {
-        for (int i = 0; i < arp_map->data.idx; i++) {
-            if (!kernel_memcmp(arp_map->data.items[i].ip, ip, IPV4_LEN)) {
-                kernel_memcpy(mac, arp_map->data.items[i].mac, MAC_LEN);
+        for (int i = 0; i < arp_map.data.idx; i++) {
+            if (!kernel_memcmp(arp_map.data.items[i].ip, ip, IPV4_LEN)) {
+                kernel_memcpy(mac, arp_map.data.items[i].mac, MAC_LEN);
                 found = TRUE;
                 break;
             }

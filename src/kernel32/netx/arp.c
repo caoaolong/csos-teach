@@ -32,7 +32,7 @@ void eth_proc_arp(eth_t *eth, uint16_t length)
     }
 }
 
-void arp_request(e1000_t *e1000, eth_t *eth, ip_addr ip)
+void arp_request_with_mac(e1000_t *e1000, eth_t *eth, mac_addr dst_mac, ip_addr dst_ip)
 {
     arp_t *arp = (arp_t *)eth->payload;
     arp->hw_type = htons(0x0001); // 硬件类型
@@ -42,8 +42,13 @@ void arp_request(e1000_t *e1000, eth_t *eth, ip_addr ip)
     arp->op = htons(ARP_OP_REQUEST); // 操作码
     kernel_memcpy(arp->src_mac, eth->src, MAC_LEN); // 源MAC地址
     kernel_memcpy(arp->src_ip, e1000->ipv4, IPV4_LEN); // 源IP地址
-    kernel_memcpy(arp->dst_mac, "\x00\x00\x00\x00\x00\x00", MAC_LEN); // 目标MAC地址
-    kernel_memcpy(arp->dst_ip, ip, IPV4_LEN); // 目标IP地址
+    kernel_memcpy(arp->dst_mac, dst_mac, MAC_LEN); // 目标MAC地址
+    kernel_memcpy(arp->dst_ip, dst_ip, IPV4_LEN); // 目标IP地址
+}
+
+void arp_request(e1000_t *e1000, eth_t *eth, ip_addr ip)
+{
+    arp_request_with_mac(e1000, eth, "\x00\x00\x00\x00\x00\x00", ip);
 }
 
 void arp_replay(e1000_t *e1000, eth_t *eth)
@@ -88,7 +93,7 @@ void arp_gratuitous()
     eth_request(e1000, buff, "\xFF\xFF\xFF\xFF\xFF\xFF", ETH_TYPE_ARP);
     buff->length += sizeof(eth_t);
     eth_t *eth = (eth_t *)buff->payload;
-    arp_request(e1000, eth, e1000->ipv4);
+    arp_request_with_mac(e1000, eth, e1000->mac, e1000->ipv4);
     buff->length += sizeof(arp_t);
     // 发送数据包
     e1000_kernel_send_packet(buff);

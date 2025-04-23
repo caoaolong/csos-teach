@@ -262,6 +262,7 @@ static int e1000_rx_init()
 
     uint32_t membase = e1000.dev->bar[0].iobase;
     moutl(membase + E1000_RDBAL, (uint32_t)e1000.rx);
+    moutl(membase + E1000_RDBAH, 0);
     moutl(membase + E1000_RDLEN, sizeof(rx_desc_t) * RX_DESC_NR);
 
     moutl(membase + E1000_RDH, 0);
@@ -274,10 +275,7 @@ static int e1000_rx_init()
         e1000.rx[i].status = 0;
     }
 
-    uint32_t value = 0;
-    value |= RCTL_EN | RCTL_SBP | RCTL_UPE;
-    value |= RCTL_MPE | RCTL_LBM_NONE;
-    value |= RCTL_BAM | RCTL_SECRC;
+    uint32_t value = RCTL_EN | RCTL_LBM_NONE | RTCL_RDMTS_HALF | RCTL_BAM | RCTL_SECRC | RCTL_BSIZE_2048;
     moutl(membase + E1000_RCTL, value);
 }
 
@@ -289,6 +287,7 @@ static int e1000_tx_init()
 
     uint32_t membase = e1000.dev->bar[0].iobase;
     moutl(membase + E1000_TDBAL, (uint32_t)e1000.tx);
+    moutl(membase + E1000_TDBAH, 0);
     moutl(membase + E1000_TDLEN, sizeof(tx_desc_t) * TX_DESC_NR);
 
     moutl(membase + E1000_TDH, 0);
@@ -296,15 +295,11 @@ static int e1000_tx_init()
 
     for (int i = 0; i < TX_DESC_NR; i++)
     {
-        desc_buff_t *buff = (desc_buff_t *)alloc_desc_buff(&e1000);
-        e1000.tx[i].address = (uint64_t)&buff->payload;
+        e1000.tx[i].address = 0;
         e1000.tx[i].sta = TS_DD;
     }
 
-    uint32_t value = 0;
-    value |= TCTL_EN | TCTL_PSP | TCTL_RTLC;
-    value |= 0x10 << TCTL_CT;
-    value |= 0x40 << TCTL_COLD;
+    uint32_t value = TCTL_EN | TCTL_PSP | TCTL_RTLC | (0x10 << TCTL_CT) | (0x40 << TCTL_COLD);
     moutl(membase + E1000_TCTL, value);
 }
 
@@ -318,6 +313,8 @@ static void e1000_reset()
     // 使用DHCP获取IP地址
     
     logf("IP address: %d.%d.%d.%d", e1000.ipv4[0], e1000.ipv4[1], e1000.ipv4[2], e1000.ipv4[3]);
+    // Set Link Up
+    moutl(membase + E1000_CTRL, (minl(membase + E1000_CTRL) | CTRL_SLU));
     // 初始化组播表数组
     for (int i = E1000_MAT0; i < E1000_MAT1; i += 4)
         moutl(membase + i, 0);
@@ -342,7 +339,7 @@ static void receive_packet()
         if (!(rx->status & RS_DD)) return;
         if (rx->errors)
         {
-            // logf("error %#X happened...\n", rx->errors);
+            logf("error %#X happened...\n", rx->errors);
         }
         eth_t *eth = (eth_t *)(uint32_t)(rx->address & 0xFFFFFFFF);
         switch (ntohs(eth->type)) {
@@ -353,13 +350,11 @@ static void receive_packet()
                 eth_proc_ipv4(eth, rx->length);
                 break;
             case ETH_TYPE_IPv6:
-                logf("IPv6:");
                 break;
             case ETH_TYPE_TEST:
-                logf("Ethernet Configuration Testing:");
+                logf("Ethernet Configuration Testing");
                 break;
             default:
-                logf("Unknown:");
                 break;
         }
         // logf("RECV: %02X:%02X:%02X:%02X:%02X:%02X -> %02X:%02X:%02X:%02X:%02X:%02X : (%d)",
@@ -382,33 +377,10 @@ static void send_packet(eth_t *eth, uint16_t length)
     }
     tx->address = (uint64_t)(void *)eth;
     tx->length = length;
-    tx->cmd = TCMD_EOP | TCMD_RS | TCMD_IFCS | TCMD_IC;
+    tx->cmd = TCMD_EOP | TCMD_RPS | TCMD_RS | TCMD_IFCS;
     tx->sta = 0;
-    uint8_t tx_old = e1000.tx_now;
     e1000.tx_now = (e1000.tx_now + 1) % TX_DESC_NR;
     moutl(membase + E1000_TDT, e1000.tx_now);
-    uint32_t tdh = minl(membase + E1000_TDH);
-    switch (ntohs(eth->type)) {
-        case ETH_TYPE_ARP:
-            logf("ARP:");
-            break;
-        case ETH_TYPE_IPv4:
-            logf("IPv4:");
-            break;
-        case ETH_TYPE_IPv6:
-            logf("IPv6:");
-            break;
-        case ETH_TYPE_TEST:
-            logf("Ethernet Configuration Testing:");
-            break;
-        default:
-            logf("Unknown:");
-            break;
-    }
-    // logf("SEND: %02X:%02X:%02X:%02X:%02X:%02X -> %02X:%02X:%02X:%02X:%02X:%02X : (%d)",
-    //         eth->src[0], eth->src[1], eth->src[2], eth->src[3], eth->src[4], eth->src[5],
-    //         eth->dst[0], eth->dst[1], eth->dst[2], eth->dst[3], eth->dst[4], eth->dst[5],
-    //         length);
 }
 
 void handler_e1000(interrupt_frame_t* frame)
