@@ -32,7 +32,7 @@ void ipv4_request_with_ip(
     ipv4->ihl = 0x5 + oplen / 4; // 头部长度
     ipv4->tos = 0; // 服务类型
     ipv4->total_len = htons(sizeof(ipv4_t) + oplen + dlen); // 总长度
-    ipv4->id = (uint16_t)xrandom();
+    ipv4->id = htons(1);
     // TODO: 根据数据长度设置
     ipv4->flags = 0;
     ipv4->ttl = 64;

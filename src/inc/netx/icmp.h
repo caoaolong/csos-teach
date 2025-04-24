@@ -17,8 +17,18 @@ typedef struct icmp_t {
     uint8_t payload[0]; // 数据负载
 } icmp_t;
 
+typedef struct icmp_echo_t {
+    uint8_t type; // 类型
+    uint8_t code; // 代码
+    uint16_t checksum; // 校验和
+    uint16_t id;
+    uint16_t seq;
+    uint8_t payload[0]; // 数据负载
+} icmp_echo_t;
+
 void eth_proc_icmp(eth_t *eth, uint16_t length);
 
+void icmp_echo(e1000_t *e1000, eth_t *eth, uint8_t *data, uint16_t dlen);
 void icmp_request(e1000_t *e1000, eth_t *eth, uint8_t *data, uint16_t dlen);
 void icmp_reply(e1000_t *e1000, eth_t *eth, uint8_t *data, uint16_t dlen);
 void icmp_send(mac_addr dst_mac, ip_addr dst_ip);
