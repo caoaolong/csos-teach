@@ -24,7 +24,7 @@ void eth_proc_icmp(eth_t *eth, uint16_t length)
     } else if (icmp->type == ICMP_TYPE_ECHO_REPLY) {
         logf("ICMPv4 Reply: from: %d.%d.%d.%d, length: %d, ttl: %d",
             ipv4->src_ip[0], ipv4->src_ip[1], ipv4->src_ip[2], ipv4->src_ip[3],
-            ipv4->total_len, ipv4->ttl);
+            ntohs(ipv4->total_len), ipv4->ttl);
     }
 }
 
@@ -36,7 +36,7 @@ void icmp_echo(e1000_t *e1000, eth_t *eth, uint8_t *data, uint16_t dlen)
     icmp->code = 0; // 代码
     icmp->checksum = 0; // 校验和
     icmp->id = htons(1);
-    icmp->seq = htons(256);
+    icmp->seq = htons(1);
     if (data) 
         kernel_memcpy(icmp->payload, data, dlen); // 数据负载
     icmp->checksum = calc_checksum((uint8_t *)icmp, dlen + sizeof(icmp_echo_t)); // 计算校验和
@@ -66,7 +66,7 @@ void icmp_reply(e1000_t *e1000, eth_t *eth, uint8_t *data, uint16_t dlen)
     icmp->checksum = calc_checksum((uint8_t *)icmp, dlen + sizeof(icmp_t)); // 计算校验和
 }
 
-static char payload[] = "Onix icmp echo 1234567890 asdfghjkl;'";
+static char payload[] = "csos.icmp.echo.abcdefghijklmnopqrstuvwxyz0123456789";
 
 void icmp_send(mac_addr dst_mac, ip_addr dst_ip)
 {

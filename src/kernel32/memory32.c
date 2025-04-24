@@ -255,6 +255,7 @@ void free_page(uint32_t addr)
 
 int alloc_pages(uint32_t pde, uint32_t index, uint32_t size, uint32_t perm)
 {
+    logf("alloc_pages: pde = %x, index = %x, size = %x, perm = %x", pde, index, size, perm);
     return memory32_alloc_task_pages(pde, index, size, perm);
 }
 

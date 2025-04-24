@@ -38,7 +38,7 @@ static shell_cmd_t cmd_list[] = {
     },
     {
         .name = "pwd",
-        .usage = "pwd\tprint the current workspace directory\n",
+        .usage = "pwd\tprint the current workspace directory",
         .cmd_exec = cmd_exec_pwd
     },
     {
@@ -67,7 +67,7 @@ static shell_cmd_t cmd_list[] = {
     },
     {
         .name = "exit",
-        .usage = "exit\texit the current task\n",
+        .usage = "exit\texit the current task",
         .cmd_exec = cmd_exec_exit
     },
     {
@@ -79,12 +79,12 @@ static shell_cmd_t cmd_list[] = {
     },
     {
         .name = "ping",
-        .usage = "ping\tsend the ICMPv4 packet to target <ip>\n",
+        .usage = "ping\tsend the ICMPv4 packet to target <ip>",
         .cmd_exec = cmd_exec_ping
     },
     {
         .name = "test",
-        .usage = "test\ttest the kernel function\n",
+        .usage = "test\ttest the kernel function",
         .cmd_exec = cmd_exec_test
     }
 };
@@ -176,8 +176,8 @@ void shell_exec(shell_t *shell)
 
 void shell_putc(shell_t *shell, char ch)
 {
-    if (ch == '\b') {
-        shell->cmd[shell->pcwrite] = 0;
+    if (ch == '\b' && shell->pcwrite > 0) {
+        shell->cmd[--shell->pcwrite] = 0;
     } else if (ch == 0) {
         return;
     } else {
@@ -196,6 +196,7 @@ void shell_cmd_up(shell_t *shell)
     shell->now = (uint32_t)&cmd->node;
     // 替换当前命令
     tcsetattr(stdin, &shell->term);
+    strcpy(shell->cmd, cmd->cmd);
     printf("\033[%d;%df%s\033[0f", shell->term.cr, shell->term.cc, cmd->cmd);
 }
 
@@ -363,6 +364,6 @@ static int cmd_exec_ping(struct shell_t *shell)
     char *ip = shell_get_arg(shell);
     for (int i = 0; i < 4; i++) {
         ping(ip);
-        sleep(1500); // 等待1.5秒
+        sleep(1000); // 等待1秒
     }
 }

@@ -342,7 +342,6 @@ static void receive_packet()
         if (!(rx->status & RS_DD)) return;
         if (rx->errors)
         {
-            logf("error %#X happened...\n", rx->errors);
         }
         desc_buff_t *buff = e1000.rx_buff[e1000.rx_now];
         buff->length = rx->length;
@@ -353,7 +352,7 @@ static void receive_packet()
                 eth_proc_arp(eth, rx->length);
                 break;
             case ETH_TYPE_IPv4:
-                // eth_proc_ipv4(eth, rx->length);
+                eth_proc_ipv4(eth, rx->length);
                 break;
             case ETH_TYPE_IPv6:
                 break;
@@ -363,16 +362,8 @@ static void receive_packet()
             default:
                 break;
         }
-        logf("RECV: %02X:%02X:%02X:%02X:%02X:%02X -> %02X:%02X:%02X:%02X:%02X:%02X : (%d)",
-            eth->src[0], eth->src[1], eth->src[2], eth->src[3], eth->src[4], eth->src[5],
-            eth->dst[0], eth->dst[1], eth->dst[2], eth->dst[3], eth->dst[4], eth->dst[5],
-            rx->length);
         
-        buff = alloc_desc_buff();
-        e1000.rx_buff[e1000.rx_now] = buff;
-        rx->address = (uint32_t)get_paddr(0, (uint32_t)&buff->payload);
         rx->status = 0;
-
         moutl(membase + E1000_RDT, e1000.rx_now);
         e1000.rx_now = (e1000.rx_now + 1) % RX_DESC_NR;
     }
@@ -412,22 +403,17 @@ void handler_e1000(interrupt_frame_t* frame)
     // 传输队列为空，并且传输进程阻塞
     if (status & IM_TXQE)
     {
-        logf("transmit queue is empty");
     }
     // 连接状态改变
     if (status & IM_LSC)
     {
-        logf("e1000 link state changed...\n");
     }
     // Overrun
     if (status & IM_RXO)
     {
-        logf("e1000 RXO...\n");
-        // overrun
     }
     if (status & IM_RXDMT0)
     {
-        logf("e1000 RXDMT0...\n");
     }
     if (status & IM_RXT0)
     {

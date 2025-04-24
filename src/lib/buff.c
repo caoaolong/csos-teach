@@ -1,4 +1,5 @@
 #include <paging.h>
+#include <logf.h>
 #include <pci/e1000.h>
 #include <csos/memory.h>
 

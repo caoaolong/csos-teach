@@ -6,8 +6,6 @@
 #include <netx/arp.h>
 #include <netx/ipv4.h>
 #include <netx/icmp.h>
-#include <netx/udp.h>
-#include <netx/dhcp.h>
 #include <netx/arp_map.h>
 #include <netx/inet.h>
 

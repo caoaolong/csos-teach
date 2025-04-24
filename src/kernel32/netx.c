@@ -88,8 +88,4 @@ void net_init()
     e1000_t *e1000 = get_e1000dev();
     // 设置自己的临时IP(192.168.137.100)
     kernel_memcpy(e1000->ipv4, "\xC0\xA8\x89\x64", IPV4_LEN);
-    // 广播自身MAC地址
-    // arp_gratuitous();
-    // 完成DHCP流程
-    dhcp_discover();   
 }

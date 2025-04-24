@@ -4,8 +4,8 @@
 
 void eth_proc_ipv4(eth_t *eth, uint16_t length)
 {
-    logf("IPv4: %d", length);
     ipv4_t *ipv4 = (ipv4_t *)eth->payload;
+    logf("IPv4: %02X:%d", ipv4->proto, length);
     switch (ipv4->proto)
     {
     case IP_TYPE_ICMP:

@@ -117,12 +117,17 @@ static void tty_put(char ch)
         tty->cursor.can_echo = FALSE;
     } else if (ks.e0 && (ch == KEY_UP || ch == KEY_DOWN)) {
         tty->cursor.can_echo = FALSE;
-    }
-     else {
+    } else if (ch == '\n') {
+        tty->cursor.current = 0;
+        tty->cursor.total = 0;
+        tty->cursor.can_echo = TRUE;
+        tty->cursor.can_backspace = FALSE;
+    } else {
         tty->cursor.current++;
         tty->cursor.total++;
         tty->cursor.can_echo = TRUE;
     }
+    logf("current: %d, total: %d", tty->cursor.current, tty->cursor.total);
     tty_fifo_put(&tty->ififo, ch);
     sem_notify(&tty->isem);
 }

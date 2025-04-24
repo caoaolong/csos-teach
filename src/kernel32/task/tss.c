@@ -6,6 +6,7 @@
 #include <paging.h>
 #include <interrupt.h>
 #include <fs.h>
+#include <logf.h>
 
 static mutex_t task_mutex;
 static tss_task_t task_table[OS_TASK_MAX_SIZE];
