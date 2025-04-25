@@ -62,43 +62,6 @@ enum IMSBITS {
     IMS_SRPD    = 1 << 16
 };
 
-// 中断类型
-enum ICRBITS
-{
-    // 传输描述符写回，表示有一个数据包发出
-    IM_TXDW = 1 << 0, // Transmit Descriptor Written Back.
-
-    // 传输队列为空
-    IM_TXQE = 1 << 1, // Transmit Queue Empty.
-
-    // 连接状态变化，可以认为是网线拔掉或者插上
-    IM_LSC = 1 << 2, // Link Status Change
-
-    // 接收序列错误
-    IM_RXSEQ = 1 << 3, // Receive Sequence Error.
-
-    // 到达接受描述符最小阈值，表示流量太大，接收描述符太少了，应该再多加一些，不过没有数据包丢失
-    IM_RXDMT0 = 1 << 4, // Receive Descriptor Minimum Threshold hit.
-
-    // 因为没有可用的接收缓冲区或因为PCI接收带宽不足，已经溢出，有数据包丢失
-    IM_RXO = 1 << 6, // Receiver FIFO Overrun.
-
-    // 接收定时器中断
-    IM_RXT0 = 1 << 7, // Receiver Timer Interrupt.
-
-    // 这个位在 MDI/O 访问完成时设置
-    IM_MADC = 1 << 9, // MDI/O Access Complete Interrupt
-
-    IM_RXCFG = 1 << 10,  // Receiving /C/ ordered sets.
-    IM_PHYINT = 1 << 12, // Sets mask for PHY Interrupt
-    IM_GPI0 = 1 << 13,   // General Purpose Interrupts.
-    IM_GPI1 = 1 << 14,   // General Purpose Interrupts.
-
-    // 传输描述符环已达到传输描述符控制寄存器中指定的阈值。
-    IM_TXDLOW = 1 << 15, // Transmit Descriptor Low Threshold hit
-    IM_SRPD = 1 << 16,   // Small Receive Packet Detection
-};
-
 enum CTRLBITS {
     CTRL_FD     = 1 << 0,
     CTRL_ASDE   = 1 << 5,
@@ -347,6 +310,7 @@ static void receive_packet()
         buff->length = rx->length;
 
         eth_t *eth = (eth_t *)buff->payload;
+        logf("Receive packet: %d bytes", buff->length);
         switch (ntohs(eth->type)) {
             case ETH_TYPE_ARP:
                 eth_proc_arp(eth, rx->length);
@@ -362,7 +326,11 @@ static void receive_packet()
             default:
                 break;
         }
+        free_desc_buff(buff);
         
+        buff = alloc_desc_buff();
+        e1000.rx_buff[e1000.rx_now] = buff;
+        rx->address = (uint32_t)get_paddr(0, (uint32_t)&buff->payload);
         rx->status = 0;
         moutl(membase + E1000_RDT, e1000.rx_now);
         e1000.rx_now = (e1000.rx_now + 1) % RX_DESC_NR;
@@ -392,7 +360,7 @@ void handler_e1000(interrupt_frame_t* frame)
     uint32_t membase = e1000.dev->bar[0].iobase;
     uint32_t status = minl(membase + E1000_ICR);
     // 传输描述符写回，表示有一个数据包发送完毕
-    if (status & IM_TXDW)
+    if (status & IMS_TXDW)
     {
         if (e1000.tx_waiter)
         {
@@ -401,21 +369,21 @@ void handler_e1000(interrupt_frame_t* frame)
         }
     }
     // 传输队列为空，并且传输进程阻塞
-    if (status & IM_TXQE)
+    if (status & IMS_TXQE)
     {
     }
     // 连接状态改变
-    if (status & IM_LSC)
+    if (status & IMS_LSC)
     {
     }
     // Overrun
-    if (status & IM_RXO)
+    if (status & IMS_RXO)
     {
     }
-    if (status & IM_RXDMT0)
+    if (status & IMS_RXDMT0)
     {
     }
-    if (status & IM_RXT0)
+    if (status & IMS_RXT0)
     {
         receive_packet();
     }

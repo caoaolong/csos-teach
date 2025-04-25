@@ -127,7 +127,6 @@ static void tty_put(char ch)
         tty->cursor.total++;
         tty->cursor.can_echo = TRUE;
     }
-    logf("current: %d, total: %d", tty->cursor.current, tty->cursor.total);
     tty_fifo_put(&tty->ififo, ch);
     sem_notify(&tty->isem);
 }

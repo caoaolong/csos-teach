@@ -15,7 +15,7 @@ void eth_proc_ipv4(eth_t *eth, uint16_t length)
         /* code */
         break;
     case IP_TYPE_UDP:
-        /* code */
+        eth_proc_udp(eth, length);
         break;
     default:
         break;
