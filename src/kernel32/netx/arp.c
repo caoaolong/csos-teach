@@ -96,7 +96,7 @@ void arp_gratuitous()
     arp_request_with_mac(e1000, eth, e1000->mac, e1000->ipv4);
     buff->length += sizeof(arp_t);
     // 发送数据包
-    e1000_kernel_send_packet(buff);
+    e1000_send_packet(buff);
     // 释放缓冲区
     free_page((uint32_t)buff);
 }

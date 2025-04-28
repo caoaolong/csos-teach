@@ -47,7 +47,8 @@
         "arp_map.h": "c",
         "ipv4.h": "c",
         "inet.h": "c",
-        "dhcp.h": "c"
+        "dhcp.h": "c",
+        "ifnet.h": "c"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }

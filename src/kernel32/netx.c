@@ -1,6 +1,61 @@
 #include <netx.h>
 #include <task.h>
+#include <logf.h>
+#include <csos/memory.h>
 #include <csos/string.h>
+
+static netif_t netifs[4];
+static uint32_t netif_count = 0;
+static sem_t netin_sem, netout_sem;
+static task_t netin_task, netout_task;
+
+// 数据接收线程
+static void netin_thread()
+{
+    while (TRUE) {
+        int count = 0;
+        for (int i = 0; i < netif_count; i++) {
+            netif_t *netif = &netifs[i];
+            if (list_is_empty(&netif->rx_list)) {
+                continue;
+            } else {
+                // TODO: 处理接收数据包
+                count++;
+            }
+        }
+        if (count == 0) sem_wait(&netin_sem);
+    }
+}
+
+// 数据发送线程
+static void netout_thread()
+{
+    while (TRUE) {
+        int count = 0;
+        for (int i = 0; i < netif_count; i++) {
+            netif_t *netif = &netifs[i];
+            if (list_is_empty(&netif->tx_list)) {
+                continue;
+            } else {
+                // TODO: 处理接收数据包
+                count++;
+            }
+        }
+        if (count == 0) sem_wait(&netout_sem);
+    }
+}
+
+void netif_input(netif_t *netif, desc_buff_t *buff)
+{
+    list_insert_back(&netif->rx_list, buff);
+    sem_notify(&netif->rx_sem);
+}
+
+void netif_output(netif_t *netif, desc_buff_t *buff)
+{
+    list_insert_back(&netif->tx_list, buff);
+    sem_notify(&netif->tx_sem);
+}
 
 void sys_arpl(arp_map_data_t *arp_data)
 {
@@ -84,8 +139,34 @@ uint16_t calc_checksum(uint8_t *data, uint32_t length) {
 
 void net_init()
 {
-    // 申请缓冲区
+    // 网卡初始化
+    e1000_init();
     e1000_t *e1000 = get_e1000dev();
     // 设置自己的临时IP(192.168.137.100)
     kernel_memcpy(e1000->ipv4, "\xC0\xA8\x89\x64", IPV4_LEN);
+    // 初始化虚拟网卡列表
+    kernel_memset(netifs, 0, sizeof(netifs));
+    // 创建数据收发线程
+    uint32_t netin_stack = alloc_page();
+    sem_init(&netin_sem, 0);
+    task_init(&netin_task, "netin", TASK_LEVEL_SYSTEM, (uint32_t)netin_task, netin_stack);
+    uint32_t netout_stack = alloc_page();
+    sem_init(&netout_sem, 0);
+    task_init(&netout_task, "netout", TASK_LEVEL_SYSTEM, (uint32_t)netout_task, netout_stack);
+}
+
+int netif_create(ip_addr ip, ip_addr mask, ip_addr gw)
+{
+    if (netif_count >= 4) {
+        logf("The number of netif exceeds the upper limit");
+        return -1; // 超过最大网卡数量
+    }
+    netif_t *netif = &netifs[netif_count++];
+    kernel_memcpy(netif->ipv4, ip, IPV4_LEN);
+    kernel_memcpy(netif->mask, mask, IPV4_LEN);
+    kernel_memcpy(netif->gw, gw, IPV4_LEN);
+    kernel_memset(netif, 0, sizeof(netif_t));
+    list_init(&netif->rx_list);
+    list_init(&netif->tx_list);
+    return 0;
 }
