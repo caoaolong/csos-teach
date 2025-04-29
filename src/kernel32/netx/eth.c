@@ -16,7 +16,7 @@ static void netif_set_payload(desc_buff_t *buff, uint8_t *data, uint16_t dlen)
         pd = (uint8_t *)ipv4;
         if (ipv4->proto == IP_TYPE_ICMP) {
             icmp_t *icmp = (icmp_t *)(pd + ipv4l);
-            if (icmp->type == ICMP_TYPE_ECHO_REPLY && icmp->code == 0) {
+            if ((icmp->type == ICMP_TYPE_ECHO_REPLY || icmp->type == ICMP_TYPE_ECHO_REQUEST) && icmp->code == 0) {
                 icmp_echo_t *echo = (icmp_echo_t *)icmp;
                 kernel_memcpy(echo->payload, data, dlen);
             }
@@ -41,7 +41,7 @@ static void netif_set_checksum(desc_buff_t *buff, uint8_t *data, uint16_t dlen)
         if (ipv4->proto == IP_TYPE_ICMP) {
             pd += ipv4l;
             icmp_t *icmp = (icmp_t *)pd;
-            if (icmp->type == ICMP_TYPE_ECHO_REPLY && icmp->code == 0) {
+            if ((icmp->type == ICMP_TYPE_ECHO_REPLY || icmp->type == ICMP_TYPE_ECHO_REQUEST) && icmp->code == 0) {
                 icmp->checksum = calc_checksum(pd, sizeof(icmp_echo_t) + dlen);
             }
         } else if (ipv4->proto == IP_TYPE_UDP) {

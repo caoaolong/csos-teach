@@ -30,11 +30,13 @@ void icmp_build(netif_t *netif, desc_buff_t *buff,
 {
     eth_t *eth = (eth_t *)buff->payload;
     ipv4_t *ipv4 = (ipv4_t *)eth->payload;
-    icmp_t *icmp = (icmp_t *)ipv4->payload;
+    icmp_echo_t *icmp = (icmp_echo_t *)ipv4->payload;
     icmp->type = type;
     icmp->code = code;
     icmp->checksum = 0;
-    buff->length += sizeof(icmp_t);
+    icmp->id = 0;
+    icmp->seq = 0;
+    buff->length += sizeof(icmp_echo_t);
     if (data == NULL && dlen == 0) {
         ipv4_build(netif, buff, dst_ip, IP_TYPE_ICMP, echo_payload, sizeof(echo_payload));
     } else {

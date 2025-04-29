@@ -143,9 +143,9 @@ void sys_ping(const char *ip)
     ip_addr dst_ip;
     mac_addr dst_mac;
     inet_pton(ip, dst_ip);
-    netif_t *netif = find_netif(dst_mac);
+    netif_t *netif = netif_default();
     desc_buff_t *buff = alloc_desc_buff();
-    icmp_build(netif, buff, ICMP_TYPE_ECHO_REQUEST, 0, "\xC0\xA8\x89\x01", NULL, 0);
+    icmp_build(netif, buff, ICMP_TYPE_ECHO_REQUEST, 0, dst_ip, NULL, 0);
 }
 
 void inet_pton(const char *ipstr, ip_addr ipv)
