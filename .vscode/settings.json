@@ -49,7 +49,8 @@
         "inet.h": "c",
         "dhcp.h": "c",
         "ifnet.h": "c",
-        "mio.h": "c"
+        "mio.h": "c",
+        "udp.h": "c"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }

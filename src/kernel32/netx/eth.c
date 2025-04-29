@@ -47,7 +47,7 @@ static void netif_set_checksum(desc_buff_t *buff, uint8_t *data, uint16_t dlen)
         } else if (ipv4->proto == IP_TYPE_UDP) {
             pd += ipv4l;
             udp_t *udp = (udp_t *)pd;
-            udp->checksum = calc_checksum(pd, sizeof(udp_t) + dlen);
+            udp->checksum = calc_udp_checksum(ipv4, udp, udp->payload, dlen);
         }
     }
 }

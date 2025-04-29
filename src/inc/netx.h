@@ -51,14 +51,14 @@ static inline uint16_t htons(uint16_t hostshort) {
 uint16_t calc_checksum(uint8_t *data, uint32_t length);
 void inet_pton(const char *ipstr, ip_addr ipv);
 
+netif_t *netif_default();
 void netif_input(desc_buff_t *buff);
 void netif_output(desc_buff_t *buff);
+int netif_create(ip_addr ip, ip_addr mask, ip_addr gw, mac_addr mac);
 
 void sys_arpl(arp_map_data_t *arp_data);
 void sys_arpc();
 void sys_ping(const char *ip);
 
 void net_init();
-
-int netif_create(ip_addr ip, ip_addr mask, ip_addr gw, mac_addr mac);
 #endif

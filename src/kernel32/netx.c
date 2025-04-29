@@ -2,6 +2,7 @@
 #include <logf.h>
 #include <paging.h>
 #include <netx/eth.h>
+#include <netx/ipv4.h>
 #include <netx/icmp.h>
 #include <csos/memory.h>
 #include <csos/string.h>
@@ -10,6 +11,11 @@ static netif_t netifs[4];
 static uint32_t netif_count = 0;
 static sem_t netin_sem, netout_sem;
 static task_t netin_task, netout_task;
+
+netif_t *netif_default()
+{
+    return &netifs[1];
+}
 
 // 数据接收线程
 static void netin_thread()
@@ -74,6 +80,26 @@ static netif_t *find_netif(mac_addr mac)
     return NULL;
 }
 
+uint16_t calc_checksum(uint8_t *data, uint32_t length)
+{
+    uint32_t checksum = 0;
+
+    for (uint32_t i = 0; i < length; i += 2) {
+        uint16_t word = data[i] << 8;
+        if (i + 1 < length) {
+            word |= data[i + 1];
+        }
+        checksum += word;
+    }
+
+    // 不断将高 16 位加到低 16 位
+    while (checksum >> 16) {
+        checksum = (checksum & 0xFFFF) + (checksum >> 16);
+    }
+
+    return htons((uint16_t)(~checksum));
+}
+
 // 接收数据包
 void netif_input(desc_buff_t *buff)
 {
@@ -135,25 +161,6 @@ void inet_pton(const char *ipstr, ip_addr ipv)
         }
         p++;
     }
-}
-
-uint16_t calc_checksum(uint8_t *data, uint32_t length) {
-    uint32_t checksum = 0;
-
-    for (uint32_t i = 0; i < length; i += 2) {
-        uint16_t word = data[i] << 8;
-        if (i + 1 < length) {
-            word |= data[i + 1];
-        }
-        checksum += word;
-    }
-
-    // 不断将高 16 位加到低 16 位
-    while (checksum >> 16) {
-        checksum = (checksum & 0xFFFF) + (checksum >> 16);
-    }
-
-    return htons((uint16_t)(~checksum));
 }
 
 void net_init()
