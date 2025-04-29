@@ -2,17 +2,15 @@
 #define CSOS_NETX_H
 
 #include <kernel.h>
-#include <netx/eth.h>
-#include <netx/arp.h>
-#include <netx/ipv4.h>
-#include <netx/icmp.h>
-#include <netx/udp.h>
+#include <list.h>
 #include <netx/arp_map.h>
 #include <netx/inet.h>
 #include <csos/sem.h>
-#include <csos/list.h>
+#include <pci/e1000.h>
 
 typedef struct netif_t {
+    char name[8];
+
     mac_addr mac; // 网卡MAC地址
     ip_addr ipv4; // 网卡IP地址
     ip_addr mask; // 子网掩码
@@ -53,8 +51,8 @@ static inline uint16_t htons(uint16_t hostshort) {
 uint16_t calc_checksum(uint8_t *data, uint32_t length);
 void inet_pton(const char *ipstr, ip_addr ipv);
 
-void netif_input(netif_t *netif, desc_buff_t *buff);
-void netif_output(netif_t *netif, desc_buff_t *buff);
+void netif_input(desc_buff_t *buff);
+void netif_output(desc_buff_t *buff);
 
 void sys_arpl(arp_map_data_t *arp_data);
 void sys_arpc();
@@ -62,5 +60,5 @@ void sys_ping(const char *ip);
 
 void net_init();
 
-int netif_create(ip_addr ip, ip_addr mask, ip_addr gw);
+int netif_create(ip_addr ip, ip_addr mask, ip_addr gw, mac_addr mac);
 #endif

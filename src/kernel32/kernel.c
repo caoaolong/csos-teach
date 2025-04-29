@@ -34,12 +34,12 @@ void csos_init(memory_info_t* mem_info, uint32_t gdt_info)
     fs_init();
     // PCI初始化
     pci_init();
-    // 网络配置
-    net_init();
     // 初始化任务队列
     task_queue_init();
     // 初始化任务
     default_task_init();
+    // 网络配置
+    net_init();
     // 打印信息
     logf("KL Version: %s; OS Version: %s", KERNEL_VERSION, OP_SYS_VERSION);
     // default任务

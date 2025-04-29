@@ -1,90 +1,56 @@
 #include <netx.h>
+#include <netx/eth.h>
+#include <netx/ipv4.h>
+#include <netx/icmp.h>
 #include <logf.h>
 #include <csos/string.h>
 
-void eth_proc_icmp(eth_t *eth, uint16_t length)
+static char echo_payload[] = "csos.icmp.abcdefghijklmnopqrstuvwxyz0123456789";
+
+void icmp_input(netif_t *netif, desc_buff_t *buff)
 {
-    e1000_t *e1000 = get_e1000dev();
+    eth_t *eth = (eth_t *)buff->payload;
     ipv4_t *ipv4 = (ipv4_t *)eth->payload;
     icmp_t *icmp = (icmp_t *)ipv4->payload;
     if (icmp->type == ICMP_TYPE_ECHO_REQUEST) {
-        desc_buff_t *buff = alloc_desc_buff(e1000);
-        buff->length = length;
-        // 复制数据包
-        kernel_memcpy(buff->payload, eth, length);
-        // 构建应答包
-        eth_reply(e1000, buff, eth);
-        ipv4_reply(e1000, (eth_t *)buff->payload, NULL, 0, NULL, 0);
-        icmp_reply(e1000, (eth_t *)buff->payload, (uint8_t *)icmp->payload, 
-            length - (sizeof(icmp_t) + sizeof(ipv4_t) + sizeof(eth_t)));
-        // 发送ICMP应答
-        e1000_send_packet(buff);
-        // 释放缓冲区
-        free_desc_buff(buff);
+        icmp_output(netif, buff, NULL, 0);
     } else if (icmp->type == ICMP_TYPE_ECHO_REPLY) {
         logf("ICMPv4 Reply: from: %d.%d.%d.%d, length: %d, ttl: %d",
             ipv4->src_ip[0], ipv4->src_ip[1], ipv4->src_ip[2], ipv4->src_ip[3],
             ntohs(ipv4->total_len), ipv4->ttl);
     }
-}
-
-void icmp_echo(e1000_t *e1000, eth_t *eth, uint8_t *data, uint16_t dlen)
-{
-    ipv4_t *ipv4 = (ipv4_t *)eth->payload;
-    icmp_echo_t *icmp = (icmp_echo_t *)ipv4->payload;
-    icmp->type = ICMP_TYPE_ECHO_REQUEST; // 类型
-    icmp->code = 0; // 代码
-    icmp->checksum = 0; // 校验和
-    icmp->id = htons(1);
-    icmp->seq = htons(1);
-    if (data) 
-        kernel_memcpy(icmp->payload, data, dlen); // 数据负载
-    icmp->checksum = calc_checksum((uint8_t *)icmp, dlen + sizeof(icmp_echo_t)); // 计算校验和
-}
-
-void icmp_request(e1000_t *e1000, eth_t *eth, uint8_t *data, uint16_t dlen)
-{
-    ipv4_t *ipv4 = (ipv4_t *)eth->payload;
-    icmp_t *icmp = (icmp_t *)ipv4->payload;
-    icmp->type = ICMP_TYPE_ECHO_REQUEST; // 类型
-    icmp->code = 0; // 代码
-    icmp->checksum = 0; // 校验和
-    if (data) 
-        kernel_memcpy(icmp->payload, data, dlen); // 数据负载
-    icmp->checksum = calc_checksum((uint8_t *)icmp, dlen + sizeof(icmp_t)); // 计算校验和
-}
-
-void icmp_reply(e1000_t *e1000, eth_t *eth, uint8_t *data, uint16_t dlen)
-{
-    ipv4_t *ipv4 = (ipv4_t *)eth->payload;
-    icmp_t *icmp = (icmp_t *)ipv4->payload;
-    icmp->type = ICMP_TYPE_ECHO_REPLY; // 类型
-    icmp->code = 0; // 代码
-    icmp->checksum = 0; // 校验和
-    if (data) 
-        kernel_memcpy(icmp->payload, data, dlen); // 数据负载
-    icmp->checksum = calc_checksum((uint8_t *)icmp, dlen + sizeof(icmp_t)); // 计算校验和
-}
-
-static char payload[] = "csos.icmp.echo.abcdefghijklmnopqrstuvwxyz0123456789";
-
-void icmp_send(mac_addr dst_mac, ip_addr dst_ip)
-{
-    // 申请缓冲区
-    e1000_t *e1000 = get_e1000dev();
-    desc_buff_t *buff = alloc_desc_buff();
-    eth_t *eth = (eth_t *)buff->payload;
-    ipv4_t *ipv4 = (ipv4_t *)eth->payload;
-    icmp_echo_t *echo = (icmp_echo_t *)ipv4->payload;
-    // 构建数据包
-    icmp_echo(e1000, eth, payload, sizeof(payload));
-    buff->length += sizeof(payload) + sizeof(icmp_echo_t);
-    ipv4_request(e1000, eth, dst_ip, IP_TYPE_ICMP, NULL, 0, NULL, sizeof(icmp_echo_t) + sizeof(payload));
-    buff->length += sizeof(ipv4_t);
-    eth_request(e1000, buff, dst_mac, ETH_TYPE_IPv4);
-    buff->length += sizeof(eth_t);
-    // 发送数据包
-    e1000_send_packet(buff);
     // 释放缓冲区
     free_desc_buff(buff);
+}
+
+void icmp_build(netif_t *netif, desc_buff_t *buff, 
+    uint8_t type, uint8_t code, 
+    ip_addr dst_ip,
+    uint8_t *data, uint16_t dlen)
+{
+    eth_t *eth = (eth_t *)buff->payload;
+    ipv4_t *ipv4 = (ipv4_t *)eth->payload;
+    icmp_t *icmp = (icmp_t *)ipv4->payload;
+    icmp->type = type;
+    icmp->code = code;
+    icmp->checksum = 0;
+    buff->length += sizeof(icmp_t);
+    if (data == NULL && dlen == 0) {
+        ipv4_build(netif, buff, dst_ip, IP_TYPE_ICMP, echo_payload, sizeof(echo_payload));
+    } else {
+        ipv4_build(netif, buff, dst_ip, IP_TYPE_ICMP, data, dlen);
+    }
+}
+
+void icmp_output(netif_t *netif, desc_buff_t *buff, uint8_t *data, uint16_t dlen)
+{
+    eth_t *eth = (eth_t *)buff->payload;
+    ipv4_t *ipv4 = (ipv4_t *)eth->payload;
+    icmp_t *icmp = (icmp_t *)ipv4->payload;
+    if (icmp->type == ICMP_TYPE_ECHO_REQUEST && icmp->code == 0) {
+        icmp->type = ICMP_TYPE_ECHO_REPLY;
+        icmp->code = 0;
+    }
+    icmp->checksum = 0; // 校验和
+    ipv4_output(netif, buff, data, dlen);
 }

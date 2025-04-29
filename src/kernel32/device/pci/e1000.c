@@ -1,9 +1,10 @@
-#include <pci/e1000.h>
-#include <netx.h>
 #include <logf.h>
 #include <mio.h>
-#include <interrupt.h>
 #include <pic.h>
+#include <task.h>
+#include <interrupt.h>
+#include <pci/e1000.h>
+#include <netx/eth.h>
 #include <csos/string.h>
 #include <csos/memory.h>
 
@@ -274,11 +275,8 @@ static void e1000_reset()
     uint32_t membase = e1000.dev->bar[0].iobase;
     // 读取MAC地址
     e1000_read_mac();
-    logf("MAC address: %2X-%2X-%2X-%2X-%2X-%2X",
+    logf("MAC address: %02X-%02X-%02X-%02X-%02X-%02X",
         e1000.mac[0], e1000.mac[1], e1000.mac[2], e1000.mac[3], e1000.mac[4], e1000.mac[5]);
-    // 使用DHCP获取IP地址
-    
-    logf("IP address: %d.%d.%d.%d", e1000.ipv4[0], e1000.ipv4[1], e1000.ipv4[2], e1000.ipv4[3]);
     // Set Link Up
     moutl(membase + E1000_CTRL, (minl(membase + E1000_CTRL) | CTRL_SLU));
     // 初始化组播表数组
@@ -309,24 +307,7 @@ static void receive_packet()
         desc_buff_t *buff = e1000.rx_buff[e1000.rx_now];
         buff->length = rx->length;
 
-        eth_t *eth = (eth_t *)buff->payload;
-        logf("Receive packet: %d bytes", buff->length);
-        switch (ntohs(eth->type)) {
-            case ETH_TYPE_ARP:
-                eth_proc_arp(eth, rx->length);
-                break;
-            case ETH_TYPE_IPv4:
-                eth_proc_ipv4(eth, rx->length);
-                break;
-            case ETH_TYPE_IPv6:
-                break;
-            case ETH_TYPE_TEST:
-                logf("Ethernet Configuration Testing");
-                break;
-            default:
-                break;
-        }
-        free_desc_buff(buff);
+        netif_input(buff);
         
         buff = alloc_desc_buff();
         e1000.rx_buff[e1000.rx_now] = buff;
@@ -349,8 +330,10 @@ static void send_packet(eth_t *eth, uint16_t length)
     tx->length = length;
     tx->cmd = TCMD_EOP | TCMD_RPS | TCMD_RS | TCMD_IFCS;
     tx->sta = 0;
+    uint16_t tx_old = e1000.tx_now;
     e1000.tx_now = (e1000.tx_now + 1) % TX_DESC_NR;
     moutl(membase + E1000_TDT, e1000.tx_now);
+    while(!(e1000.tx[tx_old].sta & 0xF));
 }
 
 void handler_e1000(interrupt_frame_t* frame)
@@ -391,13 +374,13 @@ void handler_e1000(interrupt_frame_t* frame)
     send_eoi(IRQ_E1000);
 }
 
-void e1000_init()
+e1000_t *e1000_init()
 {
     // 查找PCI设备
     pci_device_t *dev = find_e1000_device();
     if (!dev) {
         logf("find e1000 pci device failed!");
-        return;
+        return NULL;
     }
     e1000.dev = dev;
     kernel_strcpy(e1000.name, "e1000");
@@ -406,12 +389,13 @@ void e1000_init()
     pci_bar_t *bar = &e1000.dev->bar[0];
     if (bar->index < 0) {
         logf("set e1000 bar failed");
-        return;
+        return NULL;
     }
+    task_t *task = get_running_task();
     // 映射EEPROM
     if (map_area(bar->iobase, bar->size) < 0) {
         logf("mapping eeprom failed");
-        return;
+        return NULL;
     }
     // 启用总线主控
     pci_enable_busmastering(e1000.dev);
@@ -423,15 +407,11 @@ void e1000_init()
     IRQ_E1000 = pci_interrupt(e1000.dev) + 0x20;
     if (IRQ_E1000 != IRQ1_NIC) {
         logf("pci interrupt get failed");
-        return;
+        return NULL;
     }
     install_interrupt_handler(IRQ_E1000, (uint32_t)interrupt_handler_e1000);
     irq_enable(IRQ_E1000);
     irq_enable(IRQ0_CASCADE);
-}
-
-e1000_t *get_e1000dev()
-{
     return &e1000;
 }
 

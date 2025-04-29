@@ -1,77 +1,64 @@
 #include <netx.h>
+#include <netx/eth.h>
+#include <netx/ipv4.h>
+#include <netx/icmp.h>
+#include <netx/udp.h>
 #include <logf.h>
 #include <csos/string.h>
 
-void eth_proc_ipv4(eth_t *eth, uint16_t length)
+void ipv4_input(netif_t *netif, desc_buff_t *buff)
 {
+    eth_t *eth = (eth_t *)buff->payload;
     ipv4_t *ipv4 = (ipv4_t *)eth->payload;
-    logf("IPv4: %02X:%d", ipv4->proto, length);
+    logf("IPv4: %02X:%d", ipv4->proto, ntohs(ipv4->total_len));
     switch (ipv4->proto)
     {
     case IP_TYPE_ICMP:
-        eth_proc_icmp(eth, length);
+        icmp_input(netif, buff);
         break;
     case IP_TYPE_TCP:
         /* code */
         break;
     case IP_TYPE_UDP:
-        eth_proc_udp(eth, length);
+        udp_input(netif, buff);
         break;
     default:
+        free_desc_buff(buff);
         break;
     }
 }
 
-void ipv4_request_with_ip(
-    e1000_t *e1000, eth_t *eth, ip_addr src, ip_addr dst, uint8_t proto, 
-    uint8_t *options, uint16_t oplen, 
+void ipv4_build(netif_t *netif, desc_buff_t *buff, 
+    ip_addr dst_ip, uint8_t tp,
     uint8_t *data, uint16_t dlen)
 {
+    eth_t *eth = (eth_t *)buff->payload;
     ipv4_t *ipv4 = (ipv4_t *)eth->payload;
-    ipv4->ver = 0x4; // 版本号和头部长度
-    ipv4->ihl = 0x5 + oplen / 4; // 头部长度
-    ipv4->tos = 0; // 服务类型
-    ipv4->total_len = htons(sizeof(ipv4_t) + oplen + dlen); // 总长度
-    ipv4->id = htons(1);
-    // TODO: 根据数据长度设置
+    ipv4->ver = 4;
+    ipv4->ihl = 5;
+    ipv4->total_len = htons(sizeof(ipv4_t) + dlen);
+    ipv4->tos = 0;
     ipv4->flags = 0;
-    ipv4->ttl = 64;
-    ipv4->proto = proto;
-    kernel_memcpy(ipv4->src_ip, src, IPV4_LEN);
-    kernel_memcpy(ipv4->dst_ip, dst, IPV4_LEN);
-    // TODO: 处理Options和Paddings
-    ipv4->checksum = 0;
-    ipv4->checksum = calc_checksum((uint8_t *)ipv4, sizeof(ipv4_t));
-    if(data) 
-        kernel_memcpy(ipv4->payload, data, dlen);
-}
-
-void ipv4_request(
-    e1000_t *e1000, eth_t *eth, ip_addr dst, uint8_t proto, 
-    uint8_t *options, uint16_t oplen, 
-    uint8_t *data, uint16_t dlen)
-{
-    ipv4_request_with_ip(e1000, eth, e1000->ipv4, dst, proto, options, oplen, data, dlen);
-}
-
-void ipv4_reply(
-    e1000_t *e1000, eth_t *eth, 
-    uint8_t *options, uint16_t oplen,
-    uint8_t *data, uint16_t dlen)
-{
-    ipv4_t *ipv4 = (ipv4_t *)eth->payload;
-    // 保存发送地址
-    ip_addr target_ip;
-    kernel_memcpy(target_ip, ipv4->src_ip, IPV4_LEN);
-    // 构建数据包
     ipv4->id = (uint16_t)xrandom();
-    // TODO: 根据数据长度设置
-    ipv4->flags = 0;
-    kernel_memcpy(ipv4->src_ip, e1000->ipv4, IPV4_LEN);
-    kernel_memcpy(ipv4->dst_ip, target_ip, IPV4_LEN);
-    // TODO: 处理Options和Paddings
+    ipv4->ttl = 64;
+    ipv4->proto = tp;
     ipv4->checksum = 0;
-    ipv4->checksum = calc_checksum((uint8_t *)ipv4, sizeof(ipv4_t));
-    if(data) 
-        kernel_memcpy(ipv4->payload, data, dlen);
+    kernel_memcpy(ipv4->src_ip, netif->ipv4, IPV4_LEN);
+    kernel_memcpy(ipv4->dst_ip, dst_ip, IPV4_LEN);
+    mac_addr dst_mac;
+    kernel_setmac(dst_ip, dst_mac);
+    buff->length += sizeof(ipv4_t) + dlen;
+    eth_build(netif, buff, dst_mac, ETH_TYPE_IPv4, data, dlen);
+}
+
+void ipv4_output(netif_t *netif, desc_buff_t *buff, uint8_t *data, uint16_t dlen)
+{
+    eth_t *eth = (eth_t *)buff->payload;
+    ipv4_t *ipv4 = (ipv4_t *)eth->payload;
+    ipv4->checksum = 0;
+    ipv4->id = (uint16_t)xrandom();
+    ipv4->ttl = 64;
+    kernel_memcpy(ipv4->dst_ip, ipv4->src_ip, IPV4_LEN);
+    kernel_memcpy(ipv4->src_ip, netif->ipv4, IPV4_LEN);
+    eth_output(netif, buff, ETH_TYPE_IPv4, data, dlen);
 }

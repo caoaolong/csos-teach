@@ -48,7 +48,8 @@
         "ipv4.h": "c",
         "inet.h": "c",
         "dhcp.h": "c",
-        "ifnet.h": "c"
+        "ifnet.h": "c",
+        "mio.h": "c"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }

@@ -43,7 +43,6 @@ typedef struct e1000_t {
     char name[NET_DEV_NAME_LEN];
     uint32_t base;
     mac_addr mac;
-	ip_addr ipv4;
     pci_device_t *dev;
     uint8_t eeprom;
 
@@ -63,7 +62,6 @@ desc_buff_t *alloc_desc_buff();
 void desc_buff_init();
 
 void e1000_send_packet(desc_buff_t *buff);
-e1000_t *get_e1000dev();
-void e1000_init();
+e1000_t *e1000_init();
 
 #endif

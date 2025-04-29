@@ -2,7 +2,7 @@
 #define CSOS_NETX_ETH_H
 
 #include <types.h>
-#include <pci/e1000.h>
+#include <netx.h>
 
 #define ETH_TYPE_IPv4   0x0800
 #define ETH_TYPE_ARP    0x0806
@@ -18,7 +18,11 @@ typedef struct eth_t
     uint8_t payload[0];  // 载荷
 } eth_t;
 
-void eth_request(e1000_t *e1000, desc_buff_t *buff, mac_addr target, uint16_t type);
+void eth_input(netif_t *netif, desc_buff_t *buff);
+void eth_output(netif_t *ifnet, desc_buff_t *buff, uint16_t tp, uint8_t *data, uint16_t dlen);
 
-void eth_reply(e1000_t *e1000, desc_buff_t *buff, eth_t *eth);
+void eth_build(netif_t *netif, desc_buff_t *buff, 
+    mac_addr dst_mac, uint16_t type, 
+    uint8_t *data, uint16_t dlen);
+
 #endif

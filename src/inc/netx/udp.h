@@ -12,10 +12,11 @@ typedef struct udp_t {
     uint8_t payload[0];
 } udp_t;
 
-void eth_proc_udp(eth_t *eth, uint16_t length);
+void udp_input(netif_t *netif, desc_buff_t *buff);
+void udp_output(netif_t *netif, desc_buff_t *buff, uint8_t *data, uint16_t dlen);
 
-void udp_request(eth_t *eth, uint16_t sp, uint16_t tp, uint8_t *data, uint16_t dlen);
-void udp_reply(eth_t *eth, uint8_t *data, uint16_t dlen);
-void udp_send(ip_addr dst_ip, uint16_t src_port, uint16_t dst_port, uint8_t *data, uint16_t length);
+void udp_build(netif_t *netif, desc_buff_t *buff, 
+    ip_addr dst_ip, uint16_t src_port, uint16_t dst_port, 
+    uint8_t *data, uint16_t dlen);
 
 #endif

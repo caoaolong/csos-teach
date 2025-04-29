@@ -29,19 +29,11 @@ typedef struct ipv4_t {
     uint8_t payload[0]; // 数据负载
 } ipv4_t;
 
-void eth_proc_ipv4(eth_t *eth, uint16_t length);
+void ipv4_input(netif_t *netif, desc_buff_t *buff);
+void ipv4_output(netif_t *netif, desc_buff_t *buff, uint8_t *data, uint16_t dlen);
 
-void ipv4_request_with_ip(
-    e1000_t *e1000, eth_t *eth, ip_addr src, ip_addr dst, uint8_t proto, 
-    uint8_t *options, uint16_t oplen, 
-    uint8_t *data, uint16_t dlen);
-void ipv4_request(
-    e1000_t *e1000, eth_t *eth, ip_addr dst, uint8_t proto, 
-    uint8_t *options, uint16_t oplen, 
-    uint8_t *data, uint16_t dlen);
-void ipv4_reply(
-    e1000_t *e1000, eth_t *eth, 
-    uint8_t *options, uint16_t oplen,
+void ipv4_build(netif_t *netif, desc_buff_t *buff, 
+    ip_addr dst_ip, uint8_t tp,
     uint8_t *data, uint16_t dlen);
 
 #endif
