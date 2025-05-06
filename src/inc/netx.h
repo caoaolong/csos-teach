@@ -8,11 +8,6 @@
 #include <csos/sem.h>
 #include <pci/e1000.h>
 
-enum {
-    NETIF_STATUS_REQUESTED = 1,
-    NETIF_STATUS_ACK = 2
-};
-
 typedef struct netif_t {
     char name[8];
 
@@ -30,8 +25,13 @@ typedef struct netif_t {
     list_t rx_list; // 接收缓冲区链表
     list_t tx_list; // 发送缓冲区链表
 
-    uint8_t index:6;
-    uint8_t status:2;
+    uint8_t index:4;
+    uint8_t status:4;
+
+    uint8_t timer:4; // 定时器
+    uint8_t period:4; // 周期
+
+    char unused[58];
 } netif_t;
 
 // 将32位网络字节序转换为主机字节序
@@ -73,6 +73,8 @@ int netif_create(ip_addr ip, ip_addr mask, ip_addr gw, mac_addr mac);
 void sys_arpl(arp_map_data_t *arp_data);
 void sys_arpc();
 void sys_ping(const char *ip);
+void sys_ifconf(netif_dev_t *devs, int *devc);
 
 void net_init();
+void net_save();
 #endif

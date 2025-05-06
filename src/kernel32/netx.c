@@ -5,6 +5,7 @@
 #include <netx/ipv4.h>
 #include <netx/icmp.h>
 #include <netx/dhcp.h>
+#include <interrupt.h>
 #include <csos/memory.h>
 #include <csos/string.h>
 
@@ -149,6 +150,24 @@ void sys_ping(const char *ip)
     icmp_build(netif, buff, ICMP_TYPE_ECHO_REQUEST, 0, dst_ip, NULL, 0);
 }
 
+void sys_ifconf(netif_dev_t *devs, int *devc)
+{
+    kernel_memset(devs, 0, sizeof(netif_dev_t) * 4);
+    *devc = 0;
+    for (int i = 0; i < 4; i++) {
+        netif_t *netif = &netifs[i];
+        if (netif->name[0] == 'e' && netif->name[1] == 'n') {
+            kernel_memcpy(devs[*devc].name, netif->name, 8);
+            kernel_memcpy(devs[*devc].ipv4, netif->ipv4, IPV4_LEN);
+            kernel_memcpy(devs[*devc].gwv4, netif->gw, IPV4_LEN);
+            kernel_memcpy(devs[*devc].mask, netif->mask, IPV4_LEN);
+            kernel_memcpy(devs[*devc].mac, netif->mac, MAC_LEN);
+            devs[*devc].status = netif->status;
+            (*devc)++;
+        }
+    }
+}
+
 void inet_pton(const char *ipstr, ip_addr ipv)
 {
     char *p = (char *)ipstr;
@@ -169,7 +188,7 @@ void net_init()
     // 网卡初始化
     e1000_t *e1000 = e1000_init();
     // 初始化虚拟网卡列表
-    kernel_memset(netifs, 0, sizeof(netifs));
+    read_disk(NET_INFO_SECTOR, 1, (uint16_t *)netifs);
     int ret;
     // 创建数据收发线程
     uint32_t netin_stack = alloc_page();
@@ -190,11 +209,19 @@ void net_init()
     }
     // 创建虚拟网卡
     // 本地回环接口: 127.0.0.1/8
-    netif_create("\x7F\x00\x00\x01", "\xFF\x00\x00\x00", "\x00\x00\x00\x00", "\x00\x00\x00\x00\x00\x00");
-    // 默认物理网卡: 192.168.137.100(临时IP)
-    netif_create("\x00\x00\x00\x00", "\x00\x00\x00\x00", "\x00\x00\x00\x00", e1000->mac);
-    // 获取IP地址
-    dhcp_discover(netif_default(), alloc_desc_buff());
+    if (netifs[0].status != NETIF_STATUS_ACK) {
+        netif_create("\x7F\x00\x00\x01", "\xFF\x00\x00\x00", "\x00\x00\x00\x00", "\x00\x00\x00\x00\x00\x00");
+        netifs[0].status = NETIF_STATUS_ACK;
+    }
+    // 默认物理网卡: 0.0.0.0
+    if (netifs[1].status != NETIF_STATUS_ACK) {
+        netif_create("\x00\x00\x00\x00", "\x00\x00\x00\x00", "\x00\x00\x00\x00", e1000->mac);
+    }
+}
+
+void net_save()
+{
+    write_disk(NET_INFO_SECTOR, 1, (uint16_t *)netifs);    
 }
 
 static char netif_name[] = "en?";
@@ -208,6 +235,7 @@ int netif_create(ip_addr ip, ip_addr mask, ip_addr gw, mac_addr mac)
     netif_name[2] = '0' + netif_count;
     netif_t *netif = &netifs[netif_count];
     netif->index = netif_count;
+    netif->period = 4;
     netif_count++;
     kernel_memset(netif, 0, sizeof(netif_t));
     kernel_strcpy(netif->name, netif_name);

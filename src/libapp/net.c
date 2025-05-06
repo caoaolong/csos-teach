@@ -18,3 +18,9 @@ void ping(const char *ip)
     syscall_arg_t args = {SYS_NR_PING, (int)ip, 0, 0, 0};
     _syscall(&args);
 }
+
+void ifconf(netif_dev_t *devs, int *devc)
+{
+    syscall_arg_t args = {SYS_NR_IFCONF, (int)devs, (int)devc, 0, 0};
+    _syscall(&args);
+}

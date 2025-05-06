@@ -37,9 +37,10 @@ static const syscall_handler_t syscall_handler_table[] = {
     [SYS_NR_FREE]       = (syscall_handler_t)task_free,
     [SYS_NR_WAIT]       = (syscall_handler_t)task_wait,
     [SYS_NR_TEST]       = (syscall_handler_t)sys_test,
-    [SYS_NR_ARPL]      = (syscall_handler_t)sys_arpl,
-    [SYS_NR_ARPC]      = (syscall_handler_t)sys_arpc,
-    [SYS_NR_PING]      = (syscall_handler_t)sys_ping,
+    [SYS_NR_ARPL]       = (syscall_handler_t)sys_arpl,
+    [SYS_NR_ARPC]       = (syscall_handler_t)sys_arpc,
+    [SYS_NR_PING]       = (syscall_handler_t)sys_ping,
+    [SYS_NR_IFCONF]     = (syscall_handler_t)sys_ifconf,
 };
 // 远调用实现
 

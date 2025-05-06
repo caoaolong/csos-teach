@@ -121,12 +121,13 @@ void dhcp_offer(netif_t *netif, desc_buff_t *buff)
     kernel_memcpy(netif->dhcp_ipv4, dhcp->yiaddr, IPV4_LEN);
     dhcp_option_t *option = (dhcp_option_t *)dhcp->options;
     while (option->code != DHCP_OPTION_END) {
+        uint8_t len = option->length;
         if (option->code == DHCP_OPTION_ROUTER) {
             kernel_memcpy(netif->dhcp_gw, option->data, IPV4_LEN);
         } else if (option->code == DHCP_OPTION_SUBNET_MASK) {
             kernel_memcpy(netif->dhcp_mask, option->data, IPV4_LEN);
         }
-        option += sizeof(dhcp_option_t) + option->length;
+        option = (dhcp_option_t *)(((uint8_t *)option) + sizeof(dhcp_option_t) + len);
     }
     netif->status = NETIF_STATUS_REQUESTED;
 }
@@ -137,5 +138,5 @@ void dhcp_ack(netif_t *netif, desc_buff_t *buff)
     kernel_memcpy(netif->mask, netif->dhcp_mask, IPV4_LEN);
     kernel_memcpy(netif->ipv4, netif->dhcp_ipv4, IPV4_LEN);
     netif->status = NETIF_STATUS_ACK;
-    write_disk(NET_INFO_SECTOR + netif->index, 1, (uint16_t *)netif);
+    net_save();
 }

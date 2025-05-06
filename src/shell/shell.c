@@ -18,6 +18,7 @@ static int cmd_exec_exit(struct shell_t *shell);
 static int cmd_exec_test(struct shell_t *shell);
 static int cmd_exec_arp(struct shell_t *shell);
 static int cmd_exec_ping(struct shell_t *shell);
+static int cmd_exec_ifconf(struct shell_t *shell);
 
 static shell_cmd_t cmd_list[] = {
     {
@@ -81,6 +82,11 @@ static shell_cmd_t cmd_list[] = {
         .name = "ping",
         .usage = "ping\tsend the ICMPv4 packet to target <ip>",
         .cmd_exec = cmd_exec_ping
+    },
+    {
+        .name = "ifconfig",
+        .usage = "ifconfig\tshow all netif device info",
+        .cmd_exec = cmd_exec_ifconf
     },
     {
         .name = "test",
@@ -365,5 +371,29 @@ static int cmd_exec_ping(struct shell_t *shell)
     for (int i = 0; i < 4; i++) {
         ping(ip);
         sleep(1000); // 等待1秒
+    }
+}
+
+static int cmd_exec_ifconf(struct shell_t *shell)
+{
+    netif_dev_t *devs = (netif_dev_t *)malloc(sizeof(netif_dev_t) * 4);
+    int devc;
+    ifconf(devs, &devc);
+    for (int i = 0; i < devc; i++) {
+        netif_dev_t *dev = &devs[i];
+        printf("%s: Status: ", dev->name);
+        if (dev->status == NETIF_STATUS_DOWN) {
+            printf("\033[34;40mDown\033[0m\n");
+        } else if (dev->status == NETIF_STATUS_REQUESTED) {
+            printf("\033[36;40mLinking...\033[0m\n");
+        } else if (dev->status == NETIF_STATUS_ACK) {
+            printf("\033[32;40mUp\033[0m\n");
+        }
+        printf("    IPv4 Address: %d.%d.%d.%d, Subnet Mask: %d.%d.%d.%d\n", 
+            dev->ipv4[0], dev->ipv4[1], dev->ipv4[2], dev->ipv4[3],
+            dev->mask[0], dev->mask[1], dev->mask[2], dev->mask[3]);
+        printf("    Gateway IPv4 Address: %d.%d.%d.%d\n", dev->gwv4[0], dev->gwv4[1], dev->gwv4[2], dev->gwv4[3]);
+        printf("    Client Mac Address: %02X:%02X:%02X:%02X:%02X:%02X\n", 
+            dev->mac[0], dev->mac[1], dev->mac[2], dev->mac[3], dev->mac[4], dev->mac[5]);
     }
 }

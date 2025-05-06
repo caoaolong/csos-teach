@@ -4,6 +4,7 @@
 #include <netx.h>
 #include <kernel.h>
 #include <interrupt.h>
+#include <netx/dhcp.h>
 #include <csos/stdlib.h>
 #include <csos/time.h>
 
@@ -28,6 +29,14 @@ void handler_rtc(interrupt_frame_t* frame)
     if (arp_map->timer == arp_map->period) {
         flush_arp_map();
         arp_map->timer = 0;
+    }
+    netif_t *netif = netif_default();
+    netif->timer++;
+    if (netif->timer == netif->period) {
+        if (netif->status != NETIF_STATUS_ACK) {
+            dhcp_discover(netif, alloc_desc_buff());
+        }
+        netif->timer = 0;
     }
     send_eoi(IRQ1_RTC);
     cmos_read(CMOS_C);
