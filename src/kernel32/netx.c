@@ -4,6 +4,7 @@
 #include <netx/eth.h>
 #include <netx/ipv4.h>
 #include <netx/icmp.h>
+#include <netx/dhcp.h>
 #include <csos/memory.h>
 #include <csos/string.h>
 
@@ -191,7 +192,9 @@ void net_init()
     // 本地回环接口: 127.0.0.1/8
     netif_create("\x7F\x00\x00\x01", "\xFF\x00\x00\x00", "\x00\x00\x00\x00", "\x00\x00\x00\x00\x00\x00");
     // 默认物理网卡: 192.168.137.100(临时IP)
-    netif_create("\xC0\xA8\x89\x64", "\xFF\xFF\xFF\x00", "\xC0\xA8\x89\x01", e1000->mac);
+    netif_create("\x00\x00\x00\x00", "\x00\x00\x00\x00", "\x00\x00\x00\x00", e1000->mac);
+    // 获取IP地址
+    dhcp_discover(netif_default(), alloc_desc_buff());
 }
 
 static char netif_name[] = "en?";
@@ -203,7 +206,9 @@ int netif_create(ip_addr ip, ip_addr mask, ip_addr gw, mac_addr mac)
         return -1; // 超过最大网卡数量
     }
     netif_name[2] = '0' + netif_count;
-    netif_t *netif = &netifs[netif_count++];
+    netif_t *netif = &netifs[netif_count];
+    netif->index = netif_count;
+    netif_count++;
     kernel_memset(netif, 0, sizeof(netif_t));
     kernel_strcpy(netif->name, netif_name);
     kernel_memcpy(netif->ipv4, ip, IPV4_LEN);

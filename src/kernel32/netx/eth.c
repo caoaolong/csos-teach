@@ -56,6 +56,10 @@ void eth_input(netif_t *netif, desc_buff_t *buff)
 {
     eth_t *eth = (eth_t *)buff->payload;
     logf("Receive packet: %d bytes", buff->length);
+    if (kernel_memcmp(eth->dst, netif->mac, MAC_LEN)) {
+        free_desc_buff(buff);
+        return;
+    }
     switch (ntohs(eth->type)) {
         case ETH_TYPE_ARP:
             arp_input(netif, buff);

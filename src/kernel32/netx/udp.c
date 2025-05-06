@@ -1,6 +1,7 @@
 #include <netx.h>
 #include <netx/eth.h>
 #include <netx/udp.h>
+#include <netx/dhcp.h>
 #include <logf.h>
 #include <csos/string.h>
 
@@ -43,8 +44,13 @@ void udp_input(netif_t *netif, desc_buff_t *buff)
     eth_t *eth = (eth_t *)buff->payload;
     ipv4_t *ipv4 = (ipv4_t *)eth->payload;
     udp_t *udp = (udp_t *)ipv4->payload;
-    logf("UDP %d -> %d", ntohs(udp->src_port), ntohs(udp->dst_port));
-    free_desc_buff(buff);
+    uint16_t sp = ntohs(udp->src_port);
+    uint16_t tp = ntohs(udp->dst_port);
+    if (sp == DHCP_SERVER_PORT && tp == DHCP_CLIENT_PORT) {
+        dhcp_input(netif, buff);
+    } else {
+        free_desc_buff(buff);
+    }
 }
 
 void udp_output(netif_t *netif, desc_buff_t *buff, uint8_t *data, uint16_t dlen)

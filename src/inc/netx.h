@@ -8,16 +8,30 @@
 #include <csos/sem.h>
 #include <pci/e1000.h>
 
+enum {
+    NETIF_STATUS_REQUESTED = 1,
+    NETIF_STATUS_ACK = 2
+};
+
 typedef struct netif_t {
     char name[8];
 
     mac_addr mac; // 网卡MAC地址
+    mac_addr gw_mac; // 网关MAC地址
+    
     ip_addr ipv4; // 网卡IP地址
     ip_addr mask; // 子网掩码
-    ip_addr gw;   // 网关地址
+    ip_addr gw;   // 网关IPv4地址
+
+    ip_addr dhcp_ipv4;
+    ip_addr dhcp_mask;
+    ip_addr dhcp_gw;
 
     list_t rx_list; // 接收缓冲区链表
     list_t tx_list; // 发送缓冲区链表
+
+    uint8_t index:6;
+    uint8_t status:2;
 } netif_t;
 
 // 将32位网络字节序转换为主机字节序

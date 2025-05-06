@@ -51,6 +51,10 @@ void flush_arp_map()
 
 void kernel_setmac(ip_addr ip, mac_addr mac)
 {
+    if (!kernel_memcmp(ip, "\xFF\xFF\xFF\xFF", IPV4_LEN)) {
+        kernel_memcpy(mac, "\xFF\xFF\xFF\xFF\xFF\xFF", MAC_LEN);
+        return;
+    }
     mac_addr gateway;
     // 1. 首先查询本地ARP缓存中是否有这个IP地址所对应的MAC地址
     BOOL found = FALSE;

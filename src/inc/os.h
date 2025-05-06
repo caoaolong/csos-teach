@@ -17,5 +17,6 @@
 #define SECTOR_SIZE             512
 
 #define ARP_MAP_SECTOR          4000
+#define NET_INFO_SECTOR         4001
 
 #endif
