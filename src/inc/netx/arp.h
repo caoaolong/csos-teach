@@ -23,6 +23,6 @@ typedef struct arp_t {
 void arp_input(netif_t *netif, desc_buff_t *buff);
 void arp_output(netif_t *netif, desc_buff_t *buff);
 
-void arp_build(netif_t *netif, desc_buff_t *buff);
+void arp_build(netif_t *netif, desc_buff_t *buff, ip_addr dst_ip);
 
 #endif

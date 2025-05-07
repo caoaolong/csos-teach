@@ -49,7 +49,7 @@ void flush_arp_map()
     protect_exit(ps);
 }
 
-void kernel_setmac(ip_addr ip, mac_addr mac)
+void kernel_setmac(netif_t *netif, ip_addr ip, mac_addr mac)
 {
     if (!kernel_memcmp(ip, "\xFF\xFF\xFF\xFF", IPV4_LEN)) {
         kernel_memcpy(mac, "\xFF\xFF\xFF\xFF\xFF\xFF", MAC_LEN);
@@ -69,7 +69,8 @@ void kernel_setmac(ip_addr ip, mac_addr mac)
         }
         // 如果没有找到，则发送ARP请求
         if (!found) {
-            logf("can't find the mac of %d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
+            arp_build(netif, alloc_desc_buff(), ip);
+            try_count--;
             return;
         }
     }

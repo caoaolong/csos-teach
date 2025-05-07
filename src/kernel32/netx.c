@@ -188,7 +188,8 @@ void net_init()
     // 网卡初始化
     e1000_t *e1000 = e1000_init();
     // 初始化虚拟网卡列表
-    read_disk(NET_INFO_SECTOR, 1, (uint16_t *)netifs);
+    kernel_memset(netifs, 0, sizeof(netifs));
+    // read_disk(NET_INFO_SECTOR, 1, (uint16_t *)netifs);
     int ret;
     // 创建数据收发线程
     uint32_t netin_stack = alloc_page();
@@ -209,14 +210,9 @@ void net_init()
     }
     // 创建虚拟网卡
     // 本地回环接口: 127.0.0.1/8
-    if (netifs[0].status != NETIF_STATUS_ACK) {
-        netif_create("\x7F\x00\x00\x01", "\xFF\x00\x00\x00", "\x00\x00\x00\x00", "\x00\x00\x00\x00\x00\x00");
-        netifs[0].status = NETIF_STATUS_ACK;
-    }
+    netif_create("\x7F\x00\x00\x01", "\xFF\x00\x00\x00", "\x00\x00\x00\x00", "\x00\x00\x00\x00\x00\x00");
     // 默认物理网卡: 0.0.0.0
-    if (netifs[1].status != NETIF_STATUS_ACK) {
-        netif_create("\x00\x00\x00\x00", "\x00\x00\x00\x00", "\x00\x00\x00\x00", e1000->mac);
-    }
+    netif_create("\x00\x00\x00\x00", "\x00\x00\x00\x00", "\x00\x00\x00\x00", e1000->mac);
 }
 
 void net_save()
@@ -237,12 +233,14 @@ int netif_create(ip_addr ip, ip_addr mask, ip_addr gw, mac_addr mac)
     netif->index = netif_count;
     netif->period = 4;
     netif_count++;
-    kernel_memset(netif, 0, sizeof(netif_t));
-    kernel_strcpy(netif->name, netif_name);
-    kernel_memcpy(netif->ipv4, ip, IPV4_LEN);
-    kernel_memcpy(netif->mask, mask, IPV4_LEN);
-    kernel_memcpy(netif->gw, gw, IPV4_LEN);
-    kernel_memcpy(netif->mac, mac, MAC_LEN);
+    if (netif->status != NETIF_STATUS_ACK) {
+        kernel_memset(netif, 0, sizeof(netif_t));
+        kernel_strcpy(netif->name, netif_name);
+        kernel_memcpy(netif->ipv4, ip, IPV4_LEN);
+        kernel_memcpy(netif->mask, mask, IPV4_LEN);
+        kernel_memcpy(netif->gw, gw, IPV4_LEN);
+        kernel_memcpy(netif->mac, mac, MAC_LEN);
+    }
     list_init(&netif->rx_list);
     list_init(&netif->tx_list);
     return 0;

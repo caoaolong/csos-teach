@@ -56,7 +56,7 @@ void eth_input(netif_t *netif, desc_buff_t *buff)
 {
     eth_t *eth = (eth_t *)buff->payload;
     logf("Receive packet: %d bytes", buff->length);
-    if (kernel_memcmp(eth->dst, netif->mac, MAC_LEN)) {
+    if (kernel_memcmp(eth->dst, netif->mac, MAC_LEN) && kernel_memcmp(eth->dst, "\xFF\xFF\xFF\xFF\xFF\xFF", MAC_LEN)) {
         free_desc_buff(buff);
         return;
     }

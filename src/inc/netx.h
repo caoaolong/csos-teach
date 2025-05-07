@@ -62,6 +62,8 @@ static inline uint16_t htons(uint16_t hostshort) {
            ((hostshort & 0x00FF) << 8);
 }
 
+void kernel_setmac(netif_t *netif, ip_addr ip, mac_addr mac);
+
 uint16_t calc_checksum(uint8_t *data, uint32_t length);
 void inet_pton(const char *ipstr, ip_addr ipv);
 

@@ -367,11 +367,7 @@ static int cmd_exec_arp(struct shell_t *shell)
 
 static int cmd_exec_ping(struct shell_t *shell)
 {
-    char *ip = shell_get_arg(shell);
-    for (int i = 0; i < 4; i++) {
-        ping(ip);
-        sleep(1000); // 等待1秒
-    }
+    ping(shell_get_arg(shell));
 }
 
 static int cmd_exec_ifconf(struct shell_t *shell)

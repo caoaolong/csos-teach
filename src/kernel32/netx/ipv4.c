@@ -50,7 +50,7 @@ void ipv4_build(netif_t *netif, desc_buff_t *buff,
     kernel_memcpy(ipv4->src_ip, netif->ipv4, IPV4_LEN);
     kernel_memcpy(ipv4->dst_ip, dst_ip, IPV4_LEN);
     mac_addr dst_mac;
-    kernel_setmac(dst_ip, dst_mac);
+    kernel_setmac(netif, dst_ip, dst_mac);
     buff->length += sizeof(ipv4_t);
     eth_build(netif, buff, dst_mac, ETH_TYPE_IPv4, data, dlen);
 }

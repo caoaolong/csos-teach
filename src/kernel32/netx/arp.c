@@ -20,13 +20,20 @@ void arp_input(netif_t *netif, desc_buff_t *buff)
     free_desc_buff(buff);
 }
 
-void arp_build(netif_t *netif, desc_buff_t *buff)
+void arp_build(netif_t *netif, desc_buff_t *buff, ip_addr dst_ip)
 {
     eth_t *eth = (eth_t *)buff->payload;
     arp_t *arp = (arp_t *)eth->payload;
-    kernel_memcpy(arp->dst_mac, "\xFF\xFF\xFF\xFF\xFF\xFF", MAC_LEN);
-    kernel_memset(arp->dst_ip, 0, IPV4_LEN);
-    eth_build(netif, buff, arp->dst_mac, ETH_TYPE_ARP, NULL, 0);
+    arp->hw_type = htons(1);
+    arp->hw_size = 6;
+    arp->proto_type = htons(ETH_TYPE_IPv4);
+    arp->proto_size = 4;
+    arp->op = htons(ARP_OP_REQUEST);
+    kernel_memset(arp->dst_mac, 0, MAC_LEN); // 目标MAC地址
+    kernel_memcpy(arp->dst_ip, dst_ip, IPV4_LEN); // 目标IP地址
+    kernel_memcpy(arp->src_mac, netif->mac, MAC_LEN); // 源MAC地址
+    kernel_memcpy(arp->src_ip, netif->ipv4, IPV4_LEN); // 源IP地址
+    eth_build(netif, buff, "\xFF\xFF\xFF\xFF\xFF\xFF", ETH_TYPE_ARP, NULL, sizeof(arp_t));
 }
 
 void arp_output(netif_t *netif, desc_buff_t *buff)

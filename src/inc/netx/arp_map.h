@@ -27,7 +27,6 @@ arp_map_t *get_arp_map();
 void put_arp_map(ip_addr ip, mac_addr mac);
 void flush_arp_map();
 void clear_arp_map();
-void kernel_setmac(ip_addr ip, mac_addr mac);
 
 void arp_map_init();
 
