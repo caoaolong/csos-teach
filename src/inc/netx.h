@@ -6,7 +6,18 @@
 #include <netx/arp_map.h>
 #include <netx/inet.h>
 #include <csos/sem.h>
-#include <pci/e1000.h>
+
+enum {
+	DBT_UNK, DBT_ARP, DBT_ICMP
+};
+
+typedef struct desc_buff_t
+{
+	list_node_t node;
+	uint16_t length;
+	uint32_t refp;
+	uint8_t payload[0];
+} desc_buff_t;
 
 typedef struct netif_t {
     char name[8];
@@ -24,6 +35,7 @@ typedef struct netif_t {
 
     list_t rx_list; // 接收缓冲区链表
     list_t tx_list; // 发送缓冲区链表
+    list_t wait_list; // 等待队列
 
     uint8_t index:4;
     uint8_t status:4;
@@ -62,7 +74,19 @@ static inline uint16_t htons(uint16_t hostshort) {
            ((hostshort & 0x00FF) << 8);
 }
 
-void kernel_setmac(netif_t *netif, ip_addr ip, mac_addr mac);
+static inline uint32_t ip2uint32(ip_addr ip) {
+    return ((uint32_t)ip[0] << 24) | 
+           ((uint32_t)ip[1] << 16) | 
+           ((uint32_t)ip[2] << 8)  | 
+           (uint32_t)ip[3];
+}
+
+void free_desc_buff(desc_buff_t *buff);
+desc_buff_t *alloc_desc_buff();
+void reply_desc_buff(netif_t *netif, desc_buff_t *buff, uint8_t type);
+void desc_buff_init();
+
+BOOL kernel_setmac(netif_t *netif, ip_addr ip, mac_addr mac);
 
 uint16_t calc_checksum(uint8_t *data, uint32_t length);
 void inet_pton(const char *ipstr, ip_addr ipv);

@@ -15,9 +15,7 @@ void icmp_input(netif_t *netif, desc_buff_t *buff)
     if (icmp->type == ICMP_TYPE_ECHO_REQUEST) {
         icmp_output(netif, buff, NULL, 0);
     } else if (icmp->type == ICMP_TYPE_ECHO_REPLY) {
-        logf("ICMPv4 Reply: from: %d.%d.%d.%d, length: %d, ttl: %d",
-            ipv4->src_ip[0], ipv4->src_ip[1], ipv4->src_ip[2], ipv4->src_ip[3],
-            ntohs(ipv4->total_len), ipv4->ttl);
+        reply_desc_buff(netif, buff, DBT_ICMP);
     }
     // 释放缓冲区
     free_desc_buff(buff);

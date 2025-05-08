@@ -9,6 +9,7 @@ void arp_input(netif_t *netif, desc_buff_t *buff)
     uint16_t op = ntohs(arp->op);
     if (op == ARP_OP_REPLY) {
         put_arp_map(arp->src_ip, arp->src_mac); // 保存ARP映射
+        reply_desc_buff(netif, buff, DBT_ARP);
         return;
     } else if (op == ARP_OP_REQUEST) {
         if (!kernel_memcmp(arp->dst_ip, netif->ipv4, IPV4_LEN)) {

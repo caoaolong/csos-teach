@@ -5,6 +5,7 @@
 #include <netx/ipv4.h>
 #include <netx/icmp.h>
 #include <netx/dhcp.h>
+#include <pci/e1000.h>
 #include <interrupt.h>
 #include <csos/memory.h>
 #include <csos/string.h>
@@ -122,6 +123,7 @@ void netif_output(desc_buff_t *buff)
     netif_t *netif = find_netif(eth->src);
     if (netif) {
         list_insert_back(&netif->tx_list, &buff->node);
+        list_insert_back(&netif->wait_list, &buff->node);
         sem_notify(&netout_sem);
     } else {
         free_desc_buff(buff);
@@ -148,6 +150,16 @@ void sys_ping(const char *ip)
     netif_t *netif = netif_default();
     desc_buff_t *buff = alloc_desc_buff();
     icmp_build(netif, buff, ICMP_TYPE_ECHO_REQUEST, 0, dst_ip, NULL, 0);
+    while (buff->refp == 0) {
+        task_sleep(100);
+    }
+    desc_buff_t *rbuff = (desc_buff_t *)buff->refp;
+    eth_t *eth = (eth_t *)rbuff->payload;
+    ipv4_t *ipv4 = (ipv4_t *)eth->payload;
+    icmp_echo_t *icmp = (icmp_echo_t *)ipv4->payload;
+    logf("ICMPv4 Reply: from: %d.%d.%d.%d, length: %d, ttl: %d, data: %s",
+        ipv4->src_ip[0], ipv4->src_ip[1], ipv4->src_ip[2], ipv4->src_ip[3],
+        ntohs(ipv4->total_len), ipv4->ttl, (char *)icmp->payload);
 }
 
 void sys_ifconf(netif_dev_t *devs, int *devc)
@@ -188,8 +200,8 @@ void net_init()
     // 网卡初始化
     e1000_t *e1000 = e1000_init();
     // 初始化虚拟网卡列表
-    kernel_memset(netifs, 0, sizeof(netifs));
-    // read_disk(NET_INFO_SECTOR, 1, (uint16_t *)netifs);
+    // kernel_memset(netifs, 0, sizeof(netifs));
+    read_disk(NET_INFO_SECTOR, 1, (uint16_t *)netifs);
     int ret;
     // 创建数据收发线程
     uint32_t netin_stack = alloc_page();
@@ -243,5 +255,6 @@ int netif_create(ip_addr ip, ip_addr mask, ip_addr gw, mac_addr mac)
     }
     list_init(&netif->rx_list);
     list_init(&netif->tx_list);
+    list_init(&netif->wait_list);
     return 0;
 }

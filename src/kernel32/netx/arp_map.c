@@ -8,6 +8,34 @@
 
 arp_map_t arp_map; // ARP映射表
 
+static BOOL find_mac(ip_addr ip, mac_addr mac)
+{
+    for (int i = 0; i < arp_map.data.idx; i++) {
+        if (!kernel_memcmp(arp_map.data.items[i].ip, ip, IPV4_LEN)) {
+            kernel_memcpy(mac, arp_map.data.items[i].mac, MAC_LEN);
+            return TRUE;
+        }
+    }
+    return FALSE;
+}
+
+static BOOL ask_mac(netif_t *netif, ip_addr ip, mac_addr mac, uint8_t tryc)
+{
+    while (tryc--) {
+        desc_buff_t *buff = alloc_desc_buff();
+        arp_build(netif, buff, ip);
+        while (buff->refp == 0) {
+            task_sleep(100);
+        }
+        desc_buff_t *rbuff = (desc_buff_t *)buff->refp;
+        eth_t *eth = (eth_t *)rbuff->payload;
+        arp_t *arp = (arp_t *)eth->payload;
+        kernel_memcpy(mac, arp->src_mac, MAC_LEN);
+        return TRUE;
+    }
+    return FALSE;
+}
+
 arp_map_t *get_arp_map()
 {
     return &arp_map;
@@ -49,31 +77,38 @@ void flush_arp_map()
     protect_exit(ps);
 }
 
-void kernel_setmac(netif_t *netif, ip_addr ip, mac_addr mac)
+BOOL kernel_setmac(netif_t *netif, ip_addr ip, mac_addr mac)
 {
+    // 如果是广播则直接返回广播的MAC地址
     if (!kernel_memcmp(ip, "\xFF\xFF\xFF\xFF", IPV4_LEN)) {
         kernel_memcpy(mac, "\xFF\xFF\xFF\xFF\xFF\xFF", MAC_LEN);
-        return;
+        return TRUE;
     }
-    mac_addr gateway;
-    // 1. 首先查询本地ARP缓存中是否有这个IP地址所对应的MAC地址
-    BOOL found = FALSE;
-    uint8_t try_count = 3;
-    while ((!found) && try_count > 0) {
-        for (int i = 0; i < arp_map.data.idx; i++) {
-            if (!kernel_memcmp(arp_map.data.items[i].ip, ip, IPV4_LEN)) {
-                kernel_memcpy(mac, arp_map.data.items[i].mac, MAC_LEN);
-                found = TRUE;
-                break;
-            }
+    // 判断目标IP地址是否处于同一子网内
+    uint32_t mask = ip2uint32(netif->mask);
+    uint32_t ipm = ip2uint32(ip) & mask;
+    uint32_t selfm = ip2uint32(netif->ipv4) & mask;
+    if (ipm == selfm) {
+        // 查找目标主机的MAC地址
+        if (find_mac(ip, mac)) {
+            return TRUE;
         }
-        // 如果没有找到，则发送ARP请求
-        if (!found) {
-            arp_build(netif, alloc_desc_buff(), ip);
-            try_count--;
-            return;
+        // 请求目标主机的MAC地址
+        if (ask_mac(netif, ip, mac, 3)) {
+            return TRUE;
+        }
+    } else {
+        // 查找网关的MAC地址
+        if (find_mac(netif->gw, mac)) {
+            return TRUE;
+        }
+        // 请求网关的MAC地址
+        if (ask_mac(netif, ip, mac, 3)) {
+            return TRUE;
         }
     }
+    logf("can't find the mac of %d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
+    return FALSE;
 }
 
 void arp_map_init()

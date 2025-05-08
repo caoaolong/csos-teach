@@ -322,10 +322,6 @@ static void send_packet(eth_t *eth, uint16_t length)
 {
     uint32_t membase = e1000.dev->bar[0].iobase;
     tx_desc_t *tx = &e1000.tx[e1000.tx_now];
-    while (tx->sta == 0) {
-        e1000.tx_waiter = get_running_task();
-        task_set_block(e1000.tx_waiter);
-    }
     tx->address = (uint64_t)(void *)eth;
     tx->length = length;
     tx->cmd = TCMD_EOP | TCMD_RPS | TCMD_RS | TCMD_IFCS;
@@ -345,11 +341,6 @@ void handler_e1000(interrupt_frame_t* frame)
     // 传输描述符写回，表示有一个数据包发送完毕
     if (status & IMS_TXDW)
     {
-        if (e1000.tx_waiter)
-        {
-            task_set_ready(e1000.tx_waiter);
-            e1000.tx_waiter = NULL;
-        }
     }
     // 传输队列为空，并且传输进程阻塞
     if (status & IMS_TXQE)
