@@ -46,5 +46,5 @@ void arp_output(netif_t *netif, desc_buff_t *buff)
     kernel_memcpy(arp->dst_ip, arp->src_ip, IPV4_LEN); // 目标IP地址
     kernel_memcpy(arp->src_mac, netif->mac, MAC_LEN); // 源MAC地址
     kernel_memcpy(arp->src_ip, netif->ipv4, IPV4_LEN); // 源IP地址
-    eth_output(netif, buff, ETH_TYPE_ARP, NULL, 0);
+    eth_output(netif, buff, NULL, 0);
 }

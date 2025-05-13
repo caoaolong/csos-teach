@@ -8,7 +8,7 @@
 #include <csos/sem.h>
 
 enum {
-	DBT_UNK, DBT_ARP, DBT_ICMP
+	DBT_UNK, DBT_ARP, DBT_ICMP, DBT_UDP, DBT_TCP
 };
 
 typedef struct desc_buff_t

@@ -19,7 +19,7 @@ typedef struct eth_t
 } eth_t;
 
 void eth_input(netif_t *netif, desc_buff_t *buff);
-void eth_output(netif_t *ifnet, desc_buff_t *buff, uint16_t tp, uint8_t *data, uint16_t dlen);
+void eth_output(netif_t *ifnet, desc_buff_t *buff, uint8_t *data, uint16_t dlen);
 
 void eth_build(netif_t *netif, desc_buff_t *buff, 
     mac_addr dst_mac, uint16_t type, 

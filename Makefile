@@ -68,6 +68,7 @@ $(BUILD)/kernel32.elf: $(BUILD)/kernel32/start.o \
 	$(BUILD)/kernel32/netx/icmp.o \
 	$(BUILD)/kernel32/netx/udp.o \
 	$(BUILD)/kernel32/netx/dhcp.o \
+	$(BUILD)/kernel32/netx/tcp.o \
 	$(BUILD)/kernel32/netx/arp_map.o \
 	$(BUILD)/lib/string.o \
 	$(BUILD)/lib/stdio.o \

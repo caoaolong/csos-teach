@@ -3,6 +3,7 @@
 #include <netx/ipv4.h>
 #include <netx/udp.h>
 #include <netx/icmp.h>
+#include <netx/tcp.h>
 #include <logf.h>
 #include <csos/string.h>
 
@@ -23,6 +24,9 @@ static void netif_set_payload(desc_buff_t *buff, uint8_t *data, uint16_t dlen)
         } else if (ipv4->proto == IP_TYPE_UDP) {
             udp_t *udp = (udp_t *)(pd + ipv4l);
             kernel_memcpy(udp->payload, data, dlen);
+        } else if (ipv4->proto == IP_TYPE_TCP) {
+            tcp_t *tcp = (tcp_t *)(pd + ipv4l);
+            kernel_memcpy(tcp->payload, data, dlen);
         }
     }
     buff->length += dlen;
@@ -48,6 +52,10 @@ static void netif_set_checksum(desc_buff_t *buff, uint8_t *data, uint16_t dlen)
             pd += ipv4l;
             udp_t *udp = (udp_t *)pd;
             udp->checksum = calc_udp_checksum(ipv4, udp, udp->payload, dlen);
+        } else if (ipv4->proto == IP_TYPE_TCP) {
+            pd += ipv4l;
+            tcp_t *tcp = (tcp_t *)pd;
+            tcp->checksum = calc_tcp_checksum(ipv4, tcp, tcp->payload, dlen);
         }
     }
 }
@@ -92,14 +100,12 @@ void eth_build(netif_t *netif, desc_buff_t *buff,
     netif_output(buff);
 }
 
-void eth_output(netif_t *ifnet, desc_buff_t *buff, uint16_t tp, uint8_t *data, uint16_t dlen)
+void eth_output(netif_t *ifnet, desc_buff_t *buff, uint8_t *data, uint16_t dlen)
 {
     eth_t *eth = (eth_t *)buff->payload;
-    eth->type = htons(tp);
     kernel_memcpy(eth->dst, eth->src, MAC_LEN);
     kernel_memcpy(eth->src, ifnet->mac, MAC_LEN);
-
-    dlen = buff->length - sizeof(eth_t) - sizeof(ipv4_t) - sizeof(icmp_echo_t);
+    netif_set_payload(buff, data, dlen);
     netif_set_checksum(buff, data, dlen);
     netif_output(buff);
 }
