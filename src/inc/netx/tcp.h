@@ -42,9 +42,9 @@ void tcp_build(netif_t *netif, desc_buff_t *buff,
     ip_addr dst_ip, uint16_t src_port, uint16_t dst_port, 
     uint8_t *data, uint16_t dlen);
 
-void tcp_syn(netif_t *netif, desc_buff_t *buff, 
-    ip_addr dst_ip, uint16_t src_port, uint16_t dst_port);
+void tcp_syn(netif_t *netif, desc_buff_t *buff, ip_addr dst_ip);
 void tcp_synack(netif_t *netif, desc_buff_t *buff);
+void tcp_finack(netif_t *netif, desc_buff_t *buff, ip_addr dst_ip);
 void tcp_ack(netif_t *netif, desc_buff_t *buff);
 
 #endif
