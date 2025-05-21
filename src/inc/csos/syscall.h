@@ -41,6 +41,7 @@
 #define SYS_NR_ARPC         33
 #define SYS_NR_PING         34
 #define SYS_NR_IFCONF       35
+#define SYS_NR_ENUM_PORT    36
 
 #define SYSCALL_LCALL
 

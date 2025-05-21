@@ -41,6 +41,7 @@ static const syscall_handler_t syscall_handler_table[] = {
     [SYS_NR_ARPC]       = (syscall_handler_t)sys_arpc,
     [SYS_NR_PING]       = (syscall_handler_t)sys_ping,
     [SYS_NR_IFCONF]     = (syscall_handler_t)sys_ifconf,
+    [SYS_NR_ENUM_PORT]  = (syscall_handler_t)sys_enum_port,
 };
 // 远调用实现
 

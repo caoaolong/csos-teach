@@ -1,3 +1,4 @@
+#include <logf.h>
 #include <netx.h>
 #include <netx/eth.h>
 #include <netx/ipv4.h>
@@ -139,4 +140,12 @@ void dhcp_ack(netif_t *netif, desc_buff_t *buff)
     kernel_memcpy(netif->ipv4, netif->dhcp_ipv4, IPV4_LEN);
     netif->status = NETIF_STATUS_ACK;
     net_save();
+}
+
+void dhcp_init(netif_t *netif)
+{
+    if (alloc_port(DHCP_CLIENT_PORT, netif, DBT_UDP)) {
+        logf("DHCP client port %d is already in use", DHCP_CLIENT_PORT);
+        return;
+    }
 }

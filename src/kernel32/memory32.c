@@ -235,6 +235,11 @@ uint32_t alloc_page()
     return memory32_alloc_page(&memory32_info, 1);
 }
 
+uint32_t alloc_pages(uint32_t size)
+{
+    return memory32_alloc_page(&memory32_info, size);
+}
+
 void free_page(uint32_t addr)
 {
     if (addr < (uint32_t)VM_SHELL_BASE) {
@@ -253,7 +258,7 @@ void free_page(uint32_t addr)
     }
 }
 
-int alloc_pages(uint32_t pde, uint32_t index, uint32_t size, uint32_t perm)
+int alloc_task_pages(uint32_t pde, uint32_t index, uint32_t size, uint32_t perm)
 {
     return memory32_alloc_task_pages(pde, index, size, perm);
 }

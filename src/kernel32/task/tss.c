@@ -122,7 +122,7 @@ void default_tss_task_init()
     tss_task_queue.running_task = &tss_task_queue.default_task;
     uint32_t pde = tss_task_queue.default_task.tss.cr3;
     set_pde(pde);
-    alloc_pages(pde, init_start, alloc_size, PTE_P | PTE_W | PTE_U);
+    alloc_task_pages(pde, init_start, alloc_size, PTE_P | PTE_W | PTE_U);
     kernel_memcpy((void *)init_start, (void *)b_init_task, copy_size);
 }
 
@@ -250,7 +250,7 @@ static uint32_t load_elf_file(task_t *task, const char *name, uint32_t pde)
         buffer += sizeof(Elf32_Phdr);
         if ((elf_phdr.p_type != 1) || (elf_phdr.p_vaddr < VM_TASK_BASE))
             continue;
-        int err = alloc_pages(pde, elf_phdr.p_vaddr, elf_phdr.p_memsz, PTE_P | PTE_U | PTE_W);
+        int err = alloc_task_pages(pde, elf_phdr.p_vaddr, elf_phdr.p_memsz, PTE_P | PTE_U | PTE_W);
         if (err < 0) return -1;
         buffer = SHELL_TMP + elf_phdr.p_offset;
         uint32_t vaddr = elf_phdr.p_vaddr;
@@ -306,7 +306,7 @@ int tss_task_execve(char *name, char *argv[], char *env[])
         return -1;
     }
     uint32_t stack_top = VM_SHELL_STACK - VM_SHELL_ARGS_SIZE;
-    if (alloc_pages(new_pde, VM_SHELL_STACK - VM_SHELL_STACK_SIZE, VM_SHELL_STACK_SIZE, PTE_U | PTE_W | PTE_P) < 0) {
+    if (alloc_task_pages(new_pde, VM_SHELL_STACK - VM_SHELL_STACK_SIZE, VM_SHELL_STACK_SIZE, PTE_U | PTE_W | PTE_P) < 0) {
         task->tss.cr3 = old_pde;
         set_pde(old_pde);
         destroy_pde(old_pde);
@@ -372,7 +372,7 @@ uint8_t *tss_task_sbrk(uint32_t size)
 
     if (size) {
         uint32_t cs = stop - start;
-        if (alloc_pages(task->tss.cr3, start, cs, PTE_P | PTE_U | PTE_W) < 0) {
+        if (alloc_task_pages(task->tss.cr3, start, cs, PTE_P | PTE_U | PTE_W) < 0) {
             return (uint8_t*)NULL;
         }
     }

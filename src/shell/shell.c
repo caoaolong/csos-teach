@@ -15,10 +15,12 @@ static int cmd_exec_cd(struct shell_t *shell);
 static int cmd_exec_mkdir(struct shell_t *shell);
 static int cmd_exec_rmdir(struct shell_t *shell);
 static int cmd_exec_exit(struct shell_t *shell);
-static int cmd_exec_test(struct shell_t *shell);
 static int cmd_exec_arp(struct shell_t *shell);
 static int cmd_exec_ping(struct shell_t *shell);
 static int cmd_exec_ifconf(struct shell_t *shell);
+static int cmd_exec_netcat(struct shell_t *shell);
+static int cmd_exec_lsof(struct shell_t *shell);
+static int cmd_exec_test(struct shell_t *shell);
 
 static shell_cmd_t cmd_list[] = {
     {
@@ -87,6 +89,20 @@ static shell_cmd_t cmd_list[] = {
         .name = "ifconfig",
         .usage = "ifconfig\tshow all netif device info",
         .cmd_exec = cmd_exec_ifconf
+    },
+    {
+        .name = "nc",
+        .usage = "nc\tnetcat tool to udp/tcp connect\n"
+                 "  \t-l <port> listen to port for tcp\n"
+                 "  \t-u -l <port> listen to port for udp\n"
+                 "  \t<ip> <port> connect to tcp server",
+        .cmd_exec = cmd_exec_netcat
+    },
+    {
+        .name = "lsof",
+        .usage = "lsof\tlist the open files of process\n"
+                 "    \t-i list the ports of the process",
+        .cmd_exec = cmd_exec_lsof
     },
     {
         .name = "test",
@@ -332,12 +348,6 @@ static int cmd_exec_exit(struct shell_t *shell)
     return 0;
 }
 
-static int cmd_exec_test(struct shell_t *shell)
-{
-    test();
-    return 0;
-}
-
 static int cmd_exec_arp(struct shell_t *shell)
 {
     char *arg = shell_get_arg(shell);
@@ -392,4 +402,49 @@ static int cmd_exec_ifconf(struct shell_t *shell)
         printf("    Client Mac Address: %02X:%02X:%02X:%02X:%02X:%02X\n", 
             dev->mac[0], dev->mac[1], dev->mac[2], dev->mac[3], dev->mac[4], dev->mac[5]);
     }
+}
+
+static int cmd_exec_netcat(struct shell_t *shell)
+{
+    return 0;
+}
+
+static int cmd_exec_lsof(struct shell_t *shell)
+{
+    char *arg = shell_get_arg(shell);
+    port_t port;
+    uint16_t cp = 0, np = 0;
+    printf("%5s %5s %10s\n", "PID", "PORT", "PTYPE");
+    printf("----- ----- ----------\n");
+    if (!strcmp(arg, "-i")) {
+        do {
+            enum_port(&port, &cp, &np);
+            if (port.status == PORT_DOWN) {
+                continue;
+            }
+            printf("%5d %5d ", port.pid, cp);
+            if (port.ptype == DBT_TCP) {
+                if (port.status == PORT_UP) {
+                    printf("\033[32;40m%10s\033[0m\n", "TCP/UP");
+                } else if (port.status == PORT_BUSY) {
+                    printf("\033[36;40m%10s\033[0m\n", "TCP/BUSY");
+                }
+            } else if (port.ptype == DBT_UDP) {
+                if (port.status == PORT_UP) {
+                    printf("\033[32;40m%10s\033[0m\n", "UDP/UP");
+                } else if (port.status == PORT_BUSY) {
+                    printf("\033[36;40m%10s\033[0m\n", "UDP/BUSY");
+                }
+            }
+            cp = np;
+        } while (np > 0);
+    }
+
+    return 0;
+}
+
+static int cmd_exec_test(struct shell_t *shell)
+{
+    test();
+    return 0;
 }

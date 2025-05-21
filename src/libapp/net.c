@@ -24,3 +24,9 @@ void ifconf(netif_dev_t *devs, int *devc)
     syscall_arg_t args = {SYS_NR_IFCONF, (int)devs, (int)devc, 0, 0};
     _syscall(&args);
 }
+
+void enum_port(port_t *port, uint16_t *cp, uint16_t *np)
+{
+    syscall_arg_t args = {SYS_NR_ENUM_PORT, (int)port, (int)cp, (int)np, 0};
+    _syscall(&args);
+}

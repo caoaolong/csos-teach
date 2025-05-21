@@ -10,6 +10,9 @@
 #include <csos/memory.h>
 #include <csos/string.h>
 
+#define PORT_SIZE 0x10000
+static port_t *ports;
+
 static netif_t netifs[4];
 static uint32_t netif_count = 0;
 static sem_t netin_sem, netout_sem;
@@ -180,6 +183,29 @@ void sys_ifconf(netif_dev_t *devs, int *devc)
     }
 }
 
+void sys_enum_port(port_t *port, uint16_t *cp, uint16_t *np)
+{
+    if (*cp == 0) {
+        for (int i = 0; i < PORT_SIZE; i++) {
+            port_t *pp = &ports[i];
+            if (pp->status != PORT_DOWN) {
+                kernel_memcpy(port, pp, sizeof(port_t));
+                *cp = i;
+                break;
+            }
+        }
+    }
+    *np = 0;
+    for (int i = *cp + 1; i < PORT_SIZE; i++) {
+        port_t *pp = &ports[i];
+        if (pp->status != PORT_DOWN) {
+            kernel_memcpy(port, pp, sizeof(port_t));
+            *np = i;
+            break;
+        }
+    }
+}
+
 void inet_pton(const char *ipstr, ip_addr ipv)
 {
     char *p = (char *)ipstr;
@@ -220,6 +246,16 @@ void net_init()
         free_page(netout_stack);
         return;
     }
+    // 端口初始化
+    uint32_t psize = PORT_SIZE * sizeof(port_t) / PAGE_SIZE;
+    ports = (port_t *)alloc_pages(psize);
+    for (int i = 0; i < PORT_SIZE; i++) {
+        port_t *p = &ports[i];
+        p->status = PORT_DOWN;
+        p->ifid = 0;
+        p->ptype = DBT_UNK;
+        p->pid = 0;
+    }
     // 创建虚拟网卡
     // 本地回环接口: 127.0.0.1/8
     netif_create("\x7F\x00\x00\x01", "\xFF\x00\x00\x00", "\x00\x00\x00\x00", "\x00\x00\x00\x00\x00\x00");
@@ -256,5 +292,28 @@ int netif_create(ip_addr ip, ip_addr mask, ip_addr gw, mac_addr mac)
     list_init(&netif->rx_list);
     list_init(&netif->tx_list);
     list_init(&netif->wait_list);
+
+    // 协议栈初始化
+    dhcp_init(netif);
     return 0;
+}
+
+int alloc_port(uint16_t port, netif_t *netif, uint8_t protocol)
+{
+    task_t *task = get_running_task();
+    port_t *p = &ports[port];
+    if (p->status != PORT_DOWN) {
+        logf("Port %d is already in use", port);
+        return -1; // 端口已被占用
+    }
+    p->status = PORT_UP;
+    p->pid = task->pid;
+    p->ifid = netif->index;
+    p->ptype = protocol;
+    return 0;
+}
+
+void free_port(uint16_t port)
+{
+    kernel_memset(&ports[port], 0, sizeof(port_t));
 }

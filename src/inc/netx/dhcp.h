@@ -61,4 +61,6 @@ void dhcp_request(netif_t *netif, desc_buff_t *buff);
 void dhcp_offer(netif_t *netif, desc_buff_t *buff);
 void dhcp_ack(netif_t *netif, desc_buff_t *buff);
 
+void dhcp_init(netif_t *netif);
+
 #endif

@@ -7,10 +7,6 @@
 #include <netx/inet.h>
 #include <csos/sem.h>
 
-enum {
-	DBT_UNK, DBT_ARP, DBT_ICMP, DBT_UDP, DBT_TCP
-};
-
 typedef struct desc_buff_t
 {
 	list_node_t node;
@@ -96,10 +92,14 @@ void netif_input(desc_buff_t *buff);
 void netif_output(desc_buff_t *buff);
 int netif_create(ip_addr ip, ip_addr mask, ip_addr gw, mac_addr mac);
 
+int alloc_port(uint16_t port, netif_t *netif, uint8_t protocol);
+void free_port(uint16_t port);
+
 void sys_arpl(arp_map_data_t *arp_data);
 void sys_arpc();
 void sys_ping(const char *ip);
 void sys_ifconf(netif_dev_t *devs, int *devc);
+void sys_enum_port();
 
 void net_init();
 void net_save();
