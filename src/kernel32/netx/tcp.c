@@ -4,26 +4,6 @@
 #include <netx/ipv4.h>
 #include <csos/string.h>
 
-#define TCP_TEST_PORT 8000
-
-enum {
-    TCP_CLOSED = 0,
-    TCP_LISTEN,
-    TCP_SYN_SENT,
-    TCP_SYN_RECEIVED,
-    TCP_ESTABLISHED,
-    TCP_FIN_WAIT_1,
-    TCP_FIN_WAIT_2,
-    TCP_CLOSE_WAIT,
-    TCP_LAST_ACK,
-    TCP_CLOSING,
-    TCP_TIME_WAIT
-};
-
-static uint32_t ack_num = 0;
-static uint32_t seq_num = 0;
-static uint8_t state = TCP_CLOSED;
-
 uint16_t calc_tcp_checksum(ipv4_t *ip, tcp_t *tcp, uint8_t *payload, uint16_t data_len)
 {
     uint32_t checksum = 0;
@@ -68,27 +48,29 @@ uint16_t calc_tcp_checksum(ipv4_t *ip, tcp_t *tcp, uint8_t *payload, uint16_t da
 
 void tcp_input(netif_t *netif, desc_buff_t *buff)
 {
-    logf("state = %d", state);
-    if (state == TCP_CLOSED) {
-        // TODO: 应该发送一个RST包
-        free_desc_buff(buff);
-        return;
-    }
-
     eth_t *eth = (eth_t *)buff->payload;
     ipv4_t *ipv4 = (ipv4_t *)eth->payload;
     tcp_t *tcp = (tcp_t *)ipv4->payload;
-    if (tcp->dst_port == htons(TCP_TEST_PORT)) {
+    port_t *port = get_port(ntohs(tcp->dst_port));
+    if (port && port->status == PORT_UP) {
         tcp->ff.v = ntohs(tcp->ff.v);
         if (tcp->ff.flags == (FLAGS_SYN | FLAGS_ACK)) {
-            tcp_ack(netif, buff);
+            tcp_ack(port->sock, buff);
         } else if (tcp->ff.flags == (FLAGS_FIN | FLAGS_ACK)) {
-            tcp_ack(netif, buff);
+            tcp_ack(port->sock, buff);
         } else if(tcp->ff.flags == FLAGS_SYN) {
-            tcp_synack(netif, buff);
+            tcp_synack(port->sock, buff);
         } else if(tcp->ff.flags == FLAGS_ACK) {
+            socket_t *socket = port->sock;
             // 处理ACK包
+            if (socket->state == TCP_FIN_WAIT_1) {
+                socket->state = TCP_FIN_WAIT_2;
+                free_desc_buff(buff);
+            }
         }
+    } else {
+        // TODO: 发送RST数据包
+        free_desc_buff(buff);
     }
 }
 
@@ -106,17 +88,18 @@ void tcp_build(netif_t *netif, desc_buff_t *buff,
 
 }
 
-void tcp_syn(netif_t *netif, desc_buff_t *buff, ip_addr dst_ip)
+void tcp_syn(socket_t *socket, desc_buff_t *buff, ip_addr dst_ip, uint16_t dst_port)
 {
+    netif_t *netif = socket->netif;
     eth_t *eth = (eth_t *)buff->payload;
     ipv4_t *ipv4 = (ipv4_t *)eth->payload;
     tcp_t *tcp = (tcp_t *)ipv4->payload;
-    tcp->src_port = htons(TCP_TEST_PORT);
-    tcp->dst_port = htons(TCP_TEST_PORT);
+    socket->srcp = alloc_random_port(socket, DBT_TCP);
+    tcp->src_port = htons(socket->srcp);
+    tcp->dst_port = htons(socket->dstp);
 
-    seq_num = xrandom();
-    tcp->seq_num = htonl(seq_num);
-    
+    socket->seq = xrandom();
+    tcp->seq_num = htonl(socket->seq);
     tcp->ack_num = 0;
     
     tcp->ff.flags = FLAGS_SYN;
@@ -128,11 +111,12 @@ void tcp_syn(netif_t *netif, desc_buff_t *buff, ip_addr dst_ip)
     tcp->urgent_pointer = 0;
     buff->length += sizeof(tcp_t);
     ipv4_build(netif, buff, dst_ip, IP_TYPE_TCP, NULL, 0);
-    state = TCP_SYN_SENT;
+    socket->state = TCP_SYN_SENT;
 }
 
-void tcp_synack(netif_t *netif, desc_buff_t *buff)
+void tcp_synack(socket_t *socket, desc_buff_t *buff)
 {
+    netif_t *netif = socket->netif;
     // TODO: 需要修改
     eth_t *eth = (eth_t *)buff->payload;
     ipv4_t *ipv4 = (ipv4_t *)eth->payload;
@@ -154,15 +138,16 @@ void tcp_synack(netif_t *netif, desc_buff_t *buff)
     ipv4_output(netif, buff, NULL, 0);
 }
 
-void tcp_finack(netif_t *netif, desc_buff_t *buff, ip_addr dst_ip)
+void tcp_finack(socket_t *socket, desc_buff_t *buff, ip_addr dst_ip)
 {
+    netif_t *netif = socket->netif;
     eth_t *eth = (eth_t *)buff->payload;
     ipv4_t *ipv4 = (ipv4_t *)eth->payload;
     tcp_t *tcp = (tcp_t *)ipv4->payload;
-    tcp->src_port = htons(TCP_TEST_PORT);
-    tcp->dst_port = htons(TCP_TEST_PORT);
-    tcp->seq_num = htonl(seq_num);
-    tcp->ack_num = htonl(ack_num);
+    tcp->src_port = htons(socket->srcp);
+    tcp->dst_port = htons(socket->dstp);
+    tcp->seq_num = htonl(socket->seq);
+    tcp->ack_num = htonl(socket->ack);
     tcp->ff.flags = FLAGS_FIN | FLAGS_ACK;
     tcp->ff.unused = 0;
     tcp->ff.offset = sizeof(tcp_t) / 4;
@@ -172,14 +157,12 @@ void tcp_finack(netif_t *netif, desc_buff_t *buff, ip_addr dst_ip)
     tcp->urgent_pointer = 0;
     buff->length += sizeof(tcp_t);
     ipv4_build(netif, buff, dst_ip, IP_TYPE_TCP, NULL, 0);
-    if (state == TCP_ESTABLISHED) {
-        state = TCP_FIN_WAIT_1;
-    } else if (state == TCP_FIN_WAIT_2) {
-        state = TCP_TIME_WAIT;
+    if (socket->state == TCP_ESTABLISHED) {
+        socket->state = TCP_FIN_WAIT_1;
     }
 }
 
-void tcp_ack(netif_t *netif, desc_buff_t *buff)
+void tcp_ack(socket_t *socket, desc_buff_t *buff)
 {
     eth_t *eth = (eth_t *)buff->payload;
     ipv4_t *ipv4 = (ipv4_t *)eth->payload;
@@ -191,21 +174,20 @@ void tcp_ack(netif_t *netif, desc_buff_t *buff)
 
     uint32_t pack_seq_num = ntohl(tcp->seq_num);
     tcp->seq_num = tcp->ack_num;
-    seq_num = ntohl(tcp->seq_num);
+    socket->seq = ntohl(tcp->seq_num);
 
     tcp->ack_num = htonl(pack_seq_num + 1);
-    ack_num = ntohl(tcp->ack_num);
+    socket->ack = ntohl(tcp->ack_num);
 
     tcp->ff.flags = FLAGS_ACK;
     tcp->window_size = htons(0xFF);
     tcp->checksum = 0;
-    ipv4_output(netif, buff, NULL, 0);
-    if (state == TCP_SYN_SENT) {
-        state = TCP_ESTABLISHED;
-    } else if (state == TCP_FIN_WAIT_1) {
-        state = TCP_FIN_WAIT_2;
-    } else if (state == TCP_TIME_WAIT) {
-        // TODO: 应该等待两个MSL的时间
-        state = TCP_CLOSED;
+    ipv4_output(socket->netif, buff, NULL, 0);
+    if (socket->state == TCP_SYN_SENT) {
+        socket->state = TCP_ESTABLISHED;
+    } else if (socket->state == TCP_FIN_WAIT_1) {
+        socket->state = TCP_FIN_WAIT_2;
+    } else if (socket->state == TCP_FIN_WAIT_2) {
+        socket->state = TCP_TIME_WAIT;
     }
 }

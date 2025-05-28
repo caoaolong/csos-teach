@@ -51,7 +51,8 @@
         "ifnet.h": "c",
         "mio.h": "c",
         "udp.h": "c",
-        "icmp.h": "c"
+        "icmp.h": "c",
+        "tcp.h": "c"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }

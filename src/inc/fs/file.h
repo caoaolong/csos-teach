@@ -2,6 +2,7 @@
 #define CSOS_FILE_H
 
 #include <types.h>
+#include <netx/inet.h>
 
 #define stdin       0
 #define stdout      1
@@ -25,6 +26,8 @@ typedef struct FILE {
     int fd;
     // 文件名称
     char name[FILE_NAME_SIZE];
+    // socket
+    socket_t *sock;
     // 文件类型
     file_type_t type;
     // 文件大小

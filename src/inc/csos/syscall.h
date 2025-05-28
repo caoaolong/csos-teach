@@ -42,6 +42,9 @@
 #define SYS_NR_PING         34
 #define SYS_NR_IFCONF       35
 #define SYS_NR_ENUM_PORT    36
+#define SYS_NR_SOCKET       37
+#define SYS_NR_CONNECT      38
+#define SYS_NR_CLOSE        39
 
 #define SYSCALL_LCALL
 

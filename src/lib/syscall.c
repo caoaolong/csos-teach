@@ -42,6 +42,9 @@ static const syscall_handler_t syscall_handler_table[] = {
     [SYS_NR_PING]       = (syscall_handler_t)sys_ping,
     [SYS_NR_IFCONF]     = (syscall_handler_t)sys_ifconf,
     [SYS_NR_ENUM_PORT]  = (syscall_handler_t)sys_enum_port,
+    [SYS_NR_SOCKET]     = (syscall_handler_t)sys_socket,
+    [SYS_NR_CONNECT]    = (syscall_handler_t)sys_connect,
+    [SYS_NR_CLOSE]      = (syscall_handler_t)sys_close,
 };
 // 远调用实现
 
