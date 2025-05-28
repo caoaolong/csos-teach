@@ -4,6 +4,7 @@
 #include <netx/eth.h>
 #include <netx/ipv4.h>
 #include <netx/icmp.h>
+#include <netx/tcp.h>
 #include <netx/dhcp.h>
 #include <pci/e1000.h>
 #include <interrupt.h>
@@ -14,6 +15,7 @@
 static port_t *ports;
 
 static netif_t netifs[4];
+static socket_t sockets[1024];
 static uint32_t netif_count = 0;
 static sem_t netin_sem, netout_sem;
 static task_t netin_task, netout_task;
@@ -206,6 +208,95 @@ void sys_enum_port(port_t *port, uint16_t *cp, uint16_t *np)
     }
 }
 
+int sys_socket(uint8_t family, uint8_t type, uint8_t flags)
+{
+    socket_t *socket = alloc_socket();
+    if (!socket) {
+        logf("No available socket");
+        return -1; // 没有可用的socket
+    }
+    task_t *task = get_running_task();
+    int fd = task_alloc_fd((FILE *)socket->fp);
+    if (fd < 0) {
+        free_socket(socket);
+        logf("No available file descriptor");
+        return -1; // 没有可用的文件描述符
+    }
+    socket->family = family;
+    socket->type = type;
+    socket->flags = flags;
+    socket->seq = 0;
+    socket->ack = 0;
+    socket->dstp = socket->srcp = 0;
+    socket->netif = netif_default();
+    socket->state = TCP_CLOSED;
+    ((FILE *)socket->fp)->sock = socket;
+    return fd;
+}
+
+int sys_connect(int fd, sock_addr_t *addr, uint8_t addrlen)
+{
+    FILE *file = task_file(fd);
+    socket_t *socket = file->sock;
+    if (!socket) {
+        logf("File descriptor %d is not a socket", fd);
+        return -1;
+    }
+    socket->dstp = addr->port;
+    kernel_memcpy(socket->dipv4, addr->ipv4, IPV4_LEN);
+    if (socket->type == SOCK_DGRAM) {
+
+    } else if (socket->type == SOCK_STREAM) {
+        desc_buff_t *buff = alloc_desc_buff();
+        tcp_syn(socket, buff, addr->ipv4, addr->port);
+        // 默认为30s超时
+        int tryc = 300;
+        logf("Connecting to %d.%d.%d.%d:%d",
+            addr->ipv4[0], addr->ipv4[1], addr->ipv4[2], addr->ipv4[3], ntohs(addr->port));
+        while (socket->state != TCP_ESTABLISHED && tryc > 0) {
+            task_sleep(100);
+            tryc--;
+        }
+        logf("Connection established to %d.%d.%d.%d:%d",
+            addr->ipv4[0], addr->ipv4[1], addr->ipv4[2], addr->ipv4[3], ntohs(addr->port));
+        free_desc_buff(buff);
+        return 0;
+    }
+    logf("unknown socket type(%d) for fd %d", socket->type, fd);
+    return -1;
+}
+
+int sys_close(int fd)
+{
+    FILE *file = task_file(fd);
+    if (!file) {
+        logf("File descriptor %d is not valid", fd);
+        return -1;
+    }
+    socket_t *socket = file->sock;
+    if (!socket) {
+        logf("File descriptor %d is not a socket", fd);
+        return -1;
+    }
+    desc_buff_t *buff = alloc_desc_buff();
+    tcp_finack(socket, buff, socket->dipv4);
+    // 默认为3s超时
+    int tryc = 30;
+    logf("Disconnecting");
+    while (socket->state != TCP_TIME_WAIT && tryc > 0) {
+        logf("state = %d", socket->state);
+        task_sleep(100);
+        tryc--;
+    }
+    // 等待两个MSL
+    task_sleep(2 * 60);
+    logf("Disconnected");
+    task_free_fd(fd);
+    free_socket(socket);
+    free_desc_buff(buff);
+    return 0;
+}
+
 void inet_pton(const char *ipstr, ip_addr ipv)
 {
     char *p = (char *)ipstr;
@@ -252,15 +343,17 @@ void net_init()
     for (int i = 0; i < PORT_SIZE; i++) {
         port_t *p = &ports[i];
         p->status = PORT_DOWN;
-        p->ifid = 0;
         p->ptype = DBT_UNK;
         p->pid = 0;
+        p->sock = NULL;
     }
     // 创建虚拟网卡
     // 本地回环接口: 127.0.0.1/8
     netif_create("\x7F\x00\x00\x01", "\xFF\x00\x00\x00", "\x00\x00\x00\x00", "\x00\x00\x00\x00\x00\x00");
     // 默认物理网卡: 0.0.0.0
     netif_create("\x00\x00\x00\x00", "\x00\x00\x00\x00", "\x00\x00\x00\x00", e1000->mac);
+    // 初始化sockets
+    kernel_memset(sockets, 0, sizeof(sockets));
 }
 
 void net_save()
@@ -298,7 +391,20 @@ int netif_create(ip_addr ip, ip_addr mask, ip_addr gw, mac_addr mac)
     return 0;
 }
 
-int alloc_port(uint16_t port, netif_t *netif, uint8_t protocol)
+uint16_t alloc_random_port(socket_t *socket, uint8_t protocol)
+{
+    uint16_t port = 20000;
+    while (port < 65535) {
+        if (ports[port].status == PORT_DOWN) {
+            alloc_port(port, socket, protocol);
+            break; // 找到一个空闲端口
+        }
+        port++;
+    }
+    return port;
+}
+
+int alloc_port(uint16_t port, socket_t *socket, uint8_t protocol)
 {
     task_t *task = get_running_task();
     port_t *p = &ports[port];
@@ -308,12 +414,40 @@ int alloc_port(uint16_t port, netif_t *netif, uint8_t protocol)
     }
     p->status = PORT_UP;
     p->pid = task->pid;
-    p->ifid = netif->index;
     p->ptype = protocol;
+    p->sock = socket;
     return 0;
 }
 
 void free_port(uint16_t port)
 {
     kernel_memset(&ports[port], 0, sizeof(port_t));
+}
+
+port_t *get_port(uint16_t port)
+{
+    if (port < PORT_SIZE) {
+        return &ports[port];
+    }
+    return NULL; // 端口号无效
+}
+
+socket_t *alloc_socket()
+{
+    for (int i = 0; i < 1024; i++) {
+        if (sockets[i].exists == 0) {
+            kernel_memset(&sockets[i], 0, sizeof(socket_t));
+            sockets[i].exists = 1;
+            sockets[i].fp = alloc_page();
+            return &sockets[i];
+        }
+    }
+    return NULL;
+}
+
+void free_socket(socket_t *socket)
+{
+    socket->state = TCP_CLOSED;
+    socket->exists = 0;
+    free_page(socket->fp);
 }

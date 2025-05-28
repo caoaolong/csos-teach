@@ -95,7 +95,7 @@ static shell_cmd_t cmd_list[] = {
         .usage = "nc\tnetcat tool to udp/tcp connect\n"
                  "  \t-l <port> listen to port for tcp\n"
                  "  \t-u -l <port> listen to port for udp\n"
-                 "  \t<ip> <port> connect to tcp server",
+                 "  \t<host> <port> connect to tcp server",
         .cmd_exec = cmd_exec_netcat
     },
     {
@@ -406,6 +406,55 @@ static int cmd_exec_ifconf(struct shell_t *shell)
 
 static int cmd_exec_netcat(struct shell_t *shell)
 {
+    char *arg = shell_get_arg(shell);
+    if (!strcmp(arg, "-l")) {
+        // listen mode
+    } else if (!strcmp(arg, "-u")) {
+        // UDP connect
+    } else {
+        // TCP connect
+        char *host = arg;
+        arg = shell_get_arg(shell);
+        if (*arg == 0) {
+            shell_result(FALSE, "host or port not specified");
+            return -1;
+        }
+        uint16_t port = atoi(arg);
+        int sockfd = socket(AF_INET, SOCK_STREAM, 0);
+        if (sockfd < 0) {
+            printf("socket error\n");
+            return -1;
+        }
+        sock_addr_t addr;
+        addr.port = port;
+        inet_pton(host, addr.ipv4);
+        int err = connect(sockfd, addr, sizeof(addr));
+        if (err < 0) {
+            printf("connect to %s:%d failed\n", host, port);
+            return -1;
+        }
+        char *buf = (char *)malloc(1024);
+        int bufc = 0;
+        while (TRUE) {
+            char ch = getc();
+            if (ch == '\n') {
+                if (!strcmp(buf, "q")) {
+                    close(sockfd);
+                    break;
+                } else if (buf[0] == 0) {
+                    continue;
+                } else {
+                    // TODO: 发送数据
+                }
+            } else if (ch == '\b') {
+                if (bufc > 0) {
+                    buf[--bufc] = 0;
+                }
+            } else {
+                buf[bufc++] = ch;
+            }
+        }
+    }
     return 0;
 }
 

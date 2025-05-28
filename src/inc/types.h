@@ -21,6 +21,13 @@ typedef uint16_t fat_cluster_t;
 typedef uint8_t mac_addr[MAC_LEN];
 typedef uint8_t ip_addr[IPV4_LEN];
 
+typedef struct sock_addr_t {
+    mac_addr mac;      // MAC地址
+    ip_addr ipv4;      // IPv4地址
+    uint16_t family;   // 协议族 (2字节)
+    uint16_t port;     // 端口号 (2字节)
+} sock_addr_t; // MAC地址 + IPv4地址 + 协议族(2字节) + port号(2字节) = 14字节
+
 #define NULL    ((void*)0)
 
 #define BOOL    _Bool

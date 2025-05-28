@@ -15,33 +15,6 @@ typedef struct desc_buff_t
 	uint8_t payload[0];
 } desc_buff_t;
 
-typedef struct netif_t {
-    char name[8];
-
-    mac_addr mac; // 网卡MAC地址
-    mac_addr gw_mac; // 网关MAC地址
-    
-    ip_addr ipv4; // 网卡IP地址
-    ip_addr mask; // 子网掩码
-    ip_addr gw;   // 网关IPv4地址
-
-    ip_addr dhcp_ipv4;
-    ip_addr dhcp_mask;
-    ip_addr dhcp_gw;
-
-    list_t rx_list; // 接收缓冲区链表
-    list_t tx_list; // 发送缓冲区链表
-    list_t wait_list; // 等待队列
-
-    uint8_t index:4;
-    uint8_t status:4;
-
-    uint8_t timer:4; // 定时器
-    uint8_t period:4; // 周期
-
-    char unused[58];
-} netif_t;
-
 // 将32位网络字节序转换为主机字节序
 static inline uint32_t ntohl(uint32_t netlong) {
     return ((netlong & 0xFF000000) >> 24) | // 移动到最低位
@@ -85,21 +58,29 @@ void desc_buff_init();
 BOOL kernel_setmac(netif_t *netif, ip_addr ip, mac_addr mac);
 
 uint16_t calc_checksum(uint8_t *data, uint32_t length);
-void inet_pton(const char *ipstr, ip_addr ipv);
 
 netif_t *netif_default();
 void netif_input(desc_buff_t *buff);
 void netif_output(desc_buff_t *buff);
 int netif_create(ip_addr ip, ip_addr mask, ip_addr gw, mac_addr mac);
 
-int alloc_port(uint16_t port, netif_t *netif, uint8_t protocol);
+int alloc_port(uint16_t port, socket_t *socket, uint8_t protocol);
+uint16_t alloc_random_port(socket_t *socket, uint8_t protocol);
 void free_port(uint16_t port);
+port_t *get_port(uint16_t port);
+
+socket_t *alloc_socket();
+void free_socket(socket_t *socket);
 
 void sys_arpl(arp_map_data_t *arp_data);
 void sys_arpc();
 void sys_ping(const char *ip);
 void sys_ifconf(netif_dev_t *devs, int *devc);
 void sys_enum_port();
+
+int sys_socket(uint8_t family, uint8_t type, uint8_t flags);
+int sys_connect(int fd, sock_addr_t *addr, uint8_t addrlen);
+int sys_close(int fd);
 
 void net_init();
 void net_save();

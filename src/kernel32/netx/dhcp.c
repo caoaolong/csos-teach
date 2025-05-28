@@ -144,7 +144,8 @@ void dhcp_ack(netif_t *netif, desc_buff_t *buff)
 
 void dhcp_init(netif_t *netif)
 {
-    if (alloc_port(DHCP_CLIENT_PORT, netif, DBT_UDP)) {
+    socket_t *socket = alloc_socket();
+    if (alloc_port(DHCP_CLIENT_PORT, socket, DBT_UDP)) {
         logf("DHCP client port %d is already in use", DHCP_CLIENT_PORT);
         return;
     }
