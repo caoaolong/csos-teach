@@ -45,6 +45,9 @@
 #define SYS_NR_SOCKET       37
 #define SYS_NR_CONNECT      38
 #define SYS_NR_CLOSE        39
+#define SYS_NR_BIND         40
+#define SYS_NR_LISTEN       41
+#define SYS_NR_ACCEPT       42
 
 #define SYSCALL_LCALL
 

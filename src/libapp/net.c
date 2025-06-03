@@ -49,6 +49,24 @@ int close(int fd)
     return _syscall(&args);
 }
 
+int bind(int fd, sock_addr_t addr, uint8_t addrlen)
+{
+    syscall_arg_t args = {SYS_NR_BIND, fd, (int)&addr, addrlen, 0};
+    return _syscall(&args);
+}
+
+int listen(int fd, uint16_t backlog)
+{
+    syscall_arg_t args = {SYS_NR_LISTEN, fd, backlog, 0, 0};
+    return _syscall(&args);
+}
+
+int accept(int fd, sock_addr_t *addr, uint8_t *addrlen)
+{
+    syscall_arg_t args = {SYS_NR_ACCEPT, fd, (int)addr, (int)addrlen, 0};
+    return _syscall(&args);
+}
+
 void inet_pton(const char *ipstr, ip_addr ipv)
 {
     char *p = (char *)ipstr;

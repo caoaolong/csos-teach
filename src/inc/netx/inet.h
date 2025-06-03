@@ -24,6 +24,11 @@ enum {
     TCP_TIME_WAIT
 };
 
+enum {
+    SOCK_CLIENT,
+    SOCK_SERVER
+};
+
 typedef struct netif_t {
     char name[8];
 
@@ -53,6 +58,8 @@ typedef struct netif_t {
 
 typedef struct socket_t {
     uint8_t exists;
+    uint8_t socktype;
+    uint16_t backlog;
     uint8_t family;
     uint8_t type;
     uint8_t flags;
@@ -60,10 +67,11 @@ typedef struct socket_t {
     uint16_t srcp;
     uint16_t dstp;
     ip_addr dipv4;
+    ip_addr sipv4;
     uint32_t seq;
     uint32_t ack;
-    uint32_t fp;    // 文件指针
-    netif_t *netif; // 绑定的网络接口
+    uint32_t fp;       // 文件指针
+    netif_t *netif;    // 绑定的网络接口
 } socket_t;
 
 enum {
@@ -82,7 +90,7 @@ typedef struct netif_dev_t {
 } netif_dev_t;
 
 enum {
-    PORT_DOWN, PORT_BUSY, PORT_UP
+    PORT_DOWN, PORT_BUSY, PORT_UP, PORT_LISTEN
 };
 
 enum {
@@ -105,6 +113,10 @@ void enum_port(port_t *port, uint16_t *cp, uint16_t *np);
 int socket(uint16_t family, uint8_t type, uint8_t flags);
 int connect(int fd, sock_addr_t addr, uint8_t addrlen);
 int close(int fd);
+
+int bind(int fd, sock_addr_t addr, uint8_t addrlen);
+int listen(int fd, uint16_t backlog);
+int accept(int fd, sock_addr_t *addr, uint8_t *addrlen);
 
 void inet_pton(const char *ipstr, ip_addr ipv);
 

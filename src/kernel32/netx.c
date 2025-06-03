@@ -1,6 +1,7 @@
 #include <task.h>
 #include <logf.h>
 #include <paging.h>
+#include <fs.h>
 #include <netx/eth.h>
 #include <netx/ipv4.h>
 #include <netx/icmp.h>
@@ -266,6 +267,77 @@ int sys_connect(int fd, sock_addr_t *addr, uint8_t addrlen)
     return -1;
 }
 
+int sys_bind(int fd, sock_addr_t *addr, uint8_t addrlen)
+{
+    FILE *file = task_file(fd);
+    socket_t *socket = file->sock;
+    if (!socket) {
+        logf("File descriptor %d is not a socket", fd);
+        return -1;
+    }
+    socket->socktype = SOCK_SERVER;
+    socket->srcp = addr->port;
+    kernel_memcpy(socket->sipv4, netif_default()->ipv4, IPV4_LEN);
+    if (socket->type == SOCK_DGRAM) {
+        alloc_lazy_port(addr->port, socket, DBT_UDP);
+    } else if (socket->type == SOCK_STREAM) {
+        alloc_lazy_port(addr->port, socket, DBT_TCP);
+    }
+    return 0;
+}
+
+int sys_listen(int fd, int backlog)
+{
+    FILE *file = task_file(fd);
+    socket_t *socket = file->sock;
+    socket->backlog = backlog;
+    if (!socket) {
+        logf("File descriptor %d is not a socket", fd);
+        return -1;
+    }
+    port_t *port = get_port(socket->srcp);
+    port->status = PORT_LISTEN;
+    socket->state = TCP_LISTEN;
+    return 0;
+}
+
+int sys_accept(int fd, sock_addr_t *addr, uint8_t *addrlen)
+{
+    FILE *file = task_file(fd);
+    socket_t *socket = file->sock;
+    if (!socket) {
+        logf("File descriptor %d is not a socket", fd);
+        return -1;
+    }
+    port_t *port = get_port(socket->srcp);
+    if (!port || port->status != PORT_LISTEN) {
+        logf("Socket is not listening", fd);
+        return -1;
+    }
+    logf("Listening on %d.%d.%d.%d:%d",
+        addr->ipv4[0], addr->ipv4[1], addr->ipv4[2], addr->ipv4[3], socket->srcp);
+    while (socket->state != TCP_ESTABLISHED) {
+        task_sleep(100);
+    }
+    logf("client %d.%d.%d.%d:%d connected",
+        socket->dipv4[0], socket->dipv4[1], socket->dipv4[2], socket->dipv4[3], socket->dstp);
+    int cfd = fs_dup(fd);
+    FILE *cfile = task_file(cfd);
+    cfile->sock = alloc_socket();
+    socket_t *csocket = cfile->sock;
+    socket->state = TCP_ESTABLISHED;
+    csocket->family = socket->family;
+    csocket->type = socket->type;
+    csocket->flags = socket->flags;
+    csocket->srcp = socket->srcp;
+    csocket->dstp = socket->dstp;
+    kernel_memcpy(csocket->sipv4, socket->sipv4, IPV4_LEN);
+    kernel_memcpy(csocket->dipv4, socket->dipv4, IPV4_LEN);
+    csocket->seq = socket->seq;
+    csocket->ack = socket->ack;
+    return cfd;
+}
+
 int sys_close(int fd)
 {
     FILE *file = task_file(fd);
@@ -279,12 +351,14 @@ int sys_close(int fd)
         return -1;
     }
     desc_buff_t *buff = alloc_desc_buff();
+    if (socket->socktype == SOCK_SERVER) {
+        // TODO: 处理服务器端的关闭逻辑
+    }
     tcp_finack(socket, buff, socket->dipv4);
     // 默认为3s超时
     int tryc = 30;
     logf("Disconnecting");
     while (socket->state != TCP_TIME_WAIT && tryc > 0) {
-        logf("state = %d", socket->state);
         task_sleep(100);
         tryc--;
     }
@@ -404,7 +478,7 @@ uint16_t alloc_random_port(socket_t *socket, uint8_t protocol)
     return port;
 }
 
-int alloc_port(uint16_t port, socket_t *socket, uint8_t protocol)
+static int alloc_system_port(uint16_t port, socket_t *socket, uint8_t protocol, uint8_t state)
 {
     task_t *task = get_running_task();
     port_t *p = &ports[port];
@@ -412,11 +486,21 @@ int alloc_port(uint16_t port, socket_t *socket, uint8_t protocol)
         logf("Port %d is already in use", port);
         return -1; // 端口已被占用
     }
-    p->status = PORT_UP;
+    p->status = state;
     p->pid = task->pid;
     p->ptype = protocol;
     p->sock = socket;
     return 0;
+}
+
+int alloc_port(uint16_t port, socket_t *socket, uint8_t protocol)
+{
+    return alloc_system_port(port, socket, protocol, PORT_UP);
+}
+
+int alloc_lazy_port(uint16_t port, socket_t *socket, uint8_t protocol)
+{
+    return alloc_system_port(port, socket, protocol, PORT_BUSY);
 }
 
 void free_port(uint16_t port)
@@ -439,6 +523,7 @@ socket_t *alloc_socket()
             kernel_memset(&sockets[i], 0, sizeof(socket_t));
             sockets[i].exists = 1;
             sockets[i].fp = alloc_page();
+            sockets[i].socktype = SOCK_CLIENT;
             return &sockets[i];
         }
     }

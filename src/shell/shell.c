@@ -409,6 +409,52 @@ static int cmd_exec_netcat(struct shell_t *shell)
     char *arg = shell_get_arg(shell);
     if (!strcmp(arg, "-l")) {
         // listen mode
+        char *arg = shell_get_arg(shell);
+        uint16_t port = atoi(arg);
+        int sockfd = socket(AF_INET, SOCK_STREAM, 0);
+        if (sockfd < 0) {
+            printf("socket error\n");
+            return -1;
+        }
+        sock_addr_t addr;
+        addr.port = port;
+        int err = bind(sockfd, addr, sizeof(addr));
+        if (err < 0) {
+            printf("bind to %d failed\n", port);
+            return -1;
+        }
+        err = listen(sockfd, 5);
+        if (err < 0) {
+            printf("listen to %d failed\n", port);
+            return -1;
+        }
+        int cfd = accept(sockfd, NULL, NULL);
+        if (cfd < 0) {
+            printf("accept failed\n");
+            return -1;
+        }
+        char *buf = (char *)malloc(1024);
+        int bufc = 0;
+        while (TRUE) {
+            char ch = getc();
+            if (ch == '\n') {
+                if (!strcmp(buf, "q")) {
+                    close(sockfd);
+                    free(buf);
+                    break;
+                } else if (buf[0] == 0) {
+                    continue;
+                } else {
+                    // TODO: 发送数据
+                }
+            } else if (ch == '\b') {
+                if (bufc > 0) {
+                    buf[--bufc] = 0;
+                }
+            } else {
+                buf[bufc++] = ch;
+            }
+        }
     } else if (!strcmp(arg, "-u")) {
         // UDP connect
     } else {
@@ -440,6 +486,7 @@ static int cmd_exec_netcat(struct shell_t *shell)
             if (ch == '\n') {
                 if (!strcmp(buf, "q")) {
                     close(sockfd);
+                    free(buf);
                     break;
                 } else if (buf[0] == 0) {
                     continue;
@@ -477,12 +524,16 @@ static int cmd_exec_lsof(struct shell_t *shell)
                     printf("\033[32;40m%10s\033[0m\n", "TCP/UP");
                 } else if (port.status == PORT_BUSY) {
                     printf("\033[36;40m%10s\033[0m\n", "TCP/BUSY");
+                } else if (port.status == PORT_LISTEN) {
+                    printf("\033[34;40m%10s\033[0m\n", "TCP/LISTEN");
                 }
             } else if (port.ptype == DBT_UDP) {
                 if (port.status == PORT_UP) {
                     printf("\033[32;40m%10s\033[0m\n", "UDP/UP");
                 } else if (port.status == PORT_BUSY) {
                     printf("\033[36;40m%10s\033[0m\n", "UDP/BUSY");
+                } else if (port.status == PORT_LISTEN) {
+                    printf("\033[34;40m%10s\033[0m\n", "UDP/LISTEN");
                 }
             }
             cp = np;

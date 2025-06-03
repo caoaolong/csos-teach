@@ -45,6 +45,9 @@ static const syscall_handler_t syscall_handler_table[] = {
     [SYS_NR_SOCKET]     = (syscall_handler_t)sys_socket,
     [SYS_NR_CONNECT]    = (syscall_handler_t)sys_connect,
     [SYS_NR_CLOSE]      = (syscall_handler_t)sys_close,
+    [SYS_NR_BIND]       = (syscall_handler_t)sys_bind,
+    [SYS_NR_LISTEN]     = (syscall_handler_t)sys_listen,
+    [SYS_NR_ACCEPT]     = (syscall_handler_t)sys_accept,
 };
 // 远调用实现
 

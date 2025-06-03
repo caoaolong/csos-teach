@@ -65,6 +65,7 @@ void netif_output(desc_buff_t *buff);
 int netif_create(ip_addr ip, ip_addr mask, ip_addr gw, mac_addr mac);
 
 int alloc_port(uint16_t port, socket_t *socket, uint8_t protocol);
+int alloc_lazy_port(uint16_t port, socket_t *socket, uint8_t protocol);
 uint16_t alloc_random_port(socket_t *socket, uint8_t protocol);
 void free_port(uint16_t port);
 port_t *get_port(uint16_t port);
@@ -80,6 +81,9 @@ void sys_enum_port();
 
 int sys_socket(uint8_t family, uint8_t type, uint8_t flags);
 int sys_connect(int fd, sock_addr_t *addr, uint8_t addrlen);
+int sys_bind(int fd, sock_addr_t *addr, uint8_t addrlen);
+int sys_listen(int fd, int backlog);
+int sys_accept(int fd, sock_addr_t *addr, uint8_t *addrlen);
 int sys_close(int fd);
 
 void net_init();
