@@ -36,9 +36,9 @@ void icmp_build(netif_t *netif, desc_buff_t *buff,
     icmp->seq = (uint16_t)xrandom();
     buff->length += sizeof(icmp_echo_t);
     if (data == NULL && dlen == 0) {
-        ipv4_build(netif, buff, dst_ip, IP_TYPE_ICMP, echo_payload, sizeof(echo_payload));
+        ipv4_build(netif, buff, dst_ip, IP_TYPE_ICMP, echo_payload, sizeof(echo_payload), NULL, 0);
     } else {
-        ipv4_build(netif, buff, dst_ip, IP_TYPE_ICMP, data, dlen);
+        ipv4_build(netif, buff, dst_ip, IP_TYPE_ICMP, data, dlen, NULL, 0);
     }
 }
 

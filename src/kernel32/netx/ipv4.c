@@ -31,7 +31,8 @@ void ipv4_input(netif_t *netif, desc_buff_t *buff)
 
 void ipv4_build(netif_t *netif, desc_buff_t *buff, 
     ip_addr dst_ip, uint8_t tp,
-    uint8_t *data, uint16_t dlen)
+    uint8_t *data, uint16_t dlen,
+    uint8_t *options, uint16_t olen)
 {
     eth_t *eth = (eth_t *)buff->payload;
     ipv4_t *ipv4 = (ipv4_t *)eth->payload;
@@ -43,7 +44,7 @@ void ipv4_build(netif_t *netif, desc_buff_t *buff,
     } else if (tp == IP_TYPE_ICMP) {
         total_len = sizeof(ipv4_t) + sizeof(icmp_echo_t) + dlen;
     } else if (tp == IP_TYPE_TCP) {
-        total_len = sizeof(ipv4_t) + sizeof(tcp_t) + dlen;
+        total_len = sizeof(ipv4_t) + sizeof(tcp_t) + dlen + olen;
     }
     ipv4->total_len = htons(total_len);
     ipv4->tos = 0;

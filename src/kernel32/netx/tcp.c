@@ -22,7 +22,7 @@ uint16_t calc_tcp_checksum(ipv4_t *ip, tcp_t *tcp, uint8_t *payload, uint16_t da
     // 2. TCP header
     tcp->checksum = 0;
     uint8_t *tcp_bytes = (uint8_t *)tcp;
-    for (uint16_t i = 0; i < sizeof(tcp_t); i += 2) {
+    for (uint16_t i = 0; i < tcp_hdr_len; i += 2) {
         uint16_t word = tcp_bytes[i] << 8;
         if (i + 1 < tcp_hdr_len) {
             word |= tcp_bytes[i + 1];
@@ -52,12 +52,18 @@ void tcp_input(netif_t *netif, desc_buff_t *buff)
     ipv4_t *ipv4 = (ipv4_t *)eth->payload;
     tcp_t *tcp = (tcp_t *)ipv4->payload;
     port_t *port = get_port(ntohs(tcp->dst_port));
-    if (port && port->status == PORT_UP) {
+    if (port && port->status == PORT_UP || port->status == PORT_LISTEN) {
         tcp->ff.v = ntohs(tcp->ff.v);
         if (tcp->ff.flags == (FLAGS_SYN | FLAGS_ACK)) {
             tcp_ack(port->sock, buff);
         } else if (tcp->ff.flags == (FLAGS_FIN | FLAGS_ACK)) {
+            socket_t *socket = port->sock;
+            socket->srcp = ntohs(tcp->dst_port);
+            socket->dstp = ntohs(tcp->src_port);
             tcp_ack(port->sock, buff);
+            desc_buff_t *nbuff = alloc_desc_buff();
+            kernel_memcpy(nbuff, buff, buff->length);
+            tcp_finack(port->sock, nbuff, ipv4->dst_ip);
         } else if(tcp->ff.flags == FLAGS_SYN) {
             tcp_synack(port->sock, buff);
         } else if(tcp->ff.flags == FLAGS_ACK) {
@@ -66,6 +72,8 @@ void tcp_input(netif_t *netif, desc_buff_t *buff)
             if (socket->state == TCP_FIN_WAIT_1) {
                 socket->state = TCP_FIN_WAIT_2;
                 free_desc_buff(buff);
+            } else if (socket->state == TCP_SYN_RECEIVED) {
+                socket->state = TCP_ESTABLISHED;
             }
         }
     } else {
@@ -110,14 +118,13 @@ void tcp_syn(socket_t *socket, desc_buff_t *buff, ip_addr dst_ip, uint16_t dst_p
     tcp->checksum = 0;
     tcp->urgent_pointer = 0;
     buff->length += sizeof(tcp_t);
-    ipv4_build(netif, buff, dst_ip, IP_TYPE_TCP, NULL, 0);
+    ipv4_build(netif, buff, dst_ip, IP_TYPE_TCP, NULL, 0, NULL, 0);
     socket->state = TCP_SYN_SENT;
 }
 
 void tcp_synack(socket_t *socket, desc_buff_t *buff)
 {
     netif_t *netif = socket->netif;
-    // TODO: 需要修改
     eth_t *eth = (eth_t *)buff->payload;
     ipv4_t *ipv4 = (ipv4_t *)eth->payload;
     tcp_t *tcp = (tcp_t *)ipv4->payload;
@@ -127,19 +134,31 @@ void tcp_synack(socket_t *socket, desc_buff_t *buff)
     tcp->dst_port = dst_port;
 
     uint32_t seq_num = ntohl(tcp->seq_num);
-    tcp->seq_num = htonl(xrandom());
-    tcp->ack_num = seq_num + 1;
+    socket->seq = xrandom();
+    socket->ack = seq_num + 1;
+    tcp->seq_num = htonl(socket->seq);
+    tcp->ack_num = htonl(socket->ack);
+
+    char options[] = {'\x02', '\x04', '\x05', '\xb4'};
+    kernel_memcpy(tcp->payload, options, sizeof(options));
 
     tcp->ff.flags = FLAGS_SYN | FLAGS_ACK;
     tcp->ff.unused = 0;
-    tcp->ff.offset = sizeof(tcp_t) / 4;
+    tcp->ff.offset = (sizeof(tcp_t) + sizeof(options)) / 4;
     tcp->ff.v = htons(tcp->ff.v);
     tcp->checksum = 0;
-    ipv4_output(netif, buff, NULL, 0);
+    buff->length = sizeof(tcp_t) + sizeof(options);
+
+    ip_addr dst_ip;
+    kernel_memcpy(dst_ip, ipv4->src_ip, IPV4_LEN);
+    ipv4_build(socket->netif, buff, dst_ip, IP_TYPE_TCP, NULL, 0, options, sizeof(options));
+    socket->state = TCP_SYN_RECEIVED;
 }
 
 void tcp_finack(socket_t *socket, desc_buff_t *buff, ip_addr dst_ip)
 {
+    buff->length = 0;
+
     netif_t *netif = socket->netif;
     eth_t *eth = (eth_t *)buff->payload;
     ipv4_t *ipv4 = (ipv4_t *)eth->payload;
@@ -156,9 +175,15 @@ void tcp_finack(socket_t *socket, desc_buff_t *buff, ip_addr dst_ip)
     tcp->checksum = 0;
     tcp->urgent_pointer = 0;
     buff->length += sizeof(tcp_t);
-    ipv4_build(netif, buff, dst_ip, IP_TYPE_TCP, NULL, 0);
-    if (socket->state == TCP_ESTABLISHED) {
-        socket->state = TCP_FIN_WAIT_1;
+    ipv4_build(netif, buff, dst_ip, IP_TYPE_TCP, NULL, 0, NULL, 0);
+    if (socket->socktype == SOCK_CLIENT) {
+        if (socket->state == TCP_ESTABLISHED) {
+            socket->state = TCP_FIN_WAIT_1;
+        }
+    } else if (socket->socktype == SOCK_SERVER) {
+        if (socket->state == TCP_CLOSE_WAIT) {
+            socket->state = TCP_LAST_ACK;
+        }
     }
 }
 
@@ -183,11 +208,19 @@ void tcp_ack(socket_t *socket, desc_buff_t *buff)
     tcp->window_size = htons(0xFF);
     tcp->checksum = 0;
     ipv4_output(socket->netif, buff, NULL, 0);
-    if (socket->state == TCP_SYN_SENT) {
-        socket->state = TCP_ESTABLISHED;
-    } else if (socket->state == TCP_FIN_WAIT_1) {
-        socket->state = TCP_FIN_WAIT_2;
-    } else if (socket->state == TCP_FIN_WAIT_2) {
-        socket->state = TCP_TIME_WAIT;
+    if (socket->socktype == SOCK_CLIENT) {
+        if (socket->state == TCP_SYN_SENT) {
+            socket->state = TCP_ESTABLISHED;
+        } else if (socket->state == TCP_FIN_WAIT_1) {
+            socket->state = TCP_FIN_WAIT_2;
+        } else if (socket->state == TCP_FIN_WAIT_2) {
+            socket->state = TCP_TIME_WAIT;
+        }
+    } else if (socket->socktype == SOCK_SERVER) {
+        if (socket->state == TCP_ESTABLISHED) {
+            socket->state = TCP_CLOSE_WAIT;
+        } else if (socket->state == TCP_LAST_ACK) {
+            socket->state = TCP_CLOSED;
+        }
     }
 }

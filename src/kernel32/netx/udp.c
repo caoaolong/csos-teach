@@ -82,5 +82,5 @@ void udp_build(netif_t *netif, desc_buff_t *buff,
     udp->length = htons(sizeof(udp_t) + dlen);
     udp->checksum = 0;
     buff->length += sizeof(udp_t);
-    ipv4_build(netif, buff, dst_ip, IP_TYPE_UDP, data, dlen);
+    ipv4_build(netif, buff, dst_ip, IP_TYPE_UDP, data, dlen, NULL, 0);
 }

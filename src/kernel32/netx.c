@@ -321,20 +321,9 @@ int sys_accept(int fd, sock_addr_t *addr, uint8_t *addrlen)
     }
     logf("client %d.%d.%d.%d:%d connected",
         socket->dipv4[0], socket->dipv4[1], socket->dipv4[2], socket->dipv4[3], socket->dstp);
-    int cfd = fs_dup(fd);
-    FILE *cfile = task_file(cfd);
-    cfile->sock = alloc_socket();
-    socket_t *csocket = cfile->sock;
-    socket->state = TCP_ESTABLISHED;
-    csocket->family = socket->family;
-    csocket->type = socket->type;
-    csocket->flags = socket->flags;
-    csocket->srcp = socket->srcp;
-    csocket->dstp = socket->dstp;
-    kernel_memcpy(csocket->sipv4, socket->sipv4, IPV4_LEN);
-    kernel_memcpy(csocket->dipv4, socket->dipv4, IPV4_LEN);
-    csocket->seq = socket->seq;
-    csocket->ack = socket->ack;
+    socket_t *csocket = alloc_socket();
+    int cfd = task_alloc_fd((FILE *)csocket->fp);
+    kernel_memcpy(csocket, socket, sizeof(socket_t));
     return cfd;
 }
 
@@ -349,6 +338,11 @@ int sys_close(int fd)
     if (!socket) {
         logf("File descriptor %d is not a socket", fd);
         return -1;
+    }
+    if (socket->state == TCP_CLOSED) {
+        task_free_fd(fd);
+        free_socket(socket);
+        return 0; // 已经关闭
     }
     desc_buff_t *buff = alloc_desc_buff();
     if (socket->socktype == SOCK_SERVER) {
@@ -535,4 +529,5 @@ void free_socket(socket_t *socket)
     socket->state = TCP_CLOSED;
     socket->exists = 0;
     free_page(socket->fp);
+    free_port(socket->srcp);
 }

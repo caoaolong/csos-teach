@@ -34,6 +34,7 @@ void ipv4_output(netif_t *netif, desc_buff_t *buff, uint8_t *data, uint16_t dlen
 
 void ipv4_build(netif_t *netif, desc_buff_t *buff, 
     ip_addr dst_ip, uint8_t tp,
-    uint8_t *data, uint16_t dlen);
+    uint8_t *data, uint16_t dlen,
+    uint8_t *options, uint16_t olen);
 
 #endif
