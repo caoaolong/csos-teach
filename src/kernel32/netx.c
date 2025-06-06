@@ -345,9 +345,6 @@ int sys_close(int fd)
         return 0; // 已经关闭
     }
     desc_buff_t *buff = alloc_desc_buff();
-    if (socket->socktype == SOCK_SERVER) {
-        // TODO: 处理服务器端的关闭逻辑
-    }
     tcp_finack(socket, buff, socket->dipv4);
     // 默认为3s超时
     int tryc = 30;

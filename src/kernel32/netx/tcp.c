@@ -132,12 +132,16 @@ void tcp_synack(socket_t *socket, desc_buff_t *buff)
     uint16_t dst_port = tcp->src_port;
     tcp->src_port = tcp->dst_port;
     tcp->dst_port = dst_port;
+    // 服务端
+    socket->dstp = htons(dst_port);
+    kernel_memcpy(socket->dipv4, ipv4->src_ip, IPV4_LEN);
 
     uint32_t seq_num = ntohl(tcp->seq_num);
     socket->seq = xrandom();
     socket->ack = seq_num + 1;
     tcp->seq_num = htonl(socket->seq);
     tcp->ack_num = htonl(socket->ack);
+    socket->seq++;
 
     char options[] = {'\x02', '\x04', '\x05', '\xb4'};
     kernel_memcpy(tcp->payload, options, sizeof(options));
