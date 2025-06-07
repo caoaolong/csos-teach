@@ -52,18 +52,42 @@ void tcp_input(netif_t *netif, desc_buff_t *buff)
     ipv4_t *ipv4 = (ipv4_t *)eth->payload;
     tcp_t *tcp = (tcp_t *)ipv4->payload;
     port_t *port = get_port(ntohs(tcp->dst_port));
-    if (port && port->status == PORT_UP || port->status == PORT_LISTEN) {
-        tcp->ff.v = ntohs(tcp->ff.v);
+    tcp->ff.v = ntohs(tcp->ff.v);
+    if (port && port->status == PORT_UP) {
         if (tcp->ff.flags == (FLAGS_SYN | FLAGS_ACK)) {
             tcp_ack(port->sock, buff);
         } else if (tcp->ff.flags == (FLAGS_FIN | FLAGS_ACK)) {
             socket_t *socket = port->sock;
+            tcp_ack(port->sock, buff);
             socket->srcp = ntohs(tcp->dst_port);
             socket->dstp = ntohs(tcp->src_port);
-            tcp_ack(port->sock, buff);
             desc_buff_t *nbuff = alloc_desc_buff();
             kernel_memcpy(nbuff, buff, buff->length);
             tcp_finack(port->sock, nbuff, ipv4->dst_ip);
+        } else if(tcp->ff.flags == FLAGS_ACK) {
+            socket_t *socket = port->sock;
+            // 处理ACK包
+            if (socket->state == TCP_FIN_WAIT_1) {
+                socket->state = TCP_FIN_WAIT_2;
+                free_desc_buff(buff);
+            } else if (socket->state == TCP_SYN_RECEIVED) {
+                socket->state = TCP_ESTABLISHED;
+            }
+        }
+    } else if (port->status == PORT_LISTEN) {
+        if (tcp->ff.flags == (FLAGS_FIN | FLAGS_ACK)) {
+            socket_t *socket = port->sock;
+            if (socket->state == TCP_ESTABLISHED) {
+                tcp_ack(port->sock, buff);
+                desc_buff_t *nbuff = alloc_desc_buff();
+                kernel_memcpy(nbuff, buff, buff->length);
+                tcp_finack(port->sock, nbuff, ipv4->dst_ip);
+            } else if (socket->state == TCP_CLOSE_WAIT) {
+                tcp_ack(port->sock, buff);
+            } else {
+                // TODO: 发送RST数据包
+                free_desc_buff(buff);
+            }
         } else if(tcp->ff.flags == FLAGS_SYN) {
             tcp_synack(port->sock, buff);
         } else if(tcp->ff.flags == FLAGS_ACK) {
@@ -187,6 +211,8 @@ void tcp_finack(socket_t *socket, desc_buff_t *buff, ip_addr dst_ip)
     } else if (socket->socktype == SOCK_SERVER) {
         if (socket->state == TCP_CLOSE_WAIT) {
             socket->state = TCP_LAST_ACK;
+        } else if (socket->state == TCP_ESTABLISHED) {
+            socket->state = TCP_CLOSE_WAIT;
         }
     }
 }
