@@ -253,13 +253,13 @@ int sys_connect(int fd, sock_addr_t *addr, uint8_t addrlen)
         // 默认为30s超时
         int tryc = 300;
         logf("Connecting to %d.%d.%d.%d:%d",
-            addr->ipv4[0], addr->ipv4[1], addr->ipv4[2], addr->ipv4[3], ntohs(addr->port));
+            socket->dipv4[0], socket->dipv4[1], socket->dipv4[2], socket->dipv4[3], socket->dstp);
         while (socket->state != TCP_ESTABLISHED && tryc > 0) {
             task_sleep(100);
             tryc--;
         }
         logf("Connection established to %d.%d.%d.%d:%d",
-            addr->ipv4[0], addr->ipv4[1], addr->ipv4[2], addr->ipv4[3], ntohs(addr->port));
+            socket->dipv4[0], socket->dipv4[1], socket->dipv4[2], socket->dipv4[3], socket->dstp);
         free_desc_buff(buff);
         return 0;
     }
@@ -364,6 +364,21 @@ int sys_close(int fd)
 
 int sys_send(int fd, const void *buf, uint32_t len, int flags)
 {
+    FILE *file = task_file(fd);
+    if (!file) {
+        logf("File descriptor %d is not valid", fd);
+        return -1;
+    }
+    socket_t *socket = file->sock;
+    if (!socket) {
+        logf("File descriptor %d is not a socket", fd);
+        return -1;
+    }
+    if (socket->state != TCP_ESTABLISHED) {
+        return -1; // 连接未建立
+    }
+    desc_buff_t *buff = alloc_desc_buff();
+    tcp_build(socket, buff, (uint8_t *)buf, len);
     return 0;
 }
 

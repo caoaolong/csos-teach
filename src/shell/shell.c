@@ -445,7 +445,7 @@ static int cmd_exec_netcat(struct shell_t *shell)
                 } else if (buf[0] == 0) {
                     continue;
                 } else {
-                    // TODO: 发送数据
+                    
                 }
             } else if (ch == '\b') {
                 if (bufc > 0) {
@@ -491,7 +491,9 @@ static int cmd_exec_netcat(struct shell_t *shell)
                 } else if (buf[0] == 0) {
                     continue;
                 } else {
-                    // TODO: 发送数据
+                    send(sockfd, buf, bufc, 0);
+                    memset(buf, 0, bufc);
+                    bufc = 0;
                 }
             } else if (ch == '\b') {
                 if (bufc > 0) {

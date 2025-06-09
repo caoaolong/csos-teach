@@ -38,9 +38,7 @@ uint16_t calc_tcp_checksum(ipv4_t *ip, tcp_t *tcp, uint8_t *payload, uint16_t da
 void tcp_input(netif_t *netif, desc_buff_t *buff);
 void tcp_output(netif_t *netif, desc_buff_t *buff, uint8_t *data, uint16_t dlen);
 
-void tcp_build(netif_t *netif, desc_buff_t *buff, 
-    ip_addr dst_ip, uint16_t src_port, uint16_t dst_port, 
-    uint8_t *data, uint16_t dlen);
+void tcp_build(socket_t *socket, desc_buff_t *buff, uint8_t *data, uint16_t dlen);
 
 void tcp_syn(socket_t *socket, desc_buff_t *buff, ip_addr dst_ip, uint16_t dst_port);
 void tcp_synack(socket_t *socket, desc_buff_t *buff);

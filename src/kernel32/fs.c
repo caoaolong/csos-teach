@@ -278,13 +278,19 @@ char fs_getc(int fd)
     return ch;
 }
 
-void fs_putc(int fd)
+void fs_putc(int fd, char ch)
 {
     FILE *file = task_file(fd);
     if (!file) {
         logf("invalid fd");
         return;
     }
+    fs_lock(devfs);
+    if (devfs->op->fwrite(rootfs, file, &ch, 1) < 0) {
+        logf("getc failed");
+        return;
+    }
+    fs_unlock(devfs);
 }
 
 int fs_dup(int fd)

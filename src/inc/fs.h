@@ -78,7 +78,7 @@ int fs_mkdir(char *path);
 int fs_rmdir(char *path);
 
 char fs_getc(int fd);
-void fs_putc(int fd);
+void fs_putc(int fd, char ch);
 int fs_dup(int fd);
 
 #endif

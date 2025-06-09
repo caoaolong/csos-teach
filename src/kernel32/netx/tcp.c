@@ -8,7 +8,7 @@ uint16_t calc_tcp_checksum(ipv4_t *ip, tcp_t *tcp, uint8_t *payload, uint16_t da
 {
     uint32_t checksum = 0;
     // 从 tcp->offset 字段提取 TCP 头部长度（高 4 位）
-    uint16_t tcp_hdr_len = ntohs(ip->total_len) - ip->ihl * 4;
+    uint16_t tcp_hdr_len = ntohs(ip->total_len) - ip->ihl * 4 - data_len;
     uint16_t tcp_len = tcp_hdr_len + data_len;
 
     // 1. Pseudo header
@@ -72,6 +72,9 @@ void tcp_input(netif_t *netif, desc_buff_t *buff)
                 free_desc_buff(buff);
             } else if (socket->state == TCP_SYN_RECEIVED) {
                 socket->state = TCP_ESTABLISHED;
+            } else if (socket->state == TCP_ESTABLISHED) {
+                socket->ack = ntohl(tcp->seq_num);
+                socket->seq = ntohl(tcp->ack_num);
             }
         }
     } else if (port->status == PORT_LISTEN) {
@@ -98,6 +101,9 @@ void tcp_input(netif_t *netif, desc_buff_t *buff)
                 free_desc_buff(buff);
             } else if (socket->state == TCP_SYN_RECEIVED) {
                 socket->state = TCP_ESTABLISHED;
+            } else if (socket->state == TCP_ESTABLISHED) {
+                socket->ack = ntohl(tcp->seq_num);
+                socket->seq = ntohl(tcp->ack_num);
             }
         }
     } else {
@@ -113,11 +119,27 @@ void tcp_output(netif_t *netif, desc_buff_t *buff, uint8_t *data, uint16_t dlen)
     tcp_t *tcp = (tcp_t *)ipv4->payload;
 }
 
-void tcp_build(netif_t *netif, desc_buff_t *buff, 
-    ip_addr dst_ip, uint16_t src_port, uint16_t dst_port, 
-    uint8_t *data, uint16_t dlen)
+void tcp_build(socket_t *socket, desc_buff_t *buff, uint8_t *data, uint16_t dlen)
 {
+    netif_t *netif = socket->netif;
+    eth_t *eth = (eth_t *)buff->payload;
+    ipv4_t *ipv4 = (ipv4_t *)eth->payload;
+    tcp_t *tcp = (tcp_t *)ipv4->payload;
+    tcp->src_port = htons(socket->srcp);
+    tcp->dst_port = htons(socket->dstp);
 
+    tcp->seq_num = htonl(socket->seq);
+    tcp->ack_num = htonl(socket->ack);
+    
+    tcp->ff.flags = FLAGS_ACK | FLAGS_PSH;
+    tcp->ff.unused = 0;
+    tcp->ff.offset = sizeof(tcp_t) / 4;
+    tcp->ff.v = htons(tcp->ff.v);
+    tcp->window_size = htons(0xFF);
+    tcp->checksum = 0;
+    tcp->urgent_pointer = 0;
+    buff->length += sizeof(tcp_t);
+    ipv4_build(netif, buff, socket->dipv4, IP_TYPE_TCP, data, dlen, NULL, 0);
 }
 
 void tcp_syn(socket_t *socket, desc_buff_t *buff, ip_addr dst_ip, uint16_t dst_port)
