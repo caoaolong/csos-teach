@@ -48,6 +48,10 @@
 #define SYS_NR_BIND         40
 #define SYS_NR_LISTEN       41
 #define SYS_NR_ACCEPT       42
+#define SYS_NR_SEND         43
+#define SYS_NR_READ         44
+#define SYS_SENDTO          45
+#define SYS_RECVFROM        46
 
 #define SYSCALL_LCALL
 

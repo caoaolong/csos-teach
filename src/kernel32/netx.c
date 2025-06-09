@@ -362,6 +362,26 @@ int sys_close(int fd)
     return 0;
 }
 
+int sys_send(int fd, const void *buf, uint32_t len, int flags)
+{
+    return 0;
+}
+
+int sys_read(int fd, void *buf, uint32_t len)
+{
+    return 0;
+}
+
+int sys_sendto(int fd, const void *buf, uint32_t len, sock_addr_t *addr, uint8_t addrlen)
+{
+    return 0;
+}
+
+int sys_recvfrom(int fd, void *buf, uint32_t len, sock_addr_t *addr, uint8_t *addrlen)
+{
+    return 0;
+}
+
 void inet_pton(const char *ipstr, ip_addr ipv)
 {
     char *p = (char *)ipstr;

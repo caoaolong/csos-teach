@@ -118,6 +118,11 @@ int bind(int fd, sock_addr_t addr, uint8_t addrlen);
 int listen(int fd, uint16_t backlog);
 int accept(int fd, sock_addr_t *addr, uint8_t *addrlen);
 
+int send(int fd, const void *buf, uint32_t len, int flags);
+int read(int fd, void *buf, uint32_t len);
+int sendto(int fd, const void *buf, uint32_t len, sock_addr_t *addr, uint8_t addrlen);
+int recvfrom(int fd, void *buf, uint32_t len, sock_addr_t *addr, uint8_t *addrlen);
+
 void inet_pton(const char *ipstr, ip_addr ipv);
 
 #endif

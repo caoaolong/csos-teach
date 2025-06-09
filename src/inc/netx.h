@@ -85,6 +85,10 @@ int sys_bind(int fd, sock_addr_t *addr, uint8_t addrlen);
 int sys_listen(int fd, int backlog);
 int sys_accept(int fd, sock_addr_t *addr, uint8_t *addrlen);
 int sys_close(int fd);
+int sys_send(int fd, const void *buf, uint32_t len, int flags);
+int sys_read(int fd, void *buf, uint32_t len);
+int sys_sendto(int fd, const void *buf, uint32_t len, sock_addr_t *addr, uint8_t addrlen);
+int sys_recvfrom(int fd, void *buf, uint32_t len, sock_addr_t *addr, uint8_t *addrlen);
 
 void net_init();
 void net_save();

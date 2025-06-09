@@ -67,6 +67,30 @@ int accept(int fd, sock_addr_t *addr, uint8_t *addrlen)
     return _syscall(&args);
 }
 
+int send(int fd, const void *buf, uint32_t len, int flags)
+{
+    syscall_arg_t args = {SYS_NR_SEND, fd, (int)buf, len, flags};
+    return _syscall(&args);
+}
+
+int read(int fd, void *buf, uint32_t len)
+{
+    syscall_arg_t args = {SYS_NR_READ, fd, (int)buf, len, 0};
+    return _syscall(&args);
+}
+
+int sendto(int fd, const void *buf, uint32_t len, sock_addr_t *addr, uint8_t addrlen)
+{
+    syscall_arg_t args = {SYS_SENDTO, fd, (int)buf, len, (int)addr};
+    return _syscall(&args);
+}
+
+int recvfrom(int fd, void *buf, uint32_t len, sock_addr_t *addr, uint8_t *addrlen)
+{
+    syscall_arg_t args = {SYS_RECVFROM, fd, (int)buf, len, (int)addr};
+    return _syscall(&args);
+}
+
 void inet_pton(const char *ipstr, ip_addr ipv)
 {
     char *p = (char *)ipstr;
