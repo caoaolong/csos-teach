@@ -81,7 +81,6 @@ void tcp_input(netif_t *netif, desc_buff_t *buff)
             } else if (socket->state == TCP_ESTABLISHED) {
                 socket->ack = ntohl(tcp->seq_num);
                 socket->seq = ntohl(tcp->ack_num);
-                reply_level3_desc_buff(port->sock, buff);
             }
         }
     } else if (port->status == PORT_LISTEN) {

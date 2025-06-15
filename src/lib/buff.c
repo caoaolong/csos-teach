@@ -51,27 +51,6 @@ static void reply_icmp_desc_buff(netif_t *netif, desc_buff_t *rxbuff)
     }
 }
 
-void reply_level3_desc_buff(socket_t *socket, desc_buff_t *rxbuff)
-{
-    netif_t *netif = socket->netif;
-    eth_t *rxeth = (eth_t *)rxbuff->payload;
-    ipv4_t *rxipv4 = (ipv4_t *)rxeth->payload;
-    tcp_t *rxtcp = (tcp_t *)rxipv4->payload;
-
-    list_node_t *pnode = list_get_first(&netif->wait_list);
-    while (pnode) {
-        desc_buff_t *txbuff = struct_from_field(pnode, desc_buff_t, node);
-        ipv4_t *txipv4 = (ipv4_t *)((eth_t *)txbuff->payload)->payload;
-        tcp_t *txtcp = (tcp_t *)txipv4->payload;
-        if (rxtcp->dst_port == txtcp->dst_port && rxtcp->src_port == txtcp->src_port) {
-            socket->buff = (uint32_t)rxbuff;
-            list_remove(&netif->wait_list, pnode);
-            break;
-        }
-        pnode = list_get_next(pnode);
-    }
-}
-
 void reply_desc_buff(netif_t *netif, desc_buff_t *buff, uint8_t type)
 {
     switch (type)
