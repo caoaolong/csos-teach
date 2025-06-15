@@ -64,6 +64,12 @@ void tcp_input(netif_t *netif, desc_buff_t *buff)
             desc_buff_t *nbuff = alloc_desc_buff();
             kernel_memcpy(nbuff, buff, buff->length);
             tcp_finack(port->sock, nbuff, ipv4->dst_ip);
+        } else if (tcp->ff.flags == (FLAGS_RST | FLAGS_ACK)) {
+            socket_t *socket = port->sock;
+            socket->state = TCP_CLOSED;
+        } else if (tcp->ff.flags == (FLAGS_PSH | FLAGS_ACK)) {
+            logf("[CLIENT RECV]: %s", tcp->payload);
+            tcp_ack(port->sock, buff);
         } else if(tcp->ff.flags == FLAGS_ACK) {
             socket_t *socket = port->sock;
             // 处理ACK包
@@ -75,6 +81,7 @@ void tcp_input(netif_t *netif, desc_buff_t *buff)
             } else if (socket->state == TCP_ESTABLISHED) {
                 socket->ack = ntohl(tcp->seq_num);
                 socket->seq = ntohl(tcp->ack_num);
+                reply_level3_desc_buff(port->sock, buff);
             }
         }
     } else if (port->status == PORT_LISTEN) {
@@ -91,6 +98,12 @@ void tcp_input(netif_t *netif, desc_buff_t *buff)
                 // TODO: 发送RST数据包
                 free_desc_buff(buff);
             }
+        } else if (tcp->ff.flags == (FLAGS_RST | FLAGS_ACK)) {
+            socket_t *socket = port->sock;
+            socket->state = TCP_CLOSED;
+        } else if (tcp->ff.flags == (FLAGS_PSH | FLAGS_ACK)) {
+            logf("[SERVER RECV]: %s", tcp->payload);
+            tcp_ack(port->sock, buff);
         } else if(tcp->ff.flags == FLAGS_SYN) {
             tcp_synack(port->sock, buff);
         } else if(tcp->ff.flags == FLAGS_ACK) {
@@ -253,9 +266,16 @@ void tcp_ack(socket_t *socket, desc_buff_t *buff)
     tcp->seq_num = tcp->ack_num;
     socket->seq = ntohl(tcp->seq_num);
 
-    tcp->ack_num = htonl(pack_seq_num + 1);
-    socket->ack = ntohl(tcp->ack_num);
-
+    if (tcp->ff.flags == (FLAGS_SYN | FLAGS_ACK) || tcp->ff.flags == (FLAGS_FIN | FLAGS_ACK)) {
+        socket->ack = pack_seq_num + 1;
+        tcp->ack_num = htonl(socket->ack);
+    } else if (tcp->ff.flags == (FLAGS_PSH | FLAGS_ACK)) {
+        // 请求头长度
+        int hlen = ipv4->ihl * 4 + tcp->ff.offset * 4;
+        socket->ack += ntohs(ipv4->total_len) - hlen;
+        tcp->ack_num = htonl(socket->ack);
+    }
+    
     tcp->ff.flags = FLAGS_ACK;
     tcp->window_size = htons(0xFF);
     tcp->checksum = 0;

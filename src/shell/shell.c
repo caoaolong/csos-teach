@@ -93,9 +93,9 @@ static shell_cmd_t cmd_list[] = {
     {
         .name = "nc",
         .usage = "nc\tnetcat tool to udp/tcp connect\n"
-                 "  \t-l <port> listen to port for tcp\n"
-                 "  \t-u -l <port> listen to port for udp\n"
-                 "  \t<host> <port> connect to tcp server",
+                 "  \t<-r/-s> -l <port> listen to port for tcp\n"
+                 "  \t<-r/-s> -u -l <port> listen to port for udp\n"
+                 "  \t<-r/-s> <host> <port> connect to tcp server",
         .cmd_exec = cmd_exec_netcat
     },
     {
@@ -404,9 +404,50 @@ static int cmd_exec_ifconf(struct shell_t *shell)
     }
 }
 
+static void netcat_task(int sockfd, uint8_t type)
+{
+    char *buf = (char *)malloc(1024);
+    int bufc = 0;
+    while (TRUE) {
+        // 发送
+        if (type == 2) {
+            char ch = getc();
+            if (ch == '\n') {
+                if (!strcmp(buf, "q")) {
+                    close(sockfd);
+                    free(buf);
+                    break;
+                } else if (buf[0] == 0) {
+                    continue;
+                }
+            } else if (ch == '\b') {
+                if (bufc > 0) {
+                    buf[--bufc] = 0;
+                }
+            } else {
+                buf[bufc++] = ch;
+            }
+        } else if (type == 1) {
+            read(sockfd, buf, sizeof(buf));
+        }
+    }
+}
+
 static int cmd_exec_netcat(struct shell_t *shell)
 {
     char *arg = shell_get_arg(shell);
+    // 1表示接收；2表示发送
+    uint8_t type = 0;
+    if (!strcmp(arg, "-r")) {
+        type = 1;
+    } else if (!strcmp(arg, "-s")) {
+        type = 2;
+    } else {
+        type = 0;
+        shell_result(FALSE, "please choose -r(receive) or -s(send)");
+        return 0;
+    }
+    arg = shell_get_arg(shell);
     if (!strcmp(arg, "-l")) {
         // listen mode
         char *arg = shell_get_arg(shell);
@@ -433,28 +474,7 @@ static int cmd_exec_netcat(struct shell_t *shell)
             printf("accept failed\n");
             return -1;
         }
-        char *buf = (char *)malloc(1024);
-        int bufc = 0;
-        while (TRUE) {
-            char ch = getc();
-            if (ch == '\n') {
-                if (!strcmp(buf, "q")) {
-                    close(sockfd);
-                    free(buf);
-                    break;
-                } else if (buf[0] == 0) {
-                    continue;
-                } else {
-                    
-                }
-            } else if (ch == '\b') {
-                if (bufc > 0) {
-                    buf[--bufc] = 0;
-                }
-            } else {
-                buf[bufc++] = ch;
-            }
-        }
+        netcat_task(sockfd, type);
     } else if (!strcmp(arg, "-u")) {
         // UDP connect
     } else {
@@ -479,30 +499,7 @@ static int cmd_exec_netcat(struct shell_t *shell)
             printf("connect to %s:%d failed\n", host, port);
             return -1;
         }
-        char *buf = (char *)malloc(1024);
-        int bufc = 0;
-        while (TRUE) {
-            char ch = getc();
-            if (ch == '\n') {
-                if (!strcmp(buf, "q")) {
-                    close(sockfd);
-                    free(buf);
-                    break;
-                } else if (buf[0] == 0) {
-                    continue;
-                } else {
-                    send(sockfd, buf, bufc, 0);
-                    memset(buf, 0, bufc);
-                    bufc = 0;
-                }
-            } else if (ch == '\b') {
-                if (bufc > 0) {
-                    buf[--bufc] = 0;
-                }
-            } else {
-                buf[bufc++] = ch;
-            }
-        }
+        netcat_task(sockfd, type);
     }
     return 0;
 }

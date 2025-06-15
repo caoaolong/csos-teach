@@ -250,7 +250,7 @@ static uint32_t load_elf_file(task_t *task, const char *name, uint32_t pde)
         buffer += sizeof(Elf32_Phdr);
         if ((elf_phdr.p_type != 1) || (elf_phdr.p_vaddr < VM_TASK_BASE))
             continue;
-        int err = alloc_task_pages(pde, elf_phdr.p_vaddr, elf_phdr.p_memsz, PTE_P | PTE_U | PTE_W);
+        int err = alloc_task_pages(pde, elf_phdr.p_vaddr, elf_phdr.p_memsz + PAGE_SIZE * 5, PTE_P | PTE_U | PTE_W);
         if (err < 0) return -1;
         buffer = SHELL_TMP + elf_phdr.p_offset;
         uint32_t vaddr = elf_phdr.p_vaddr;

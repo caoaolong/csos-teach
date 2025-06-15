@@ -3,6 +3,7 @@
 
 #include <list.h>
 #include <netx/arp_map.h>
+#include <csos/sem.h>
 
 #define AF_INET         2
 // TCP
@@ -72,6 +73,7 @@ typedef struct socket_t {
     uint32_t ack;
     uint32_t fp;       // 文件指针
     netif_t *netif;    // 绑定的网络接口
+    sem_t sem;         // 信号量
 } socket_t;
 
 enum {

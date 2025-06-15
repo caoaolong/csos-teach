@@ -251,15 +251,20 @@ int sys_connect(int fd, sock_addr_t *addr, uint8_t addrlen)
         desc_buff_t *buff = alloc_desc_buff();
         tcp_syn(socket, buff, addr->ipv4, addr->port);
         // 默认为30s超时
-        int tryc = 300;
+        int tryc = 30;
         logf("Connecting to %d.%d.%d.%d:%d",
             socket->dipv4[0], socket->dipv4[1], socket->dipv4[2], socket->dipv4[3], socket->dstp);
         while (socket->state != TCP_ESTABLISHED && tryc > 0) {
+            logf("tryc = %d", tryc);
             task_sleep(100);
             tryc--;
         }
-        logf("Connection established to %d.%d.%d.%d:%d",
-            socket->dipv4[0], socket->dipv4[1], socket->dipv4[2], socket->dipv4[3], socket->dstp);
+        if (socket->state == TCP_ESTABLISHED) {
+            logf("Connection established to %d.%d.%d.%d:%d",
+                socket->dipv4[0], socket->dipv4[1], socket->dipv4[2], socket->dipv4[3], socket->dstp);
+        } else {
+            logf("state = %d", socket->state);
+        }
         free_desc_buff(buff);
         return 0;
     }
@@ -384,6 +389,20 @@ int sys_send(int fd, const void *buf, uint32_t len, int flags)
 
 int sys_read(int fd, void *buf, uint32_t len)
 {
+    FILE *file = task_file(fd);
+    if (!file) {
+        logf("File descriptor %d is not valid", fd);
+        return -1;
+    }
+    socket_t *socket = file->sock;
+    if (!socket) {
+        logf("File descriptor %d is not a socket", fd);
+        return -1;
+    }
+    if (socket->state != TCP_ESTABLISHED) {
+        return -1; // 连接未建立
+    }
+    sem_wait(&socket->sem);
     return 0;
 }
 
@@ -550,6 +569,7 @@ socket_t *alloc_socket()
             sockets[i].exists = 1;
             sockets[i].fp = alloc_page();
             sockets[i].socktype = SOCK_CLIENT;
+            sem_init(&sockets[i].sem, 0);
             return &sockets[i];
         }
     }
